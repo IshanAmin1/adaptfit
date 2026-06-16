@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | Ishan Amin | aminish1 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 | Jerry He | TODO: utorid | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
-| Eric Song | TODO: utorid | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
+| Eric Song | songeri5 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 
 ## Summary
 
@@ -70,7 +70,7 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 ### AI Integration with MCP / Tools
 
-**Assignee:** TODO
+**Assignee:** Eric
 
 **Required questions:** Which AI provider are you using? How are you planning on integrating the AI?
 
@@ -88,7 +88,7 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 ### Deployment
 
-**Assignee:** TODO
+**Assignee:** Eric
 
 **Required item:** Provide an available domain name.
 
