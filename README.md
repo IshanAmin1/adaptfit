@@ -7,7 +7,7 @@
 | Name | UTORid | AI Usage Policy Acknowledgement |
 | --- | --- | --- |
 | Ishan Amin | aminish1 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
-| Jerry He | TODO: utorid | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
+| Jerry He | hejerry4 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 | Eric Song | songeri5 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 
 ## Summary
@@ -44,11 +44,11 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 ### Authentication
 
-**Assignee:** TODO
+**Assignee:** Jerry
 
 **Required question:** Which OAuth provider are you using?
 
-**Answer:** TODO: Example: Google OAuth, GitHub OAuth, Auth0, etc.
+**Answer:** Google OAuth
 
 ### Look and Feel
 
@@ -84,7 +84,7 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 **Required item:** Provide your sandbox account publishable key.
 
-**Sandbox publishable key:** TODO: `pk_test_...`
+**Sandbox publishable key:** `pk_test_51Tj1yw8xqGcsep6XvUSamVs87dlEXqiYPyfBY11RRY4h2PQFk0iAa4vS4IdXBd6lubCTfkEPdgC0oV7Ya0oj465400c6U9T1eC`
 
 ### Deployment
 
