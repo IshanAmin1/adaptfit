@@ -6,7 +6,7 @@
 
 | Name | UTORid | AI Usage Policy Acknowledgement |
 | --- | --- | --- |
-| Ishan Amin | 1010115796 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
+| Ishan Amin | aminish1 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 | Jerry He | TODO: utorid | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 | Eric Song | TODO: utorid | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 
