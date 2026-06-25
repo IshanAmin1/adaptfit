@@ -12,32 +12,28 @@
 
 ## Summary
 
-TODO: Write one paragraph summarizing what AdaptFit will do as an AI assistant.
+**Short Summary**
 
-Suggested structure:
-- What problem does AdaptFit solve?
-- Who is it for?
-- What will the assistant help users do?
-- What makes it useful or different from existing tools?
-
-Short Summary
 A web-based fitness platform that generates personalized workout and nutrition plans using AI. Users provide their fitness goals, experience level, available equipment, and dietary preferences through an onboarding assessment. The platform then creates a customized weekly plan and continuously adapts future recommendations based on user progress and performance.
 
-Major Functionalities
-AI-Powered Fitness Plan Generation
-The core of the application is a structured AI workflow that generates personalized workout and nutrition plans. User information is processed through multiple stages:
-Goal Analysis → Exercise Selection → Nutrition Planning → Schedule Generation
-The system considers factors such as fitness goals, available equipment, experience level, and dietary restrictions to create a complete weekly plan tailored to each user.
+**Major Functionalities**
+- AI-Powered Fitness Plan Generation
 
-Adaptive Progress Tracking and Feedback System
-Users log completed workouts and nutrition data through an interactive dashboard. The platform analyzes this performance data and automatically adjusts future recommendations.
-Examples include:
-Increasing or decreasing workout intensity based on completion rates.
-Recommending alternative exercises when users consistently skip certain movements.
-Adjusting calorie and macronutrient targets according to progress toward goals.
-This creates a continuous feedback loop where the generated plans evolve based on real user behavior rather than remaining static.
+  The core of the application is a structured AI workflow that generates personalized workout and nutrition plans. User information is processed through multiple stages:
+  Goal Analysis → Exercise Selection → Nutrition Planning → Schedule Generation
+  The system considers factors such as fitness goals, available equipment, experience level, and dietary restrictions to create a complete weekly plan tailored to each user.
 
-Originality
+- Adaptive Progress Tracking and Feedback System
+
+  Users log completed workouts and nutrition data through an interactive dashboard. The platform analyzes this performance data and automatically adjusts future recommendations.
+  Examples include:
+  Increasing or decreasing workout intensity based on completion rates.
+  Recommending alternative exercises when users consistently skip certain movements.
+  Adjusting calorie and macronutrient targets according to progress toward goals.
+  This creates a continuous feedback loop where the generated plans evolve based on real user behavior rather than remaining static.
+
+**Originality**
+
 Unlike traditional fitness applications that provide generic workout templates, this platform focuses on intelligent adaptation. The application treats fitness planning as an evolving process rather than a one-time recommendation.
 
 ## Capabilities
@@ -92,7 +88,7 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 **Required item:** Provide an available domain name.
 
-**Domain name:** TODO: Example: `adaptfit.example.com`
+**Domain name:** TODO: Example: `adaptfit.ca`
 
 **Deployment platform:** TODO: Example: Render, Vercel, Railway, Fly.io, etc.
 
