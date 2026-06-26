@@ -88,7 +88,7 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 **Required item:** Provide an available domain name.
 
-**Domain name:** `adaptfit.ca`
+**Domain name:** `adaptfit.tech`
 
 **Deployment platform:** TODO: Example: Render, Vercel, Railway, Fly.io, etc.
 
