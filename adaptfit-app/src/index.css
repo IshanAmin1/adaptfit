@@ -89,6 +89,19 @@ nav a.active {
   color: white;
 }
 
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.user-greeting {
+  color: #17211f;
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .app-grid {
   width: min(1344px, calc(100% - 96px));
   margin: 0 auto;

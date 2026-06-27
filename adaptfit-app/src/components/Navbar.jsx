@@ -1,8 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
+import { googleLogout } from '@react-oauth/google';
 
 // Navbar component that renders the top navigation bar with links to different sections of the application.
-export default function Navbar() {
+export default function Navbar({ authUser, onLogout }) {
   const location = useLocation();
+
+  const handleLogout = () => {
+    googleLogout();
+    onLogout();
+  };
 
   return (
     <header className="topbar">
@@ -16,9 +22,18 @@ export default function Navbar() {
         <a href="#nutrition">Nutrition</a>
         <a href="#progress">Progress</a>
       </nav>
-      <Link to="/login" className="login-button" style={{ textDecoration: 'none' }}>
-        {location.pathname === '/login' ? 'Dashboard' : 'Log in'}
-      </Link>
+      {authUser ? (
+        <div className="auth-actions">
+          <span className="user-greeting">Hi, {authUser.firstName}!</span>
+          <button type="button" className="login-button" onClick={handleLogout}>
+            Log out
+          </button>
+        </div>
+      ) : (
+        <Link to="/login" className="login-button" style={{ textDecoration: 'none' }}>
+          {location.pathname === '/login' ? 'Dashboard' : 'Log in'}
+        </Link>
+      )}
     </header>
   );
 }

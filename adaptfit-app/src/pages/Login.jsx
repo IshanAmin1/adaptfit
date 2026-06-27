@@ -1,12 +1,35 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
-export default function Login() {
+const getGoogleProfile = (credential) => {
+  const payload = credential.split(".")[1];
+  const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
+  const decodedPayload = decodeURIComponent(
+    atob(normalizedPayload)
+      .split("")
+      .map((character) => {
+        return `%${`00${character.charCodeAt(0).toString(16)}`.slice(-2)}`;
+      })
+      .join(""),
+  );
+  const profile = JSON.parse(decodedPayload);
+
+  return {
+    firstName: profile.given_name || profile.name?.split(" ")[0] || "user",
+  };
+};
+
+export default function Login({ onLogin }) {
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Verification logic will run here later
-    navigate('/');
+  const handleGoogleSuccess = (credentialResponse) => {
+    const user = getGoogleProfile(credentialResponse.credential);
+    onLogin(user);
+    navigate("/", { replace: true });
+  };
+
+  const handleGoogleError = () => {
+    console.error("Google login failed");
   };
 
   return (
@@ -17,21 +40,13 @@ export default function Login() {
           <h2>Access AdaptFit</h2>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="form-group">
-            <label className="tiny-label" htmlFor="email" style={{ marginBottom: 0 }}>Email Address</label>
-            <input type="email" id="email" placeholder="name@example.com" required />
-          </div>
-
-          <div className="form-group">
-            <label className="tiny-label" htmlFor="password" style={{ marginBottom: 0 }}>Password</label>
-            <input type="password" id="password" placeholder="••••••••" required />
-          </div>
-
-          <button type="submit" className="login-button" style={{ width: '100%', marginTop: '10px' }}>
-            Sign In
-          </button>
-        </form>
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            width="100%"
+          />
+        </div>
       </section>
     </div>
   );
