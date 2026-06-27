@@ -1,21 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 
 const getGoogleProfile = (credential) => {
-  const payload = credential.split(".")[1];
-  const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
-  const decodedPayload = decodeURIComponent(
-    atob(normalizedPayload)
-      .split("")
-      .map((character) => {
-        return `%${`00${character.charCodeAt(0).toString(16)}`.slice(-2)}`;
-      })
-      .join(""),
-  );
-  const profile = JSON.parse(decodedPayload);
-
+  const payload = jwtDecode(credential);
   return {
-    firstName: profile.given_name || profile.name?.split(" ")[0] || "user",
+    firstName: payload.given_name || payload.name?.split(" ")[0] || "user",
   };
 };
 
