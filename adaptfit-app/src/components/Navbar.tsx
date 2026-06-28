@@ -10,7 +10,7 @@ export default function Navbar() {
 	];
 
 	return (
-		<header className="fixed left-0 top-0 z-10 grid h-[78px] w-full grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-[#d9e5df] bg-white/90 px-4 backdrop-blur-sm md:px-12">
+		<header className="fixed left-0 top-0 z-10 grid h-19.5 w-full grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-[#d9e5df] bg-white/90 px-4 backdrop-blur-sm md:px-12">
 			<Link
 				to="/"
 				className="flex items-center gap-2.5 text-[22px] font-black text-inherit no-underline"
@@ -22,7 +22,7 @@ export default function Navbar() {
 			</Link>
 			<nav
 				aria-label="Main navigation"
-				className="hidden justify-center gap-[30px] md:flex"
+				className="hidden justify-center gap-7.5 md:flex"
 			>
 				{navItems.map((item) =>
 					item.href.startsWith("#") ? (
@@ -50,7 +50,7 @@ export default function Navbar() {
 			</nav>
 			<Link
 				to={location.pathname === "/login" ? "/" : "/login"}
-				className="rounded-lg bg-[#17211f] px-[17px] py-[11px] font-black text-white no-underline"
+				className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
 			>
 				{location.pathname === "/login" ? "Dashboard" : "Log in"}
 			</Link>

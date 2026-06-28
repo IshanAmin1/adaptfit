@@ -1,13 +1,15 @@
-import { DashboardCard, ProgressBar, SectionHeading } from "./ui";
+import DashboardCard from "./common/DashboardCard";
+import ProgressBar from "./common/ProgressBar";
+import SectionHeading from "./common/SectionHeading";
 
 export default function NutritionCard() {
 	return (
-		<DashboardCard id="nutrition" className="p-[30px] lg:col-span-6">
+		<DashboardCard id="nutrition" className="p-7.5 lg:col-span-6">
 			<SectionHeading
 				eyebrow="Nutrition planning"
 				title="Daily targets"
 				action={
-					<span className="rounded-full bg-[#e0f5ee] px-[11px] py-2 text-xs font-black uppercase tracking-[0.08em] text-[#0f8b6f]">
+					<span className="rounded-full bg-[#e0f5ee] px-2.75 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#0f8b6f]">
 						Personalized
 					</span>
 				}
@@ -22,7 +24,7 @@ export default function NutritionCard() {
 				/>
 			</div>
 
-			<div className="mt-7 grid grid-cols-1 gap-[18px] md:grid-cols-3">
+			<div className="mt-7 grid grid-cols-1 gap-4.5 md:grid-cols-3">
 				<ProgressBar
 					label="Protein"
 					value="120g"
@@ -43,7 +45,7 @@ export default function NutritionCard() {
 				/>
 			</div>
 
-			<button className="mt-[30px] w-full rounded-lg border border-[#0f8b6f] bg-transparent px-[18px] py-[15px] font-black uppercase text-[#0f8b6f]">
+			<button className="mt-7.5 w-full rounded-lg border border-[#0f8b6f] bg-transparent px-4.5 py-3.75 font-black uppercase text-[#0f8b6f]">
 				Log next meal
 			</button>
 		</DashboardCard>
