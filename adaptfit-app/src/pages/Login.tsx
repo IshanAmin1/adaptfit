@@ -1,12 +1,41 @@
-import { FormEvent } from "react";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
+import type { AuthUser } from "../types/auth";
 
-export default function Login() {
+type GoogleCredentialPayload = {
+	given_name?: string;
+	name?: string;
+};
+
+type LoginProps = {
+	onLogin: (user: AuthUser) => void;
+};
+
+const getGoogleProfile = (credential: string): AuthUser => {
+	const payload = jwtDecode<GoogleCredentialPayload>(credential);
+
+	return {
+		firstName: payload.given_name || payload.name?.split(" ")[0] || "user",
+	};
+};
+
+export default function Login({ onLogin }: LoginProps) {
 	const navigate = useNavigate();
 
-	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		navigate("/");
+	const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
+		if (!credentialResponse.credential) {
+			handleGoogleError();
+			return;
+		}
+
+		const user = getGoogleProfile(credentialResponse.credential);
+		onLogin(user);
+		navigate("/", { replace: true });
+	};
+
+	const handleGoogleError = () => {
+		console.error("Google login failed");
 	};
 
 	return (
@@ -21,46 +50,13 @@ export default function Login() {
 					</h2>
 				</div>
 
-				<form onSubmit={handleSubmit} className="flex flex-col gap-5">
-					<div className="flex flex-col gap-2">
-						<label
-							className="text-xs font-black uppercase tracking-[0.1em] text-[#0f8b6f]"
-							htmlFor="email"
-						>
-							Email Address
-						</label>
-						<input
-							type="email"
-							id="email"
-							placeholder="name@example.com"
-							required
-							className="rounded-lg border border-[#d9e5df] px-3 py-3 text-sm outline-none transition focus:border-[#0f8b6f] focus:ring-2 focus:ring-[#0f8b6f]/20"
-						/>
-					</div>
-
-					<div className="flex flex-col gap-2">
-						<label
-							className="text-xs font-black uppercase tracking-[0.1em] text-[#0f8b6f]"
-							htmlFor="password"
-						>
-							Password
-						</label>
-						<input
-							type="password"
-							id="password"
-							placeholder="••••••••"
-							required
-							className="rounded-lg border border-[#d9e5df] px-3 py-3 text-sm outline-none transition focus:border-[#0f8b6f] focus:ring-2 focus:ring-[#0f8b6f]/20"
-						/>
-					</div>
-
-					<button
-						type="submit"
-						className="mt-2 w-full rounded-lg bg-[#17211f] px-[17px] py-[11px] font-black text-white"
-					>
-						Sign In
-					</button>
-				</form>
+				<div className="flex flex-col gap-5">
+					<GoogleLogin
+						onSuccess={handleGoogleSuccess}
+						onError={handleGoogleError}
+						width="320"
+					/>
+				</div>
 			</section>
 		</div>
 	);

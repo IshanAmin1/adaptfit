@@ -1,6 +1,13 @@
+import { googleLogout } from "@react-oauth/google";
 import { Link, useLocation } from "react-router-dom";
+import type { AuthUser } from "../types/auth";
 
-export default function Navbar() {
+type NavbarProps = {
+	authUser: AuthUser | null;
+	onLogout: () => void;
+};
+
+export default function Navbar({ authUser, onLogout }: NavbarProps) {
 	const location = useLocation();
 	const navItems = [
 		{ label: "Today", href: "/" },
@@ -8,6 +15,11 @@ export default function Navbar() {
 		{ label: "Nutrition", href: "#nutrition" },
 		{ label: "Progress", href: "#progress" },
 	];
+
+	const handleLogout = () => {
+		googleLogout();
+		onLogout();
+	};
 
 	return (
 		<header className="fixed left-0 top-0 z-10 grid h-19.5 w-full grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-[#d9e5df] bg-white/90 px-4 backdrop-blur-sm md:px-12">
@@ -48,12 +60,27 @@ export default function Navbar() {
 					),
 				)}
 			</nav>
-			<Link
-				to={location.pathname === "/login" ? "/" : "/login"}
-				className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
-			>
-				{location.pathname === "/login" ? "Dashboard" : "Log in"}
-			</Link>
+			{authUser ? (
+				<div className="flex items-center gap-3.5">
+					<span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
+						Hi, {authUser.firstName}!
+					</span>
+					<button
+						type="button"
+						className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+						onClick={handleLogout}
+					>
+						Log out
+					</button>
+				</div>
+			) : (
+				<Link
+					to={location.pathname === "/login" ? "/" : "/login"}
+					className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
+				>
+					{location.pathname === "/login" ? "Dashboard" : "Log in"}
+				</Link>
+			)}
 		</header>
 	);
 }
