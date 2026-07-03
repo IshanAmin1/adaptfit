@@ -1,41 +1,36 @@
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { loginWithGoogle } from "../api/auth";
 import type { AuthUser } from "../types/auth";
-
-type GoogleCredentialPayload = {
-	given_name?: string;
-	name?: string;
-};
 
 type LoginProps = {
 	onLogin: (user: AuthUser) => void;
 };
 
-const getGoogleProfile = (credential: string): AuthUser => {
-	const payload = jwtDecode<GoogleCredentialPayload>(credential);
-
-	return {
-		firstName: payload.given_name || payload.name?.split(" ")[0] || "user",
-	};
-};
-
 export default function Login({ onLogin }: LoginProps) {
 	const navigate = useNavigate();
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-	const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
+	const handleGoogleSuccess = async (
+		credentialResponse: CredentialResponse,
+	) => {
 		if (!credentialResponse.credential) {
 			handleGoogleError();
 			return;
 		}
 
-		const user = getGoogleProfile(credentialResponse.credential);
-		onLogin(user);
-		navigate("/", { replace: true });
+		try {
+			const user = await loginWithGoogle(credentialResponse.credential);
+			onLogin(user);
+			navigate("/", { replace: true });
+		} catch {
+			handleGoogleError();
+		}
 	};
 
 	const handleGoogleError = () => {
-		console.error("Google login failed");
+		setErrorMessage("Google login failed. Please try again.");
 	};
 
 	return (
@@ -56,6 +51,11 @@ export default function Login({ onLogin }: LoginProps) {
 						onError={handleGoogleError}
 						width="320"
 					/>
+					{errorMessage ? (
+						<p className="m-0 text-sm font-semibold text-red-700" role="alert">
+							{errorMessage}
+						</p>
+					) : null}
 				</div>
 			</section>
 		</div>
