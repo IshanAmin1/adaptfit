@@ -20,11 +20,13 @@ Required values:
 - `DATABASE_URL`: Postgres connection string.
 - `GOOGLE_CLIENT_ID`: same Google OAuth client ID used by the Vite frontend.
 - `CLIENT_ORIGIN`: frontend origin, usually `http://localhost:5173` in development.
+- `SESSION_SECRET`: secret used to sign the Express session cookie.
 
 On startup, the API calls `sequelize.sync({ alter: { drop: false } })`, matching
 the Lab6 Sequelize startup pattern while keeping PostgreSQL as the database.
-This creates the `users` and `sessions` tables if they do not already exist and
-can apply non-dropping table changes during local development.
+This creates the `users` table if it does not already exist and can apply
+non-dropping table changes during local development. Express session data is
+stored in PostgreSQL by `connect-pg-simple`.
 
 ## Auth Routes
 

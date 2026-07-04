@@ -1,12 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { Router } from "express";
-import { isAuthenticated, getSessionToken } from "../middleware/auth.js";
-import {
-  createSession,
-  deleteExpiredSessions,
-  deleteSessionByToken,
-  getCookieOptions,
-} from "../models/sessions.js";
+import { isAuthenticated } from "../middleware/auth.js";
 import { serializeUser, upsertGoogleUser } from "../models/users.js";
 
 export const authRouter = Router();
@@ -53,13 +47,7 @@ authRouter.post("/google", async (req, res) => {
       avatarUrl: payload.picture || null,
     });
 
-    await deleteExpiredSessions();
-
-    const session = await createSession(user.id);
-    res.cookie(COOKIE_NAME, session.token, {
-      ...getCookieOptions(),
-      expires: session.expiresAt,
-    });
+    req.session.userId = user.id;
 
     return res.json({ user: serializeUser(user) });
   } catch (error) {
@@ -74,14 +62,14 @@ authRouter.get("/me", isAuthenticated, async (req, res) => {
 
 authRouter.post("/logout", async (req, res) => {
   try {
-    const token = getSessionToken(req);
-
-    if (token) {
-      await deleteSessionByToken(token);
-    }
-
-    res.clearCookie(COOKIE_NAME, getCookieOptions());
-    return res.json({ ok: true });
+    req.session.destroy((error) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Logout failed." });
+      }
+      res.clearCookie(COOKIE_NAME); // clear cookie in browser
+      return res.json({ ok: true });
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Logout failed." });

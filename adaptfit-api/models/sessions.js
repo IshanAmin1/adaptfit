@@ -1,110 +1,51 @@
-import crypto from "crypto";
-import { DataTypes, Op } from "sequelize";
-import { sequelize } from "../datasource.js";
-import { User } from "./users.js";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import pg from "pg";
 
+const PgSession = connectPgSimple(session);
+const { Pool } = pg;
+
+const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
 const SESSION_DAYS = Number(process.env.SESSION_DAYS || 7);
+const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60 * 1000;
 
-export const Session = sequelize.define(
-  "Session",
-  {
-    id: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: DataTypes.UUIDV4,
-    },
-    user_id: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: User,
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
-    session_token_hash: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-      unique: true,
-    },
-    expires_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-  },
-  {
-    tableName: "sessions",
-    createdAt: "created_at",
-    updatedAt: false,
-    indexes: [
-      {
-        fields: ["user_id"],
-      },
-      {
-        fields: ["expires_at"],
-      },
-    ],
-  },
-);
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-Session.belongsTo(User, { foreignKey: "user_id", onDelete: "CASCADE" });
-User.hasMany(Session, { foreignKey: "user_id", onDelete: "CASCADE" });
-
-function hashToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
+function getBaseCookieOptions() {
+  return {
+    httpOnly: true, // prevent client-side JavaScript from accessing the cookie
+    sameSite: "lax", // prevent CSRF attacks by restricting cross-site cookie sending
+    secure: process.env.NODE_ENV === "production", // ensure cookies are only sent over HTTPS in production
+    path: "/", // cookie is valid for the entire domain
+  };
 }
 
 export function getCookieOptions() {
   return {
-    httpOnly: true, // JavaScript cannot access the cookie, helps prevent XSS attacks
-    sameSite: "lax", // restricts when cookies are sent, helps prevent CSRF attacks
-    secure: process.env.NODE_ENV === "production", // ensures cookies are only sent over HTTPS in production
-    path: "/",
+    ...getBaseCookieOptions(),
+    maxAge: SESSION_MAX_AGE,
   };
 }
 
-export async function createSession(userId) {
-  const token = crypto.randomBytes(32).toString("hex");
-  const tokenHash = hashToken(token);
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+export function sessionMiddleware() {
+  const secret = process.env.SESSION_SECRET;
 
-  await Session.create({
-    user_id: userId,
-    session_token_hash: tokenHash,
-    expires_at: expiresAt,
-  });
+  if (!secret) {
+    throw new Error("SESSION_SECRET is not configured.");
+  }
 
-  return { token, expiresAt };
-}
-
-export async function findSessionByToken(token) {
-  const session = await Session.findOne({
-    attributes: ["id", "user_id"],
-    where: {
-      session_token_hash: hashToken(token),
-      expires_at: {
-        [Op.gt]: new Date(),
-      },
-    },
-  });
-
-  return session?.get({ plain: true }) || null;
-}
-
-export async function deleteSessionByToken(token) {
-  await Session.destroy({
-    where: {
-      session_token_hash: hashToken(token),
-    },
-  });
-}
-
-export async function deleteExpiredSessions() {
-  await Session.destroy({
-    where: {
-      expires_at: {
-        [Op.lte]: new Date(),
-      },
-    },
+  return session({
+    name: COOKIE_NAME,
+    secret,
+    resave: false,
+    saveUninitialized: false,
+    store: new PgSession({
+      pool: sessionPool,
+      tableName: "session",
+      createTableIfMissing: true,
+    }),
+    cookie: getCookieOptions(),
   });
 }

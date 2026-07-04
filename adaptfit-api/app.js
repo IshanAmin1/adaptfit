@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
+import { sessionMiddleware } from "./models/sessions.js";
 
 const PORT = process.env.PORT || 3000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
@@ -17,6 +18,7 @@ app.use(
   }),
 );
 app.use(bodyParser.json());
+app.use(sessionMiddleware());
 
 try {
   await sequelize.authenticate();
