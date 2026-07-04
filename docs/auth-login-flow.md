@@ -18,13 +18,14 @@ source of truth for whether the browser is authenticated.
 5. Frontend sends credentialResponse.credential to POST /auth/google.
 6. Express backend verifies the Google ID token with Google.
 7. Backend creates or updates the user through the Sequelize User model.
-8. Backend stores user.id in req.session.userId.
-9. express-session signs and sends the app session cookie.
-10. connect-pg-simple stores the session data in PostgreSQL.
-11. Backend returns the serialized user.
-12. Frontend stores the user in React state.
-13. Frontend redirects to /.
-14. Navbar renders the authenticated UI.
+8. Backend regenerates the Express session.
+9. Backend stores user.id in req.session.userId.
+10. express-session signs and sends the app session cookie.
+11. connect-pg-simple stores the session data in PostgreSQL.
+12. Backend returns the serialized user.
+13. Frontend stores the user in React state.
+14. Frontend redirects to /.
+15. Navbar renders the authenticated UI.
 ```
 
 ## Why The Flow Is Designed This Way
@@ -389,10 +390,15 @@ app.use(sessionMiddleware());
 
 try {
   await sequelize.authenticate();
-  await sequelize.sync({ alter: { drop: false } });
+
+  if (process.env.NODE_ENV !== "production") {
+    await sequelize.sync({ alter: { drop: false } });
+  }
+
   console.log("Connection has been established successfully.");
 } catch (error) {
   console.error("Unable to connect to the database:", error);
+  process.exit(1);
 }
 
 app.get("/api/health", (req, res) => {
@@ -459,11 +465,16 @@ The backend startup calls:
 
 ```js
 await sequelize.authenticate();
-await sequelize.sync({ alter: { drop: false } });
+
+if (process.env.NODE_ENV !== "production") {
+  await sequelize.sync({ alter: { drop: false } });
+}
 ```
 
-That follows the Lab6 Sequelize startup pattern. In the current auth
-implementation, it creates or updates the `users` table.
+That follows the Lab6 Sequelize startup pattern for local development. In the
+current auth implementation, it creates or updates the `users` table outside
+production. In production, schema changes should be handled by migrations or
+deployment-time database management instead of `sequelize.sync(...)`.
 
 ## Step 7: Express Session Is Stored In PostgreSQL
 
@@ -740,22 +751,33 @@ uses Google for sign-in right now. If the app later needs Google Calendar,
 Google Fit, or another Google API, those tokens should be stored separately and
 encrypted at rest.
 
-## Step 10: Backend Creates The Express Session
+## Step 10: Backend Regenerates And Creates The Express Session
 
-After the user exists, login stores the user id in the Express session:
+After the user exists, login regenerates the Express session before storing the
+user id:
 
 ```js
-req.session.userId = user.id;
+req.session.regenerate((regenerateError) => {
+  if (regenerateError) {
+    console.error(regenerateError);
+    return res.status(500).json({ error: "Google login failed." });
+  }
 
-return res.json({ user: serializeUser(user) });
+  req.session.userId = user.id;
+  return res.json({ user: serializeUser(user) });
+});
 ```
+
+Regenerating the session gives the logged-in browser a fresh session id. That
+reduces session fixation risk because the app does not keep using a session id
+that may have existed before authentication.
 
 This is the only application data needed in the session right now.
 
-The code does not call `res.cookie(...)` manually. Once `req.session.userId` is
-set, `express-session` knows the session has been modified. It sends the signed
-session cookie in the response and stores the session data through
-`connect-pg-simple`.
+The code does not call `res.cookie(...)` manually. Once the regenerated session
+has `req.session.userId` set, `express-session` knows the session has been
+modified. It sends the signed session cookie in the response and stores the
+session data through `connect-pg-simple`.
 
 The session cookie contains a signed session id, not the full user record.
 

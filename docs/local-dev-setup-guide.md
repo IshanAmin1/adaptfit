@@ -17,12 +17,13 @@ Express session data is not represented by a Sequelize model anymore.
 
 On backend startup:
 
-1. `sequelize.authenticate()` verifies the database connection.
-2. `sequelize.sync({ alter: { drop: false } })` creates or updates the
-   Sequelize-managed `users` table.
-3. `sessionMiddleware()` configures `express-session` with a Postgres-backed
+1. `sessionMiddleware()` configures `express-session` with a Postgres-backed
    store.
-4. `connect-pg-simple` creates the `session` table if it is missing.
+2. `sequelize.authenticate()` verifies the database connection.
+3. In non-production environments, `sequelize.sync({ alter: { drop: false } })`
+   creates or updates the Sequelize-managed `users` table.
+4. `connect-pg-simple` creates the `session` table if it is missing when the
+   session store is used.
 
 ### 1. Install prerequisites
 
@@ -229,9 +230,12 @@ Expected response:
 { "status": "ok" }
 ```
 
-When the backend starts, it connects to PostgreSQL and runs
-`sequelize.sync({ alter: { drop: false } })`. That creates or updates the
-Sequelize-managed `users` table.
+When the backend starts locally, it connects to PostgreSQL and runs
+`sequelize.sync({ alter: { drop: false } })` because `NODE_ENV` is not
+`production`. That creates or updates the Sequelize-managed `users` table.
+
+In production, the backend skips `sequelize.sync(...)`; production schema
+changes should be handled by migrations or deployment-time database management.
 
 The session middleware also configures `connect-pg-simple` with:
 
@@ -299,11 +303,12 @@ With both servers running:
 4. The frontend sends the Google credential to `POST /auth/google`.
 5. The backend verifies the token with Google.
 6. The backend creates or updates the user through Sequelize in PostgreSQL.
-7. The backend stores `req.session.userId = user.id`.
-8. `express-session` sends an HttpOnly `adaptfit_session` cookie.
-9. `connect-pg-simple` stores the session in PostgreSQL.
-10. The frontend redirects to the dashboard.
-11. The navbar should show `Hi, firstName!`.
+7. The backend regenerates the Express session.
+8. The backend stores `req.session.userId = user.id`.
+9. `express-session` sends an HttpOnly `adaptfit_session` cookie.
+10. `connect-pg-simple` stores the session in PostgreSQL.
+11. The frontend redirects to the dashboard.
+12. The navbar should show `Hi, firstName!`.
 
 After logging in, refresh the page. The app should stay logged in because
 `App.tsx` calls `/auth/me`, and the browser sends the session cookie to the

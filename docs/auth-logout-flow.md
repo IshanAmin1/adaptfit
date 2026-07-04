@@ -150,6 +150,8 @@ The navbar awaits `onLogout()` because the parent handler is asynchronous.
 const handleLogout = async () => {
   try {
     await logout();
+  } catch (error) {
+    console.error(error);
   } finally {
     setAuthUser(null);
   }
@@ -162,10 +164,13 @@ The `logout()` function is imported from the frontend API wrapper:
 import { getCurrentUser, logout } from "./api/auth";
 ```
 
-The `finally` block matters:
+The `catch` logs a failed backend logout request for debugging. The `finally`
+block matters:
 
 ```tsx
-finally {
+catch (error) {
+  console.error(error);
+} finally {
   setAuthUser(null);
 }
 ```
@@ -176,7 +181,16 @@ session was destroyed if the request failed, but it avoids leaving the visible U
 stuck in an authenticated state.
 
 For a production app, a failed backend logout could also show an error or retry.
-For this minimal implementation, clearing local UI state is acceptable.
+For this minimal implementation, logging the error and clearing local UI state
+is acceptable.
+
+The local state cleanup is:
+
+```tsx
+finally {
+  setAuthUser(null);
+}
+```
 
 ## Step 3: Frontend Sends POST /auth/logout
 
@@ -258,10 +272,15 @@ app.use(sessionMiddleware());
 
 try {
   await sequelize.authenticate();
-  await sequelize.sync({ alter: { drop: false } });
+
+  if (process.env.NODE_ENV !== "production") {
+    await sequelize.sync({ alter: { drop: false } });
+  }
+
   console.log("Connection has been established successfully.");
 } catch (error) {
   console.error("Unable to connect to the database:", error);
+  process.exit(1);
 }
 
 app.get("/api/health", (req, res) => {
@@ -366,7 +385,7 @@ cookie on future requests.
 
 ## Step 9: Frontend Clears React State
 
-After `logout()` resolves, `App` clears the user:
+After `logout()` either resolves or throws, `App` clears the user:
 
 ```tsx
 setAuthUser(null);
@@ -378,6 +397,8 @@ Because this happens in `finally`, it also runs if the network request throws:
 const handleLogout = async () => {
   try {
     await logout();
+  } catch (error) {
+    console.error(error);
   } finally {
     setAuthUser(null);
   }
