@@ -7,13 +7,11 @@ its ORM/query layer and PostgreSQL as the database.
 
 Requires Node.js 18 or newer.
 
+Fill in `.env` before starting the server.
 ```bash
 npm install
-cp .env.example .env
 npm run start:dev
 ```
-
-Fill in `.env` before starting the server.
 
 Required values:
 
