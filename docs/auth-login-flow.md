@@ -63,9 +63,6 @@ adaptfit-api/routers/auth_router.js
 adaptfit-api/models/users.js
 adaptfit-api/models/sessions.js
 adaptfit-api/middleware/auth.js
-adaptfit-api/scripts/run-migrations.js
-adaptfit-api/migrations/001_create_users.sql
-adaptfit-api/migrations/002_create_sessions.sql
 ```
 
 ## Required Environment Variables
@@ -346,6 +343,7 @@ app.use(bodyParser.json());
 
 try {
   await sequelize.authenticate();
+  await sequelize.sync({ alter: { drop: false } });
   console.log("Connection has been established successfully.");
 } catch (error) {
   console.error("Unable to connect to the database:", error);
@@ -465,6 +463,11 @@ if (!payload?.sub || !payload.email || !payload.email_verified) {
 
 `payload.sub` is Google's stable provider user ID. It is better than email as the long-term link to the Google account because a user's email may change.
 
+`sequelize.sync({ alter: { drop: false } })` follows the Lab6 Sequelize startup
+pattern. It creates the `users` and `sessions` tables from the Sequelize model
+definitions if they do not already exist and applies non-dropping table changes
+during local development.
+
 ## Step 7: Backend Creates Or Updates The User
 
 After Google verification succeeds, the backend upserts the user:
@@ -481,26 +484,61 @@ const user = await upsertGoogleUser({
 });
 ```
 
-The PostgreSQL table comes from `adaptfit-api/migrations/001_create_users.sql`:
+`adaptfit-api/models/users.js` defines the Sequelize model for the `users` table
+and contains the upsert. Sequelize creates the table from this model during
+startup:
 
-```sql
-create extension if not exists pgcrypto;
-
-create table if not exists users (
-  id uuid primary key default gen_random_uuid(),
-  google_sub text not null unique,
-  email text not null unique,
-  email_verified boolean not null default false,
-  first_name text,
-  last_name text,
-  full_name text,
-  avatar_url text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+```js
+export const User = sequelize.define(
+  "User",
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    google_sub: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      unique: true,
+    },
+    email: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      unique: true,
+    },
+    email_verified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    first_name: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    last_name: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    full_name: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    avatar_url: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: "users",
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+  },
 );
 ```
 
-`adaptfit-api/models/users.js` defines a Sequelize model for that table and contains the upsert:
+The upsert uses the `google_sub` unique field to handle both first-time and
+returning logins:
 
 ```js
 export async function upsertGoogleUser(profile) {
@@ -541,26 +579,58 @@ await deleteExpiredSessions();
 const session = await createSession(user.id);
 ```
 
-The PostgreSQL session table comes from `adaptfit-api/migrations/002_create_sessions.sql`:
+`adaptfit-api/models/sessions.js` defines a Sequelize `Session` model. Sequelize
+creates the `sessions` table, the `user_id` relationship, and the indexes from
+this model during startup:
 
-```sql
-create table if not exists sessions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
-  session_token_hash text not null unique,
-  expires_at timestamptz not null,
-  created_at timestamptz not null default now()
+```js
+export const Session = sequelize.define(
+  "Session",
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
+      onDelete: "CASCADE",
+    },
+    session_token_hash: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      unique: true,
+    },
+    expires_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+  },
+  {
+    tableName: "sessions",
+    createdAt: "created_at",
+    updatedAt: false,
+    indexes: [
+      {
+        fields: ["user_id"],
+      },
+      {
+        fields: ["expires_at"],
+      },
+    ],
+  },
 );
-
-create index if not exists sessions_user_id_idx on sessions(user_id);
-create index if not exists sessions_expires_at_idx on sessions(expires_at);
 ```
 
-`user_id` connects the session to the authenticated user.
+`user_id` connects the session to the authenticated user. `onDelete: "CASCADE"`
+means that if a user is deleted, that user's sessions are deleted too.
 
-`on delete cascade` means that if a user is deleted, that user's sessions are deleted too.
-
-`adaptfit-api/models/sessions.js` defines a Sequelize `Session` model and creates the session:
+`createSession()` creates the session row:
 
 ```js
 export async function createSession(userId) {
@@ -874,10 +944,9 @@ To make login work locally:
 4. Set `VITE_OAUTH_CLIENT_ID` in `adaptfit-app/.env`.
 5. Set `VITE_API_BASE_URL=http://localhost:3000`.
 6. Set `CLIENT_ORIGIN=http://localhost:5173`.
-7. Run backend migrations.
-8. Start the backend.
-9. Start the frontend.
-10. Confirm Google Cloud has `http://localhost:5173` as an authorized JavaScript origin.
+7. Start the backend so `sequelize.sync({ alter: { drop: false } })` can create missing tables.
+8. Start the frontend.
+9. Confirm Google Cloud has `http://localhost:5173` as an authorized JavaScript origin.
 
 ## Key Mental Model
 

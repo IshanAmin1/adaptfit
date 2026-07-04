@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { DataTypes, Op, literal } from "sequelize";
+import { DataTypes, Op } from "sequelize";
 import { sequelize } from "../datasource.js";
 import { User } from "./users.js";
 
@@ -11,7 +11,7 @@ export const Session = sequelize.define(
     id: {
       type: DataTypes.UUID,
       primaryKey: true,
-      defaultValue: literal("gen_random_uuid()"),
+      defaultValue: DataTypes.UUIDV4,
     },
     user_id: {
       type: DataTypes.UUID,
@@ -20,6 +20,7 @@ export const Session = sequelize.define(
         model: User,
         key: "id",
       },
+      onDelete: "CASCADE",
     },
     session_token_hash: {
       type: DataTypes.TEXT,
@@ -35,11 +36,19 @@ export const Session = sequelize.define(
     tableName: "sessions",
     createdAt: "created_at",
     updatedAt: false,
+    indexes: [
+      {
+        fields: ["user_id"],
+      },
+      {
+        fields: ["expires_at"],
+      },
+    ],
   },
 );
 
-Session.belongsTo(User, { foreignKey: "user_id" });
-User.hasMany(Session, { foreignKey: "user_id" });
+Session.belongsTo(User, { foreignKey: "user_id", onDelete: "CASCADE" });
+User.hasMany(Session, { foreignKey: "user_id", onDelete: "CASCADE" });
 
 function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");

@@ -8,7 +8,6 @@
     "node": ">=18"
   },
   "scripts": {
-    "migrate": "node scripts/run-migrations.js",
     "start": "node app.js",
     "start:dev": "nodemon app.js"
   },

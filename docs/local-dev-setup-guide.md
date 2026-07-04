@@ -8,7 +8,10 @@ These instructions run AdaptFit locally with:
 - Sequelize ORM in the backend, using PostgreSQL as its database dialect
 - Google OAuth login with backend-verified sessions
 
-Sequelize is the backend database access layer. PostgreSQL is still the database server, and the SQL migrations remain the source of truth for the schema.
+Sequelize is the backend database access layer. PostgreSQL is still the database
+server. The backend follows the Lab6 Sequelize startup pattern and calls
+`sequelize.sync({ alter: { drop: false } })` on startup to create the `users`
+and `sessions` tables if they do not already exist.
 
 ### 1. Install prerequisites
 
@@ -163,42 +166,20 @@ cd adaptfit-api
 npm install
 ```
 
-### 7. Run database migrations
+### 7. Start the backend
 
-Still inside `adaptfit-api`, run:
+From `adaptfit-api`:
 
 ```bash
-npm run migrate
+npm run start:dev
 ```
 
-This runs the SQL files in:
-
-```text
-adaptfit-api/migrations/
-```
-
-Current migrations:
-
-```text
-001_create_users.sql
-002_create_sessions.sql
-```
-
-They create:
+When the backend starts, it connects to PostgreSQL and runs
+`sequelize.sync({ alter: { drop: false } })`. That creates these tables if they
+do not already exist:
 
 - `users`: stores AdaptFit user records linked to Google by `google_sub`
 - `sessions`: stores hashed app session tokens connected to users
-
-The backend reads and writes these tables through Sequelize models while keeping
-PostgreSQL as the database.
-
-The migration runner also uses Sequelize:
-
-```text
-scripts/run-migrations.js -> sequelize.query(sql)
-```
-
-The app does not use `sequelize.sync()` to create or alter tables at startup. Keep schema changes in SQL migration files so PostgreSQL-specific details such as `pgcrypto`, indexes, foreign keys, and triggers remain explicit.
 
 You can verify the tables in `psql`:
 
@@ -212,14 +193,6 @@ Expected tables:
 ```text
 users
 sessions
-```
-
-### 8. Start the backend
-
-From `adaptfit-api`:
-
-```bash
-npm run start:dev
 ```
 
 The backend should run at:
@@ -240,7 +213,7 @@ Expected response:
 { "status": "ok" }
 ```
 
-### 9. Install frontend dependencies
+### 8. Install frontend dependencies
 
 Open another terminal from the project root:
 
@@ -249,7 +222,7 @@ cd adaptfit-app
 npm install
 ```
 
-### 10. Start the frontend
+### 9. Start the frontend
 
 From `adaptfit-app`:
 
@@ -263,7 +236,7 @@ The frontend should run at:
 http://localhost:5173
 ```
 
-### 11. Test the login flow
+### 10. Test the login flow
 
 With both servers running:
 
@@ -279,7 +252,7 @@ With both servers running:
 
 After logging in, refresh the page. The app should stay logged in because `App.tsx` calls `/auth/me`, and the browser sends the session cookie to the backend.
 
-### 12. Test logout
+### 11. Test logout
 
 Click `Log out`.
 
@@ -305,7 +278,6 @@ Backend:
 ```bash
 cd adaptfit-api
 npm install
-npm run migrate
 npm run start:dev
 ```
 

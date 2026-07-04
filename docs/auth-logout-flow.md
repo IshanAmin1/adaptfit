@@ -54,7 +54,6 @@ Backend:
 adaptfit-api/routers/auth_router.js
 adaptfit-api/middleware/auth.js
 adaptfit-api/models/sessions.js
-adaptfit-api/migrations/002_create_sessions.sql
 ```
 
 ## Starting Point: Authenticated Navbar
@@ -314,22 +313,32 @@ function hashToken(token) {
 }
 ```
 
-The session table stores:
+The Sequelize `Session` model stores:
 
-```sql
-session_token_hash text not null unique
+```js
+session_token_hash: {
+  type: DataTypes.TEXT,
+  allowNull: false,
+  unique: true,
+}
 ```
 
-from `adaptfit-api/migrations/002_create_sessions.sql`:
+The model also defines the user relationship and expiry timestamp:
 
-```sql
-create table if not exists sessions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
-  session_token_hash text not null unique,
-  expires_at timestamptz not null,
-  created_at timestamptz not null default now()
-);
+```js
+user_id: {
+  type: DataTypes.UUID,
+  allowNull: false,
+  references: {
+    model: User,
+    key: "id",
+  },
+  onDelete: "CASCADE",
+},
+expires_at: {
+  type: DataTypes.DATE,
+  allowNull: false,
+}
 ```
 
 Deleting the session row revokes that browser's session. If the browser later tries to call `/auth/me` with the same old cookie token, the backend hashes it, fails to find a matching row, and returns `401`.
@@ -462,7 +471,7 @@ export async function deleteExpiredSessions() {
 `POST /auth/logout` does not use:
 
 ```js
-isAuthenticated
+isAuthenticated;
 ```
 
 That is intentional.

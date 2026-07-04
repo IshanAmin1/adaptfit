@@ -1,4 +1,4 @@
-import { DataTypes, literal } from "sequelize";
+import { DataTypes } from "sequelize";
 import { sequelize } from "../datasource.js";
 
 export const User = sequelize.define(
@@ -7,7 +7,7 @@ export const User = sequelize.define(
     id: {
       type: DataTypes.UUID,
       primaryKey: true,
-      defaultValue: literal("gen_random_uuid()"),
+      defaultValue: DataTypes.UUIDV4,
     },
     google_sub: {
       type: DataTypes.TEXT,
