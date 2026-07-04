@@ -1,36 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { getCurrentUser, logout } from "./api/auth";
 import Dashboard from "./components/Dashboard";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
 import type { AuthUser } from "./types/auth";
 
-const getStoredUser = (): AuthUser | null => {
-	const storedUser = localStorage.getItem("adaptfitUser");
-
-	if (!storedUser) {
-		return null;
-	}
-
-	try {
-		return JSON.parse(storedUser) as AuthUser;
-	} catch {
-		localStorage.removeItem("adaptfitUser");
-		return null;
-	}
-};
-
 function App() {
-	const [authUser, setAuthUser] = useState<AuthUser | null>(getStoredUser);
+	const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		getCurrentUser()
+			.then((user) => {
+				if (isMounted) {
+					setAuthUser(user);
+				}
+			})
+			.catch(() => {
+				if (isMounted) {
+					setAuthUser(null);
+				}
+			});
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
 
 	const handleLogin = (user: AuthUser) => {
 		setAuthUser(user);
-		localStorage.setItem("adaptfitUser", JSON.stringify(user));
 	};
 
-	const handleLogout = () => {
-		setAuthUser(null);
-		localStorage.removeItem("adaptfitUser");
+	const handleLogout = async () => {
+		try {
+			await logout();
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setAuthUser(null);
+		}
 	};
 
 	return (

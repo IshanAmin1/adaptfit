@@ -1,166 +1,188 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AdaptFit MockUp</title>
-  <link rel="stylesheet" href="main.css">
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-logo">A</div>
-      <div class="brand-text">AdaptFit</div>
-    </div>
-    <nav aria-label="Main navigation">
-      <a class="active" href="#today">Today</a>
-      <a href="#insights">AI Insights</a>
-      <a href="#nutrition">Nutrition</a>
-      <a href="#progress">Progress</a>
-    </nav>
-    <button class="login-button">Log in</button>
-  </header>
-
-  <main class="app-grid">
-    <section class="card hero-card" id="today">
-      <div class="hero-header">
-        <div>
-          <p class="tiny-label">Today's AI-generated plan</p>
-          <h1>Upper Body Strength</h1>
-        </div>
-        <div class="score-ring" aria-label="Plan completion 25 percent">
-          <span>25%</span>
-        </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AdaptFit MockUp</title>
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo">A</div>
+        <div class="brand-text">AdaptFit</div>
       </div>
+      <nav aria-label="Main navigation">
+        <a class="active" href="#today">Today</a>
+        <a href="#insights">AI Insights</a>
+        <a href="#nutrition">Nutrition</a>
+        <a href="#progress">Progress</a>
+      </nav>
+      <button class="login-button">Log in</button>
+    </header>
 
-      <div class="stat-grid">
-        <div class="stat-box">
-          <span>Estimated Time</span>
-          <strong>48 min</strong>
-        </div>
-        <div class="stat-box">
-          <span>Intensity</span>
-          <strong>Moderate</strong>
-        </div>
-        <div class="stat-box wide">
-          <span>Generated From</span>
-          <strong>Goals, equipment, experience, diet</strong>
-        </div>
-      </div>
-
-      <div class="exercise-strip">
-        <div>
-          <span>1</span>
-          <strong>Dumbbell bench press</strong>
-          <p>4 sets x 8 reps</p>
-        </div>
-        <div>
-          <span>2</span>
-          <strong>One-arm row</strong>
-          <p>4 sets x 10 reps</p>
-        </div>
-        <div>
-          <span>3</span>
-          <strong>Shoulder press</strong>
-          <p>3 sets x 9 reps</p>
-        </div>
-      </div>
-
-      <button class="primary-button">Start workout</button>
-    </section>
-
-    <section class="card insights-card" id="insights">
-      <div class="card-title">
-        <div class="icon-badge">AI</div>
-        <div>
-          <p class="tiny-label">Adaptive insights</p>
-          <h2>Plan calibration</h2>
-        </div>
-      </div>
-
-      <div class="insight-list">
-        <div>
-          <strong>Intensity increased by 6%</strong>
-          <p>Workout completion stayed high last week, so AdaptFit adds one extra rowing set.</p>
-        </div>
-        <div>
-          <strong>Exercise alternative suggested</strong>
-          <p>Skipped lateral raises are replaced with a shoulder press variation.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="card nutrition-card" id="nutrition">
-      <div class="split-title">
-        <div>
-          <p class="tiny-label">Nutrition planning</p>
-          <h2>Daily targets</h2>
-        </div>
-        <span class="status-chip">Personalized</span>
-      </div>
-
-      <div class="calorie-progress">
-        <div class="progress-label">
-          <span>Calories</span>
-          <strong>1,850 / 2,350 kcal</strong>
-        </div>
-        <div class="progress-track">
-          <span class="fill calories"></span>
-        </div>
-      </div>
-
-      <div class="macro-grid">
-        <div>
-          <div class="progress-label">
-            <span>Protein</span>
-            <strong>120g</strong>
+    <main class="app-grid">
+      <section class="card hero-card" id="today">
+        <div class="hero-header">
+          <div>
+            <p class="tiny-label">Today's AI-generated plan</p>
+            <h1>Upper Body Strength</h1>
           </div>
-          <div class="progress-track small"><span class="fill protein"></span></div>
-        </div>
-        <div>
-          <div class="progress-label">
-            <span>Carbs</span>
-            <strong>200g</strong>
+          <div class="score-ring" aria-label="Plan completion 25 percent">
+            <span>25%</span>
           </div>
-          <div class="progress-track small"><span class="fill carbs"></span></div>
         </div>
-        <div>
-          <div class="progress-label">
-            <span>Fat</span>
-            <strong>45g</strong>
+
+        <div class="stat-grid">
+          <div class="stat-box">
+            <span>Estimated Time</span>
+            <strong>48 min</strong>
           </div>
-          <div class="progress-track small"><span class="fill fat"></span></div>
+          <div class="stat-box">
+            <span>Intensity</span>
+            <strong>Moderate</strong>
+          </div>
+          <div class="stat-box wide">
+            <span>Generated From</span>
+            <strong>Goals, equipment, experience, diet</strong>
+          </div>
         </div>
-      </div>
 
-      <button class="secondary-button">Log next meal</button>
-    </section>
-
-    <section class="card progress-card" id="progress">
-      <div class="split-title">
-        <div>
-          <p class="tiny-label">Progress feedback</p>
-          <h2>Weekly evolution</h2>
+        <div class="exercise-strip">
+          <div>
+            <span>1</span>
+            <strong>Dumbbell bench press</strong>
+            <p>4 sets x 8 reps</p>
+          </div>
+          <div>
+            <span>2</span>
+            <strong>One-arm row</strong>
+            <p>4 sets x 10 reps</p>
+          </div>
+          <div>
+            <span>3</span>
+            <strong>Shoulder press</strong>
+            <p>3 sets x 9 reps</p>
+          </div>
         </div>
-        <strong class="trend">+12%</strong>
-      </div>
 
-      <div class="line-chart" aria-label="Weekly performance trend">
-        <div class="grid-line top"></div>
-        <div class="grid-line middle"></div>
-        <svg viewBox="0 0 300 120" role="img" aria-label="Performance line rising across the week">
-          <polyline class="chart-area" points="0,95 45,86 90,90 135,66 180,54 225,34 270,42 300,20 300,120 0,120"></polyline>
-          <polyline class="chart-line" points="0,95 45,86 90,90 135,66 180,54 225,34 270,42 300,20"></polyline>
-          <circle cx="300" cy="20" r="5"></circle>
-        </svg>
-      </div>
+        <button class="primary-button">Start workout</button>
+      </section>
 
-      <div class="day-labels">
-        <span>Mon</span>
-        <span>Wed</span>
-        <span>Today</span>
-      </div>
-    </section>
-  </main>
-</body>
+      <section class="card insights-card" id="insights">
+        <div class="card-title">
+          <div class="icon-badge">AI</div>
+          <div>
+            <p class="tiny-label">Adaptive insights</p>
+            <h2>Plan calibration</h2>
+          </div>
+        </div>
+
+        <div class="insight-list">
+          <div>
+            <strong>Intensity increased by 6%</strong>
+            <p>
+              Workout completion stayed high last week, so AdaptFit adds one
+              extra rowing set.
+            </p>
+          </div>
+          <div>
+            <strong>Exercise alternative suggested</strong>
+            <p>
+              Skipped lateral raises are replaced with a shoulder press
+              variation.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card nutrition-card" id="nutrition">
+        <div class="split-title">
+          <div>
+            <p class="tiny-label">Nutrition planning</p>
+            <h2>Daily targets</h2>
+          </div>
+          <span class="status-chip">Personalized</span>
+        </div>
+
+        <div class="calorie-progress">
+          <div class="progress-label">
+            <span>Calories</span>
+            <strong>1,850 / 2,350 kcal</strong>
+          </div>
+          <div class="progress-track">
+            <span class="fill calories"></span>
+          </div>
+        </div>
+
+        <div class="macro-grid">
+          <div>
+            <div class="progress-label">
+              <span>Protein</span>
+              <strong>120g</strong>
+            </div>
+            <div class="progress-track small">
+              <span class="fill protein"></span>
+            </div>
+          </div>
+          <div>
+            <div class="progress-label">
+              <span>Carbs</span>
+              <strong>200g</strong>
+            </div>
+            <div class="progress-track small">
+              <span class="fill carbs"></span>
+            </div>
+          </div>
+          <div>
+            <div class="progress-label">
+              <span>Fat</span>
+              <strong>45g</strong>
+            </div>
+            <div class="progress-track small">
+              <span class="fill fat"></span>
+            </div>
+          </div>
+        </div>
+
+        <button class="secondary-button">Log next meal</button>
+      </section>
+
+      <section class="card progress-card" id="progress">
+        <div class="split-title">
+          <div>
+            <p class="tiny-label">Progress feedback</p>
+            <h2>Weekly evolution</h2>
+          </div>
+          <strong class="trend">+12%</strong>
+        </div>
+
+        <div class="line-chart" aria-label="Weekly performance trend">
+          <div class="grid-line top"></div>
+          <div class="grid-line middle"></div>
+          <svg
+            viewBox="0 0 300 120"
+            role="img"
+            aria-label="Performance line rising across the week"
+          >
+            <polyline
+              class="chart-area"
+              points="0,95 45,86 90,90 135,66 180,54 225,34 270,42 300,20 300,120 0,120"
+            ></polyline>
+            <polyline
+              class="chart-line"
+              points="0,95 45,86 90,90 135,66 180,54 225,34 270,42 300,20"
+            ></polyline>
+            <circle cx="300" cy="20" r="5"></circle>
+          </svg>
+        </div>
+
+        <div class="day-labels">
+          <span>Mon</span>
+          <span>Wed</span>
+          <span>Today</span>
+        </div>
+      </section>
+    </main>
+  </body>
 </html>

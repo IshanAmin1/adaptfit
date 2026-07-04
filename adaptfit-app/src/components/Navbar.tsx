@@ -4,7 +4,7 @@ import type { AuthUser } from "../types/auth";
 
 type NavbarProps = {
 	authUser: AuthUser | null;
-	onLogout: () => void;
+	onLogout: () => void | Promise<void>;
 };
 
 export default function Navbar({ authUser, onLogout }: NavbarProps) {
@@ -16,9 +16,9 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 		{ label: "Progress", href: "#progress" },
 	];
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
 		googleLogout();
-		onLogout();
+		await onLogout();
 	};
 
 	return (

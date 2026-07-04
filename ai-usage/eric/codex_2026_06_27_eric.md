@@ -75,19 +75,23 @@
 > - Ran `git status --short`
 >
 > </details>
+
 </details>
 
 Tailwind is now wired into the app by importing it at the top of the global stylesheet: [src/index.css](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/index.css).
 
 What changed:
+
 - Added `@import "tailwindcss";` so Tailwind utilities are available everywhere.
 - Left the existing custom CSS in place, so the current UI styling stays intact.
 
 I also checked the setup:
+
 - `vite.config.ts` already includes `@tailwindcss/vite`, so no extra Vite config was needed.
 - The local build still hits a separate Vite config-loading issue in this environment (`spawn EPERM` around Tailwind’s native package), which looks unrelated to the CSS import itself.
 
 If you want, I can do one of these next:
+
 1. Convert a few existing components to Tailwind classes to prove the setup end to end.
 2. Add a small Tailwind demo section or utility-styled button/card for quick verification.
 
@@ -204,11 +208,13 @@ If you want, I can do one of these next:
 > - Ran `Get-Content -Raw src\main.tsx`
 >
 > </details>
+
 </details>
 
 I converted the app from JS/JSX into a TypeScript React setup.
 
 What changed:
+
 - Added a real TypeScript config in [tsconfig.json](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/tsconfig.json).
 - Moved the app entry to [src/main.tsx](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/main.tsx).
 - Converted the router shell to [src/App.tsx](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/App.tsx).
@@ -223,10 +229,12 @@ What changed:
 - Typed the login submit handler with `FormEvent<HTMLFormElement>`.
 
 Verification:
+
 - `npx tsc --noEmit` passes.
 - `npm run build` still fails because of the existing Tailwind/Vite native module issue on this Windows environment, not because of the TypeScript conversion.
 
 If you want, I can next:
+
 1. Clean up the remaining Vite/Tailwind build issue.
 2. Finish the TS migration in the rest of the repo, like config files and any leftover JS tooling.
 
@@ -241,6 +249,7 @@ If you want, I can next:
 > - Wrote `./project-adaptfit/adaptfit-app/tsconfig.json` (+2 -2)
 >
 > </details>
+
 </details>
 
 Yes. I changed it to ES2020 in [tsconfig.json](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/tsconfig.json):
@@ -280,15 +289,18 @@ If you want, I can also check whether any of the Vite or ESLint settings should 
 > - Ran `npm run lint`
 >
 > </details>
+
 </details>
 
 I lined the configs up with ES2020.
 
 What changed:
+
 - [tsconfig.json](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/tsconfig.json) already targets `ES2020`.
 - [eslint.config.ts](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/eslint.config.ts) now explicitly uses `ecmaVersion: 2020`.
 
 Validation:
+
 - `npx tsc --noEmit` passes.
 - `npm run lint` passes.
 
@@ -369,11 +381,13 @@ Validation:
 > - Ran `npm run build`
 >
 > </details>
+
 </details>
 
 The app is now using Tailwind only for styling.
 
 What I changed:
+
 - Removed the custom stylesheet rules from [src/index.css](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/index.css), leaving only the Tailwind import.
 - Moved the layout and visual styling into Tailwind utility classes across:
   - [src/App.tsx](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/App.tsx)
@@ -387,11 +401,13 @@ What I changed:
 - Set the browser body margin to zero with a Tailwind class on [index.html](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/index.html).
 
 Validation:
+
 - `npx tsc --noEmit` passes.
 - `npm run lint` passes.
 - `npm run build` still fails with the same existing Tailwind/Vite native module issue on Windows, not because of the Tailwind-only CSS rewrite.
 
 If you want, I can next:
+
 1. Refactor a few of the bigger Tailwind class strings into small reusable components.
 2. Troubleshoot the Vite/Tailwind build issue so `npm run build` succeeds too.
 
@@ -454,11 +470,13 @@ If you want, I can next:
 > - Ran `npm run lint`
 >
 > </details>
+
 </details>
 
 Refactor done. I pulled the repeated Tailwind patterns into a small shared UI module and updated the cards to use it.
 
 What changed:
+
 - Added reusable UI helpers in [src/components/ui.tsx](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/components/ui.tsx)
 - Reused those helpers in:
   - [src/components/WorkoutPlanCard.tsx](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/components/WorkoutPlanCard.tsx)
@@ -469,6 +487,7 @@ What changed:
 - Fixed the login submit typing in [src/pages/Login.tsx](d:/Eric/University/Year%203/CSCC09/project-adaptfit/adaptfit-app/src/pages/Login.tsx)
 
 Validation:
+
 - `npx tsc --noEmit` passes
 - `npm run lint` passes
 

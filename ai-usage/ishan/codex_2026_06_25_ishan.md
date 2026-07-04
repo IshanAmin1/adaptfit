@@ -23,6 +23,7 @@
 > - Ran `Get-Content adaptfit-app\src\index.css`
 >
 > </details>
+
 </details>
 
 Here’s the actionable implementation plan for your React + Vite AdaptFit app based on the existing mockups.
@@ -93,10 +94,10 @@ adaptfit-app/
    Weekly performance chart.
 
 10. `Login.jsx`
-   Login form page.
+    Login form page.
 
 11. Later: `WorkoutPage.jsx`, `NutritionPage.jsx`, `ProgressPage.jsx`
-   Full pages if you want navigation beyond the dashboard cards.
+    Full pages if you want navigation beyond the dashboard cards.
 
 **Step-by-Step Setup**
 
@@ -136,15 +137,15 @@ Example:
 
 ```js
 export const todayWorkout = {
-  title: 'Upper Body Strength',
+  title: "Upper Body Strength",
   completion: 25,
-  estimatedTime: '48 min',
-  intensity: 'Moderate',
-  generatedFrom: 'Goals, equipment, experience, diet',
+  estimatedTime: "48 min",
+  intensity: "Moderate",
+  generatedFrom: "Goals, equipment, experience, diet",
   exercises: [
-    { name: 'Dumbbell bench press', detail: '4 sets x 8 reps' },
-    { name: 'One-arm row', detail: '4 sets x 10 reps' },
-    { name: 'Shoulder press', detail: '3 sets x 9 reps' },
+    { name: "Dumbbell bench press", detail: "4 sets x 8 reps" },
+    { name: "One-arm row", detail: "4 sets x 10 reps" },
+    { name: "Shoulder press", detail: "3 sets x 9 reps" },
   ],
 };
 ```
