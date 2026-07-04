@@ -1,13 +1,13 @@
 import "dotenv/config";
 import { Sequelize } from "sequelize";
 
-if (!process.env.DATABASE_URL) {
-  console.warn(
-    "DATABASE_URL is not set. Database calls will fail until it is configured.",
-  );
+export const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is not configured.");
 }
 
-export const sequelize = new Sequelize(process.env.DATABASE_URL, {
+export const sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
   logging: false,
 });

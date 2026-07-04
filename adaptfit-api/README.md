@@ -8,6 +8,7 @@ its ORM/query layer and PostgreSQL as the database.
 Requires Node.js 18 or newer.
 
 Fill in `.env` before starting the server.
+
 ```bash
 npm install
 npm run start:dev

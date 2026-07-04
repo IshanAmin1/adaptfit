@@ -107,10 +107,10 @@ export default function Login() {
 ### Read `adaptfit-app/src/App.jsx`
 
 ```jsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Dashboard from './components/Dashboard';
-import Login from './pages/Login';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Dashboard from "./components/Dashboard";
+import Login from "./pages/Login";
 
 // Main App component that sets up routing and renders the Navbar and different pages based on the route.
 function App() {
@@ -192,10 +192,10 @@ Assistant:
 ```diff
  import { useNavigate } from "react-router-dom";
  import { GoogleLogin } from "@react-oauth/google";
- 
+
  export default function Login() {
    const navigate = useNavigate();
- 
+
 -  const handleSubmit = (e) => {
 -    e.preventDefault();
 -    // Verification logic will run here later
@@ -203,7 +203,7 @@ Assistant:
 +    console.log("Google login successful:", credentialResponse);
      navigate("/");
    };
- 
+
 +  const handleGoogleError = () => {
 +    console.error("Google login failed");
 +  };
@@ -215,7 +215,7 @@ Assistant:
            <p className="tiny-label">Welcome back</p>
            <h2>Access AdaptFit</h2>
          </div>
- 
+
 -        <form
 -          onSubmit={handleSubmit}
 +        <div
@@ -417,9 +417,7 @@ export default function Login() {
           <h2>Access AdaptFit</h2>
         </div>
 
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "20px" }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
@@ -491,7 +489,7 @@ Assistant:
 ### Read `adaptfit-app/src/components/Navbar.jsx`
 
 ```jsx
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from "react-router-dom";
 
 // Navbar component that renders the top navigation bar with links to different sections of the application.
 export default function Navbar() {
@@ -499,18 +497,28 @@ export default function Navbar() {
 
   return (
     <header className="topbar">
-      <Link to="/" className="brand" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link
+        to="/"
+        className="brand"
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
         <div className="brand-logo">A</div>
         <div className="brand-text">AdaptFit</div>
       </Link>
       <nav aria-label="Main navigation">
-        <Link className={location.pathname === '/' ? 'active' : ''} to="/">Today</Link>
+        <Link className={location.pathname === "/" ? "active" : ""} to="/">
+          Today
+        </Link>
         <a href="#insights">AI Insights</a>
         <a href="#nutrition">Nutrition</a>
         <a href="#progress">Progress</a>
       </nav>
-      <Link to="/login" className="login-button" style={{ textDecoration: 'none' }}>
-        {location.pathname === '/login' ? 'Dashboard' : 'Log in'}
+      <Link
+        to="/login"
+        className="login-button"
+        style={{ textDecoration: "none" }}
+      >
+        {location.pathname === "/login" ? "Dashboard" : "Log in"}
       </Link>
     </header>
   );
@@ -520,10 +528,10 @@ export default function Navbar() {
 ### Read `adaptfit-app/src/App.jsx`
 
 ```jsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Dashboard from './components/Dashboard';
-import Login from './pages/Login';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Dashboard from "./components/Dashboard";
+import Login from "./pages/Login";
 
 // Main App component that sets up routing and renders the Navbar and different pages based on the route.
 function App() {
@@ -662,9 +670,7 @@ export default function Login() {
           <h2>Access AdaptFit</h2>
         </div>
 
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "20px" }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
@@ -689,7 +695,7 @@ Assistant:
  import Navbar from './components/Navbar';
  import Dashboard from './components/Dashboard';
  import Login from './pages/Login';
- 
+
  // Main App component that sets up routing and renders the Navbar and different pages based on the route.
  function App() {
 +  const [authUser, setAuthUser] = useState(() => {
@@ -730,7 +736,7 @@ Assistant:
 ```diff
  import { useNavigate } from "react-router-dom";
  import { GoogleLogin } from "@react-oauth/google";
- 
+
 -export default function Login() {
 +const getGoogleProfile = (credential) => {
 +  const payload = credential.split(".")[1];
@@ -752,7 +758,7 @@ Assistant:
 +
 +export default function Login({ onLogin }) {
    const navigate = useNavigate();
- 
+
    const handleGoogleSuccess = (credentialResponse) => {
 -    console.log("Google login successful:", credentialResponse);
 -    navigate("/");
@@ -771,7 +777,7 @@ Assistant:
 ```diff
  import { Link, useLocation } from 'react-router-dom';
 +import { googleLogout } from '@react-oauth/google';
- 
+
  // Navbar component that renders the top navigation bar with links to different sections of the application.
 -export default function Navbar() {
 +export default function Navbar({ authUser, onLogout }) {
@@ -781,7 +787,7 @@ Assistant:
 +    googleLogout();
 +    onLogout();
 +  };
- 
+
    return (
      <header className="topbar">
        <Link to="/" className="brand" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -835,7 +841,7 @@ Assistant:
 +  font-weight: 900;
 +  white-space: nowrap;
 +}
- 
+
  .app-grid {
    width: min(1344px, calc(100% - 96px));
 ```
@@ -895,8 +901,8 @@ Assistant:
 ### Final `adaptfit-app/src/components/Navbar.jsx`
 
 ```jsx
-import { Link, useLocation } from 'react-router-dom';
-import { googleLogout } from '@react-oauth/google';
+import { Link, useLocation } from "react-router-dom";
+import { googleLogout } from "@react-oauth/google";
 
 // Navbar component that renders the top navigation bar with links to different sections of the application.
 export default function Navbar({ authUser, onLogout }) {
@@ -909,12 +915,18 @@ export default function Navbar({ authUser, onLogout }) {
 
   return (
     <header className="topbar">
-      <Link to="/" className="brand" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link
+        to="/"
+        className="brand"
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
         <div className="brand-logo">A</div>
         <div className="brand-text">AdaptFit</div>
       </Link>
       <nav aria-label="Main navigation">
-        <Link className={location.pathname === '/' ? 'active' : ''} to="/">Today</Link>
+        <Link className={location.pathname === "/" ? "active" : ""} to="/">
+          Today
+        </Link>
         <a href="#insights">AI Insights</a>
         <a href="#nutrition">Nutrition</a>
         <a href="#progress">Progress</a>
@@ -927,8 +939,12 @@ export default function Navbar({ authUser, onLogout }) {
           </button>
         </div>
       ) : (
-        <Link to="/login" className="login-button" style={{ textDecoration: 'none' }}>
-          {location.pathname === '/login' ? 'Dashboard' : 'Log in'}
+        <Link
+          to="/login"
+          className="login-button"
+          style={{ textDecoration: "none" }}
+        >
+          {location.pathname === "/login" ? "Dashboard" : "Log in"}
         </Link>
       )}
     </header>
@@ -939,27 +955,27 @@ export default function Navbar({ authUser, onLogout }) {
 ### Final `adaptfit-app/src/App.jsx`
 
 ```jsx
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Dashboard from './components/Dashboard';
-import Login from './pages/Login';
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Dashboard from "./components/Dashboard";
+import Login from "./pages/Login";
 
 // Main App component that sets up routing and renders the Navbar and different pages based on the route.
 function App() {
   const [authUser, setAuthUser] = useState(() => {
-    const storedUser = localStorage.getItem('adaptfitUser');
+    const storedUser = localStorage.getItem("adaptfitUser");
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
   const handleLogin = (user) => {
     setAuthUser(user);
-    localStorage.setItem('adaptfitUser', JSON.stringify(user));
+    localStorage.setItem("adaptfitUser", JSON.stringify(user));
   };
 
   const handleLogout = () => {
     setAuthUser(null);
-    localStorage.removeItem('adaptfitUser');
+    localStorage.removeItem("adaptfitUser");
   };
 
   return (
@@ -1021,9 +1037,7 @@ export default function Login({ onLogin }) {
           <h2>Access AdaptFit</h2>
         </div>
 
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "20px" }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
@@ -1045,6 +1059,7 @@ Assistant final:
 > Done. Google login now decodes the credential, stores the user’s first name, and redirects home with `navigate("/", { replace: true })`.
 >
 > Changed:
+>
 > - [Login.jsx](C:/Users/Divin/Documents/CSCC09/Project/project-adaptfit/adaptfit-app/src/pages/Login.jsx:25): extracts `given_name` from Google’s credential and calls `onLogin`.
 > - [App.jsx](C:/Users/Divin/Documents/CSCC09/Project/project-adaptfit/adaptfit-app/src/App.jsx:9): keeps `authUser` state and persists it in `localStorage`.
 > - [Navbar.jsx](C:/Users/Divin/Documents/CSCC09/Project/project-adaptfit/adaptfit-app/src/components/Navbar.jsx:25): shows `Hi, {Name}!` plus a `Log out` button when logged in.
@@ -1128,6 +1143,7 @@ Assistant:
 > - Ran `Get-Content adaptfit-app\src\index.css`
 >
 > </details>
+
 </details>
 
 Here’s the actionable implementation plan for your React + Vite AdaptFit app based on the existing mockups.

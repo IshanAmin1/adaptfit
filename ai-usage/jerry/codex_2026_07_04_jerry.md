@@ -239,17 +239,17 @@ Assistant final summary:
 >
 > ```js
 > return session({
->     name: COOKIE_NAME,
->     secret,
->     resave: false,
->     saveUninitialized: false,
->     store: new PgSession({
->       pool: sessionPool,
->       tableName: "session",
->       createTableIfMissing: true,
->     }),
->     cookie: getCookieOptions(),
->   });
+>   name: COOKIE_NAME,
+>   secret,
+>   resave: false,
+>   saveUninitialized: false,
+>   store: new PgSession({
+>     pool: sessionPool,
+>     tableName: "session",
+>     createTableIfMissing: true,
+>   }),
+>   cookie: getCookieOptions(),
+> });
 > ```
 >
 > That were not in Lab6? Also, is using a PgSession the only way we can save
@@ -482,27 +482,27 @@ Assistant:
 > What your current options add:
 >
 > ```js
-> sameSite: "lax"
+> sameSite: "lax";
 > ```
 >
 > Useful. Helps reduce CSRF risk by limiting when browsers send the cookie
 > cross-site. I would keep this.
 >
 > ```js
-> secure: process.env.NODE_ENV === "production"
+> secure: process.env.NODE_ENV === "production";
 > ```
 >
 > Useful. In production, the browser only sends the cookie over HTTPS. I would
 > keep this if your production API is HTTPS.
 >
 > ```js
-> path: "/"
+> path: "/";
 > ```
 >
 > Default already. Not needed.
 >
 > ```js
-> maxAge: SESSION_MAX_AGE
+> maxAge: SESSION_MAX_AGE;
 > ```
 >
 > This makes the session cookie persist for `SESSION_DAYS`. Without it, the
@@ -563,7 +563,7 @@ Assistant:
 
 > So it is worth keeping those two then. Just delete export function
 > getClearCookieOptions() {
->   return getBaseCookieOptions();
+> return getBaseCookieOptions();
 > }
 > For me and any references to it.
 
@@ -668,4 +668,3 @@ Assistant action summary:
 - Matched the existing `ai-usage` transcript style.
 - Omitted the long documentation-update transcript and included only a short
   omission note.
-

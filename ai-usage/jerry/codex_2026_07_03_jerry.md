@@ -527,35 +527,37 @@ Assistant:
 > In `Navbar.tsx`, if `authUser` is `null`, the navbar shows a link to `/login`:
 >
 > ```tsx
-> {authUser ? (
-> 	<div className="flex items-center gap-3.5">
-> 		<span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
-> 			Hi, {authUser.firstName}!
-> 		</span>
-> 		<button
-> 			type="button"
-> 			className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
-> 			onClick={handleLogout}
-> 		>
-> 			Log out
-> 		</button>
-> 	</div>
-> ) : (
-> 	<Link
-> 		to={location.pathname === "/login" ? "/" : "/login"}
-> 		className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
-> 	>
-> 		{location.pathname === "/login" ? "Dashboard" : "Log in"}
-> 	</Link>
-> )}
+> {
+>   authUser ? (
+>     <div className="flex items-center gap-3.5">
+>       <span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
+>         Hi, {authUser.firstName}!
+>       </span>
+>       <button
+>         type="button"
+>         className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+>         onClick={handleLogout}
+>       >
+>         Log out
+>       </button>
+>     </div>
+>   ) : (
+>     <Link
+>       to={location.pathname === "/login" ? "/" : "/login"}
+>       className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
+>     >
+>       {location.pathname === "/login" ? "Dashboard" : "Log in"}
+>     </Link>
+>   );
+> }
 > ```
 >
 > The route is defined in `App.tsx`:
 >
 > ```tsx
 > <Routes>
-> 	<Route path="/" element={<Dashboard />} />
-> 	<Route path="/login" element={<Login onLogin={handleLogin} />} />
+>   <Route path="/" element={<Dashboard />} />
+>   <Route path="/login" element={<Login onLogin={handleLogin} />} />
 > </Routes>
 > ```
 >
@@ -565,28 +567,30 @@ Assistant:
 >
 > ```tsx
 > <GoogleLogin
-> 	onSuccess={handleGoogleSuccess}
-> 	onError={handleGoogleError}
-> 	width="320"
+>   onSuccess={handleGoogleSuccess}
+>   onError={handleGoogleError}
+>   width="320"
 > />
 > ```
 >
 > When Google succeeds, the frontend receives a Google credential:
 >
 > ```tsx
-> const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-> 	if (!credentialResponse.credential) {
-> 		handleGoogleError();
-> 		return;
-> 	}
+> const handleGoogleSuccess = async (
+>   credentialResponse: CredentialResponse,
+> ) => {
+>   if (!credentialResponse.credential) {
+>     handleGoogleError();
+>     return;
+>   }
 >
-> 	try {
-> 		const user = await loginWithGoogle(credentialResponse.credential);
-> 		onLogin(user);
-> 		navigate("/", { replace: true });
-> 	} catch {
-> 		handleGoogleError();
-> 	}
+>   try {
+>     const user = await loginWithGoogle(credentialResponse.credential);
+>     onLogin(user);
+>     navigate("/", { replace: true });
+>   } catch {
+>     handleGoogleError();
+>   }
 > };
 > ```
 >
@@ -626,7 +630,7 @@ Assistant:
 >   cors({
 >     origin: CLIENT_ORIGIN,
 >     credentials: true,
->   })
+>   }),
 > );
 > app.use(bodyParser.json());
 >
@@ -719,7 +723,7 @@ Assistant:
 >       profile.lastName,
 >       profile.fullName,
 >       profile.avatarUrl,
->     ]
+>     ],
 >   );
 >
 >   return result.rows[0];
@@ -772,7 +776,7 @@ Assistant:
 >       insert into sessions (user_id, session_token_hash, expires_at)
 >       values ($1, $2, $3)
 >     `,
->     [userId, tokenHash, expiresAt]
+>     [userId, tokenHash, expiresAt],
 >   );
 >
 >   return { token, expiresAt };
@@ -836,12 +840,12 @@ Assistant:
 >
 > ```ts
 > export type AuthUser = {
-> 	id: string;
-> 	email: string;
-> 	firstName: string;
-> 	lastName?: string | null;
-> 	fullName?: string | null;
-> 	avatarUrl?: string | null;
+>   id: string;
+>   email: string;
+>   firstName: string;
+>   lastName?: string | null;
+>   fullName?: string | null;
+>   avatarUrl?: string | null;
 > };
 > ```
 >
@@ -856,7 +860,7 @@ Assistant:
 >
 > ```tsx
 > const handleLogin = (user: AuthUser) => {
-> 	setAuthUser(user);
+>   setAuthUser(user);
 > };
 > ```
 >
@@ -874,23 +878,23 @@ Assistant:
 >
 > ```tsx
 > useEffect(() => {
-> 	let isMounted = true;
+>   let isMounted = true;
 >
-> 	getCurrentUser()
-> 		.then((user) => {
-> 			if (isMounted) {
-> 				setAuthUser(user);
-> 			}
-> 		})
-> 		.catch(() => {
-> 			if (isMounted) {
-> 				setAuthUser(null);
-> 			}
-> 		});
+>   getCurrentUser()
+>     .then((user) => {
+>       if (isMounted) {
+>         setAuthUser(user);
+>       }
+>     })
+>     .catch(() => {
+>       if (isMounted) {
+>         setAuthUser(null);
+>       }
+>     });
 >
-> 	return () => {
-> 		isMounted = false;
-> 	};
+>   return () => {
+>     isMounted = false;
+>   };
 > }, []);
 > ```
 >
@@ -948,11 +952,11 @@ Assistant:
 >
 > ```tsx
 > <button
-> 	type="button"
-> 	className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
-> 	onClick={handleLogout}
+>   type="button"
+>   className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+>   onClick={handleLogout}
 > >
-> 	Log out
+>   Log out
 > </button>
 > ```
 >
@@ -960,8 +964,8 @@ Assistant:
 >
 > ```tsx
 > const handleLogout = async () => {
-> 	googleLogout();
-> 	await onLogout();
+>   googleLogout();
+>   await onLogout();
 > };
 > ```
 >
@@ -969,11 +973,11 @@ Assistant:
 >
 > ```tsx
 > const handleLogout = async () => {
-> 	try {
-> 		await logout();
-> 	} finally {
-> 		setAuthUser(null);
-> 	}
+>   try {
+>     await logout();
+>   } finally {
+>     setAuthUser(null);
+>   }
 > };
 > ```
 >
@@ -1132,7 +1136,7 @@ Assistant:
 > That sends a `Set-Cookie` header back to the browser. Because your frontend request uses:
 >
 > ```ts
-> credentials: "include"
+> credentials: "include";
 > ```
 >
 > the browser is allowed to accept and store that cookie.
@@ -1158,7 +1162,7 @@ Assistant:
 > `HttpOnly` means JavaScript cannot read the cookie directly. So this will not work:
 >
 > ```ts
-> document.cookie
+> document.cookie;
 > ```
 >
 > That is good. It protects the session token from frontend JavaScript bugs or XSS. The browser manages the cookie automatically; your React app only says `credentials: "include"` when it wants the browser to participate in that cookie-based session.
@@ -1166,12 +1170,12 @@ Assistant:
 ## Request 8
 
 > Explain export function getCookieOptions() {
->   return {
->     httpOnly: true,
->     sameSite: "lax",
->     secure: process.env.NODE_ENV === "production",
->     path: "/",
->   };
+> return {
+> httpOnly: true,
+> sameSite: "lax",
+> secure: process.env.NODE_ENV === "production",
+> path: "/",
+> };
 > }.
 >
 > Also, why does the row token go into the browser cookie, and hash go into Postgres?
@@ -1198,7 +1202,7 @@ Assistant:
 > So this will not expose the session token:
 >
 > ```js
-> document.cookie
+> document.cookie;
 > ```
 >
 > That matters because the session token is basically the user's temporary login key. If malicious frontend JavaScript could read it, it could steal the session.
@@ -1257,7 +1261,7 @@ Assistant:
 > That is safer. If your database leaks, attackers do not immediately get usable session tokens. They only get hashes. Since the raw tokens are randomly generated with:
 >
 > ```js
-> crypto.randomBytes(32).toString("hex")
+> crypto.randomBytes(32).toString("hex");
 > ```
 >
 > they are extremely hard to guess from the hash.
@@ -1297,7 +1301,7 @@ Assistant:
 > So even on local HTTP, this is blocked:
 >
 > ```js
-> document.cookie
+> document.cookie;
 > ```
 >
 > or at least the session cookie will not appear there. Your React code, browser extensions running as page scripts, or injected XSS code cannot directly steal the session token from JavaScript.
@@ -1311,7 +1315,7 @@ Assistant:
 > In development:
 >
 > ```js
-> secure: false
+> secure: false;
 > ```
 >
 > because you are using:

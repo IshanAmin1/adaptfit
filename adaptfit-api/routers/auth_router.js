@@ -47,15 +47,15 @@ authRouter.post("/google", async (req, res) => {
       avatarUrl: payload.picture || null,
     });
 
-req.session.regenerate((regenerateError) => {
-  if (regenerateError) {
-    console.error(regenerateError);
-    return res.status(500).json({ error: "Google login failed." });
-  }
+    req.session.regenerate((regenerateError) => {
+      if (regenerateError) {
+        console.error(regenerateError);
+        return res.status(500).json({ error: "Google login failed." });
+      }
 
-  req.session.userId = user.id;
-  return res.json({ user: serializeUser(user) });
-});
+      req.session.userId = user.id;
+      return res.json({ user: serializeUser(user) });
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Google login failed." });

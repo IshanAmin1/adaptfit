@@ -4,11 +4,11 @@
 
 ## Team
 
-| Name | UTORid | AI Usage Policy Acknowledgement |
-| --- | --- | --- |
+| Name       | UTORid   | AI Usage Policy Acknowledgement                                               |
+| ---------- | -------- | ----------------------------------------------------------------------------- |
 | Ishan Amin | aminish1 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
-| Jerry He | hejerry4 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
-| Eric Song | songeri5 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
+| Jerry He   | hejerry4 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
+| Eric Song  | songeri5 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
 
 ## Summary
 
@@ -17,6 +17,7 @@
 A web-based fitness platform that generates personalized workout and nutrition plans using AI. Users provide their fitness goals, experience level, available equipment, and dietary preferences through an onboarding assessment. The platform then creates a customized weekly plan and continuously adapts future recommendations based on user progress and performance.
 
 **Major Functionalities**
+
 - AI-Powered Fitness Plan Generation
 
   The core of the application is a structured AI workflow that generates personalized workout and nutrition plans. User information is processed through multiple stages:
@@ -99,6 +100,7 @@ Unlike traditional fitness applications that provide generic workout templates, 
 TODO: Describe the high-level architecture of the project.
 
 Suggested items to include:
+
 - Frontend framework and major pages/components
 - Backend framework and main API routes
 - Database and main data models
@@ -107,4 +109,3 @@ Suggested items to include:
 - AI/MCP/tool-calling flow
 - Stripe/payment flow
 - Deployment setup
-

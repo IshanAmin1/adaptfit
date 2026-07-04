@@ -572,7 +572,7 @@ Assistant:
 > Because we are **not** using:
 >
 > ```js
-> sequelize.sync()
+> sequelize.sync();
 > ```
 >
 > Sequelize will not automatically create the `users` and `sessions` tables. The SQL migration files are still what create the actual PostgreSQL schema.

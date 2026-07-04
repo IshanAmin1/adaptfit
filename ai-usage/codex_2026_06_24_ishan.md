@@ -33,6 +33,7 @@
 > - Wrote `./README.md` (+9 -9)
 >
 > </details>
+
 </details>
 
 Created the HTML/CSS-only mockup here:
@@ -76,6 +77,7 @@ The mockup shows the core AdaptFit dashboard: adaptive workout recommendation, w
 > </details>
 >
 > The split is done; I’m checking the diff and file list now to make sure the link path and new stylesheet are exactly where the browser expects them.
+
 </details>
 
 Separated it into:
@@ -86,8 +88,7 @@ Separated it into:
 The HTML now links the stylesheet with:
 
 ```html
-<link rel="stylesheet" href="core-feature.css">
+<link rel="stylesheet" href="core-feature.css" />
 ```
 
 I also removed the remaining inline progress-bar styles, so the mockup is cleanly split between HTML structure and CSS styling.
-
