@@ -48,26 +48,20 @@ export const User = sequelize.define(
   },
 );
 
-function toPlainUser(user) {
-  return user?.get ? user.get({ plain: true }) : user;
-}
-
 export function serializeUser(user) {
-  const plainUser = toPlainUser(user);
-
   return {
-    id: plainUser.id,
-    email: plainUser.email,
-    firstName: plainUser.first_name,
-    lastName: plainUser.last_name,
-    fullName: plainUser.full_name,
-    avatarUrl: plainUser.avatar_url,
+    id: user.id,
+    email: user.email,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    fullName: user.full_name,
+    avatarUrl: user.avatar_url,
   };
 }
 
 export async function findUserById(id) {
   const user = await User.findByPk(id);
-  return toPlainUser(user) || null;
+  return user?.toJSON() || null;
 }
 
 export async function upsertGoogleUser(profile) {
@@ -82,10 +76,12 @@ export async function upsertGoogleUser(profile) {
       avatar_url: profile.avatarUrl,
     },
     {
+      // conflict targets the unique constraint on google_sub, so if a user with the same google_sub exists,
+      // it will update that user instead of creating a new one
       conflictFields: ["google_sub"],
-      returning: true,
+      returning: true, // return the updated or created user instance
     },
   );
 
-  return toPlainUser(user);
+  return user?.toJSON();
 }
