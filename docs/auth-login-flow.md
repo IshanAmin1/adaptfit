@@ -1,8 +1,12 @@
 # Authentication Login Flow
 
-This document explains how login works in AdaptFit from the moment a user clicks `Log in` to the moment the user is authenticated, stored in PostgreSQL through Sequelize, given an app session, and redirected to the home page.
+This document explains how login works in AdaptFit from the moment a user clicks
+`Log in` to the moment the user is authenticated, stored in PostgreSQL through
+Sequelize, given an Express app session, and redirected to the dashboard.
 
-The current implementation is not frontend-only auth. The frontend receives a Google credential, but the backend verifies that credential and becomes the source of truth.
+The current implementation is not frontend-only auth. The frontend receives a
+Google credential, but the backend verifies that credential and becomes the
+source of truth for whether the browser is authenticated.
 
 ## High-Level Flow
 
@@ -13,10 +17,10 @@ The current implementation is not frontend-only auth. The frontend receives a Go
 4. Google returns a credential response to the frontend.
 5. Frontend sends credentialResponse.credential to POST /auth/google.
 6. Express backend verifies the Google ID token with Google.
-7. Backend creates or updates the user through the Sequelize `User` model.
-8. Backend creates an AdaptFit session.
-9. Backend stores only the hashed session token through the Sequelize `Session` model.
-10. Backend sends the raw session token to the browser as an HttpOnly cookie.
+7. Backend creates or updates the user through the Sequelize User model.
+8. Backend stores user.id in req.session.userId.
+9. express-session signs and sends the app session cookie.
+10. connect-pg-simple stores the session data in PostgreSQL.
 11. Backend returns the serialized user.
 12. Frontend stores the user in React state.
 13. Frontend redirects to /.
@@ -25,33 +29,38 @@ The current implementation is not frontend-only auth. The frontend receives a Go
 
 ## Why The Flow Is Designed This Way
 
-The old frontend-only version decoded the Google ID token in the browser and stored a small user object in `localStorage`. That is useful for a mockup, but it is not enough once the app has protected backend data.
+The old frontend-only version decoded the Google ID token in the browser and
+stored a small user object in `localStorage`. That is useful for a mockup, but
+it is not enough once the app has protected backend data.
 
 The backend must verify the Google token because:
 
 - `jwtDecode` only parses a token; it does not verify the token signature.
-- A user can edit frontend state and `localStorage`.
+- A user can edit frontend state and browser storage.
 - The database needs a trusted app user, not just browser-provided profile data.
-- Future routes will need to know which authenticated AdaptFit user is making the request.
+- Future routes will need to know which authenticated AdaptFit user is making
+  the request.
 
-The backend creates its own session because:
+The backend creates its own Express session because:
 
 - AdaptFit should not depend on frontend state as proof of login.
-- The browser can keep the user logged in after refresh using a cookie.
-- The session can be revoked on logout by deleting the database row.
-- Expired sessions can be rejected server-side.
+- The browser can stay logged in after refresh using a cookie.
+- `express-session` can load session data into `req.session` on later requests.
+- `connect-pg-simple` persists sessions in PostgreSQL instead of the unsafe
+  Express memory store.
+- Logout can revoke the app session by calling `req.session.destroy(...)`.
 
 ## Files Involved
 
 Frontend:
 
 ```text
+adaptfit-app/src/main.tsx
+adaptfit-app/src/App.tsx
 adaptfit-app/src/components/Navbar.tsx
 adaptfit-app/src/pages/Login.tsx
 adaptfit-app/src/api/auth.ts
-adaptfit-app/src/App.tsx
 adaptfit-app/src/types/auth.ts
-adaptfit-app/src/main.tsx
 ```
 
 Backend:
@@ -59,10 +68,10 @@ Backend:
 ```text
 adaptfit-api/app.js
 adaptfit-api/datasource.js
-adaptfit-api/routers/auth_router.js
-adaptfit-api/models/users.js
 adaptfit-api/models/sessions.js
+adaptfit-api/models/users.js
 adaptfit-api/middleware/auth.js
+adaptfit-api/routers/auth_router.js
 ```
 
 ## Required Environment Variables
@@ -83,17 +92,29 @@ GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 CLIENT_ORIGIN=http://localhost:5173
 SESSION_COOKIE_NAME=adaptfit_session
 SESSION_DAYS=7
+SESSION_SECRET=replace_with_a_long_random_secret
 ```
 
-`DATABASE_URL` is a PostgreSQL connection string. `adaptfit-api/datasource.js` passes it to Sequelize with the `postgres` dialect, and Sequelize uses the `pg` driver underneath.
+`DATABASE_URL` is a PostgreSQL connection string. `adaptfit-api/datasource.js`
+passes it to Sequelize with the `postgres` dialect, and Sequelize uses the `pg`
+driver underneath.
 
-The frontend and backend both need the Google client ID, but for different reasons.
+The frontend and backend both need the Google client ID, but for different
+reasons.
 
-The frontend uses `VITE_OAUTH_CLIENT_ID` to render the Google Identity Services button.
+The frontend uses `VITE_OAUTH_CLIENT_ID` to render the Google Identity Services
+button.
 
-The backend uses `GOOGLE_CLIENT_ID` to verify that the Google ID token was issued for this exact app.
+The backend uses `GOOGLE_CLIENT_ID` to verify that the Google ID token was
+issued for this exact app.
 
-`SESSION_COOKIE_NAME` can be any valid cookie name, but it must be consistent wherever the backend sets, reads, and clears the cookie. `adaptfit_session` is a good default.
+`SESSION_COOKIE_NAME` controls the cookie name used by `express-session`.
+`adaptfit_session` is the local default.
+
+`SESSION_DAYS` controls how long the browser session cookie lasts.
+
+`SESSION_SECRET` is required by `express-session`. It signs the session cookie
+so the backend can detect tampering.
 
 ## Frontend Root Setup
 
@@ -123,9 +144,11 @@ ReactDOM.createRoot(rootElement).render(
 );
 ```
 
-`GoogleOAuthProvider` gives child components access to Google Identity Services. Without it, `GoogleLogin` will not have the configured client ID.
+`GoogleOAuthProvider` gives child components access to Google Identity Services.
+Without it, `GoogleLogin` will not have the configured client ID.
 
-The client ID is safe to expose to browser JavaScript. It identifies the app to Google, but it is not a private secret.
+The client ID is safe to expose to browser JavaScript. It identifies the app to
+Google, but it is not a private secret.
 
 ## Step 1: Navbar Sends The User To Login
 
@@ -134,27 +157,29 @@ The client ID is safe to expose to browser JavaScript. It identifies the app to 
 When `authUser` is `null`, the navbar shows the login link:
 
 ```tsx
-{authUser ? (
-  <div className="flex items-center gap-3.5">
-    <span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
-      Hi, {authUser.firstName}!
-    </span>
-    <button
-      type="button"
-      className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
-      onClick={handleLogout}
+{
+  authUser ? (
+    <div className="flex items-center gap-3.5">
+      <span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
+        Hi, {authUser.firstName}!
+      </span>
+      <button
+        type="button"
+        className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+        onClick={handleLogout}
+      >
+        Log out
+      </button>
+    </div>
+  ) : (
+    <Link
+      to={location.pathname === "/login" ? "/" : "/login"}
+      className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
     >
-      Log out
-    </button>
-  </div>
-) : (
-  <Link
-    to={location.pathname === "/login" ? "/" : "/login"}
-    className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
-  >
-    {location.pathname === "/login" ? "Dashboard" : "Log in"}
-  </Link>
-)}
+      {location.pathname === "/login" ? "Dashboard" : "Log in"}
+    </Link>
+  );
+}
 ```
 
 The login link navigates to `/login`.
@@ -168,7 +193,16 @@ The route is defined in `adaptfit-app/src/App.tsx`:
 </Routes>
 ```
 
-`App` passes `handleLogin` to `Login` because `App` owns the top-level auth state.
+`App` passes `handleLogin` to `Login` because `App` owns the top-level auth
+state:
+
+```tsx
+const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
+const handleLogin = (user: AuthUser) => {
+  setAuthUser(user);
+};
+```
 
 ## Step 2: Login Page Renders Google Login
 
@@ -199,11 +233,13 @@ const handleGoogleError = () => {
 The visible error is rendered as:
 
 ```tsx
-{errorMessage ? (
-  <p className="m-0 text-sm font-semibold text-red-700" role="alert">
-    {errorMessage}
-  </p>
-) : null}
+{
+  errorMessage ? (
+    <p className="m-0 text-sm font-semibold text-red-700" role="alert">
+      {errorMessage}
+    </p>
+  ) : null;
+}
 ```
 
 `role="alert"` helps assistive technologies announce the error.
@@ -248,7 +284,8 @@ Then the frontend sends it to the backend:
 const user = await loginWithGoogle(credentialResponse.credential);
 ```
 
-The frontend does not decode the token and does not use it as proof of authentication. That is the backend's job.
+The frontend does not decode the token and does not use it as proof of
+authentication. That is the backend's job.
 
 ## Step 4: Frontend Calls POST /auth/google
 
@@ -301,20 +338,27 @@ The request uses:
 credentials: "include";
 ```
 
-This is important because the frontend and backend run on different origins in development:
+This is important because the frontend and backend run on different origins in
+development:
 
 ```text
 Frontend: http://localhost:5173
 Backend:  http://localhost:3000
 ```
 
-Different ports mean different origins. `credentials: "include"` tells the browser to allow cookies on this cross-origin request.
+Different ports mean different origins. `credentials: "include"` tells the
+browser to allow cookies on this cross-origin request.
 
-During login, that means the browser is allowed to accept the backend's `Set-Cookie` response.
+During login, that means the browser is allowed to accept the backend's
+`Set-Cookie` response.
 
-During later authenticated requests, that means the browser sends the stored session cookie back to the backend.
+During later authenticated requests, that means the browser sends the stored
+session cookie back to the backend.
 
-Without `credentials: "include"`, login might appear to work because the backend returns user JSON, but the browser may not store the session cookie. After refresh, `/auth/me` would return `401`, and the user would appear logged out.
+Without `credentials: "include"`, login might appear to work because the
+backend returns user JSON, but the browser may not store the session cookie.
+After refresh, `/auth/me` would return `401`, and the user would appear logged
+out.
 
 ## Step 5: Express Accepts JSON And Cookies Across Origins
 
@@ -327,6 +371,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
+import { sessionMiddleware } from "./models/sessions.js";
 
 const PORT = process.env.PORT || 3000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
@@ -340,6 +385,7 @@ app.use(
   }),
 );
 app.use(bodyParser.json());
+app.use(sessionMiddleware());
 
 try {
   await sequelize.authenticate();
@@ -356,19 +402,8 @@ app.get("/api/health", (req, res) => {
 app.use("/auth", authRouter);
 ```
 
-`adaptfit-api/datasource.js` creates the Sequelize connection:
-
-```js
-import "dotenv/config";
-import { Sequelize } from "sequelize";
-
-export const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: "postgres",
-  logging: false,
-});
-```
-
-`cors({ origin: CLIENT_ORIGIN, credentials: true })` is the backend half of cross-origin cookie support.
+`cors({ origin: CLIENT_ORIGIN, credentials: true })` is the backend half of
+cross-origin cookie support.
 
 The frontend says:
 
@@ -386,6 +421,9 @@ Both are needed.
 
 `bodyParser.json()` lets Express read the JSON body from `POST /auth/google`.
 
+`app.use(sessionMiddleware())` must run before `app.use("/auth", authRouter)` so
+the auth routes can read and write `req.session`.
+
 `app.use("/auth", authRouter)` mounts the auth routes:
 
 ```text
@@ -394,7 +432,139 @@ GET /auth/me
 POST /auth/logout
 ```
 
-## Step 6: Backend Verifies The Google ID Token
+## Step 6: Sequelize Connects To PostgreSQL
+
+`adaptfit-api/datasource.js` creates the Sequelize connection:
+
+```js
+import "dotenv/config";
+import { Sequelize } from "sequelize";
+
+if (!process.env.DATABASE_URL) {
+  console.warn(
+    "DATABASE_URL is not set. Database calls will fail until it is configured.",
+  );
+}
+
+export const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "postgres",
+  logging: false,
+});
+```
+
+Sequelize is used for the AdaptFit `users` table. It is not used for the
+Express session table.
+
+The backend startup calls:
+
+```js
+await sequelize.authenticate();
+await sequelize.sync({ alter: { drop: false } });
+```
+
+That follows the Lab6 Sequelize startup pattern. In the current auth
+implementation, it creates or updates the `users` table.
+
+## Step 7: Express Session Is Stored In PostgreSQL
+
+`adaptfit-api/models/sessions.js` configures `express-session` and
+`connect-pg-simple`:
+
+```js
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import pg from "pg";
+
+const PgSession = connectPgSimple(session);
+const { Pool } = pg;
+
+const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
+const SESSION_DAYS = Number(process.env.SESSION_DAYS || 7);
+const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60 * 1000;
+
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+```
+
+This file does not define a Sequelize model. It creates a Postgres pool for the
+session store and gives that pool to `connect-pg-simple`.
+
+Cookie options:
+
+```js
+function getBaseCookieOptions() {
+  return {
+    httpOnly: true, // prevent client-side JavaScript from accessing the cookie
+    sameSite: "lax", // prevent CSRF attacks by restricting cross-site cookie sending
+    secure: process.env.NODE_ENV === "production", // ensure cookies are only sent over HTTPS in production
+    path: "/", // cookie is valid for the entire domain
+  };
+}
+
+export function getCookieOptions() {
+  return {
+    ...getBaseCookieOptions(),
+    maxAge: SESSION_MAX_AGE,
+  };
+}
+```
+
+`httpOnly: true` means frontend JavaScript cannot read the session cookie. The
+browser manages it automatically.
+
+`sameSite: "lax"` reduces CSRF exposure by limiting when cookies are sent from
+cross-site contexts.
+
+`secure: process.env.NODE_ENV === "production"` means the cookie is `Secure`
+only in production. A secure cookie is sent only over HTTPS. Local development
+usually uses plain HTTP, so `secure` must be false locally or the browser may
+refuse to store/send the cookie.
+
+`maxAge` makes the browser cookie persist for `SESSION_DAYS`.
+
+The middleware factory:
+
+```js
+export function sessionMiddleware() {
+  const secret = process.env.SESSION_SECRET;
+
+  if (!secret) {
+    throw new Error("SESSION_SECRET is not configured.");
+  }
+
+  return session({
+    name: COOKIE_NAME,
+    secret,
+    resave: false,
+    saveUninitialized: false,
+    store: new PgSession({
+      pool: sessionPool,
+      tableName: "session",
+      createTableIfMissing: true,
+    }),
+    cookie: getCookieOptions(),
+  });
+}
+```
+
+Important options:
+
+- `name: COOKIE_NAME` names the cookie `adaptfit_session` instead of the default
+  `connect.sid`.
+- `secret` signs the session cookie.
+- `resave: false` avoids saving unchanged sessions on every request.
+- `saveUninitialized: false` avoids creating a database session for anonymous
+  requests that never write to `req.session`.
+- `store: new PgSession(...)` replaces Express's memory store with PostgreSQL.
+- `createTableIfMissing: true` lets the session store create the `session` table
+  on startup.
+
+The `session` table is managed by `connect-pg-simple`. It has a different shape
+from the old custom `sessions` table. The app session data is serialized into
+that table, including the `userId` set during login.
+
+## Step 8: Backend Verifies The Google ID Token
 
 The login route is in `adaptfit-api/routers/auth_router.js`.
 
@@ -403,11 +573,7 @@ Setup:
 ```js
 import { OAuth2Client } from "google-auth-library";
 import { Router } from "express";
-import {
-  createSession,
-  deleteExpiredSessions,
-  getCookieOptions,
-} from "../models/sessions.js";
+import { isAuthenticated } from "../middleware/auth.js";
 import { serializeUser, upsertGoogleUser } from "../models/users.js";
 
 export const authRouter = Router();
@@ -415,6 +581,9 @@ export const authRouter = Router();
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 ```
+
+The `COOKIE_NAME` constant is used by logout. Login itself does not manually set
+the cookie; `express-session` does that after `req.session` changes.
 
 The route starts by validating configuration and input:
 
@@ -447,11 +616,14 @@ try {
 }
 ```
 
-`verifyIdToken()` checks that the credential is a real Google ID token and that it was issued for this app's Google client ID.
+`verifyIdToken()` checks that the credential is a real Google ID token and that
+it was issued for this app's Google client ID.
 
-This is the key reason the backend exists. The frontend can receive a Google credential, but the backend decides whether it is trustworthy.
+This is the key reason the backend exists. The frontend can receive a Google
+credential, but the backend decides whether it is trustworthy.
 
-The route also requires Google to provide a stable user ID, email, and verified email:
+The route also requires Google to provide a stable user ID, email, and verified
+email:
 
 ```js
 if (!payload?.sub || !payload.email || !payload.email_verified) {
@@ -461,14 +633,10 @@ if (!payload?.sub || !payload.email || !payload.email_verified) {
 }
 ```
 
-`payload.sub` is Google's stable provider user ID. It is better than email as the long-term link to the Google account because a user's email may change.
+`payload.sub` is Google's stable provider user ID. It is better than email as
+the long-term link to the Google account because a user's email may change.
 
-`sequelize.sync({ alter: { drop: false } })` follows the Lab6 Sequelize startup
-pattern. It creates the `users` and `sessions` tables from the Sequelize model
-definitions if they do not already exist and applies non-dropping table changes
-during local development.
-
-## Step 7: Backend Creates Or Updates The User
+## Step 9: Backend Creates Or Updates The User
 
 After Google verification succeeds, the backend upserts the user:
 
@@ -567,149 +735,43 @@ This handles both cases:
 - First login: insert a new user.
 - Returning login: update profile fields for the existing `google_sub`.
 
-The route does not store Google access tokens or refresh tokens. AdaptFit only uses Google for sign-in right now. If the app later needs Google Calendar, Google Fit, or another Google API, those tokens should be stored separately and encrypted at rest.
+The route does not store Google access tokens or refresh tokens. AdaptFit only
+uses Google for sign-in right now. If the app later needs Google Calendar,
+Google Fit, or another Google API, those tokens should be stored separately and
+encrypted at rest.
 
-## Step 8: Backend Creates An AdaptFit Session
+## Step 10: Backend Creates The Express Session
 
-After the user exists, the route cleans up expired sessions and creates a new session:
-
-```js
-await deleteExpiredSessions();
-
-const session = await createSession(user.id);
-```
-
-`adaptfit-api/models/sessions.js` defines a Sequelize `Session` model. Sequelize
-creates the `sessions` table, the `user_id` relationship, and the indexes from
-this model during startup:
+After the user exists, login stores the user id in the Express session:
 
 ```js
-export const Session = sequelize.define(
-  "Session",
-  {
-    id: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: DataTypes.UUIDV4,
-    },
-    user_id: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: User,
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
-    session_token_hash: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-      unique: true,
-    },
-    expires_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-  },
-  {
-    tableName: "sessions",
-    createdAt: "created_at",
-    updatedAt: false,
-    indexes: [
-      {
-        fields: ["user_id"],
-      },
-      {
-        fields: ["expires_at"],
-      },
-    ],
-  },
-);
-```
-
-`user_id` connects the session to the authenticated user. `onDelete: "CASCADE"`
-means that if a user is deleted, that user's sessions are deleted too.
-
-`createSession()` creates the session row:
-
-```js
-export async function createSession(userId) {
-  const token = crypto.randomBytes(32).toString("hex");
-  const tokenHash = hashToken(token);
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-
-  await Session.create({
-    user_id: userId,
-    session_token_hash: tokenHash,
-    expires_at: expiresAt,
-  });
-
-  return { token, expiresAt };
-}
-```
-
-The raw token is random:
-
-```js
-crypto.randomBytes(32).toString("hex");
-```
-
-The database stores only the hash:
-
-```js
-function hashToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-```
-
-The raw token goes to the browser cookie. The hash goes to PostgreSQL through Sequelize.
-
-This is intentional. If the database leaks, attackers should not immediately receive usable session tokens. The backend can still verify the cookie by hashing the raw cookie token and comparing it to the stored hash.
-
-## Step 9: Backend Sets The Session Cookie
-
-The login route sets a cookie:
-
-```js
-res.cookie(COOKIE_NAME, session.token, {
-  ...getCookieOptions(),
-  expires: session.expiresAt,
-});
+req.session.userId = user.id;
 
 return res.json({ user: serializeUser(user) });
 ```
 
-`getCookieOptions()` is:
+This is the only application data needed in the session right now.
+
+The code does not call `res.cookie(...)` manually. Once `req.session.userId` is
+set, `express-session` knows the session has been modified. It sends the signed
+session cookie in the response and stores the session data through
+`connect-pg-simple`.
+
+The session cookie contains a signed session id, not the full user record.
+
+The PostgreSQL `session` table stores serialized session data. That serialized
+data includes:
 
 ```js
-export function getCookieOptions() {
-  return {
-    httpOnly: true, // JavaScript cannot access the cookie, helps prevent XSS attacks
-    sameSite: "lax", // restricts when cookies are sent, helps prevent CSRF attacks
-    secure: process.env.NODE_ENV === "production", // ensures cookies are only sent over HTTPS in production
-    path: "/",
-  };
+{
+  userId: "the-users-uuid";
 }
 ```
 
-`httpOnly: true` means frontend JavaScript cannot read the cookie. The browser manages the cookie automatically.
+The old manual implementation generated random tokens, hashed them, and stored
+the hashes in a custom `sessions` table. That is no longer how login works.
 
-`sameSite: "lax"` reduces CSRF exposure by limiting when cookies are sent from cross-site contexts.
-
-`secure: process.env.NODE_ENV === "production"` means the cookie is `Secure` only in production. A secure cookie is sent only over HTTPS. Local development usually uses plain HTTP, so `secure` must be false locally or the browser may refuse to store/send the cookie.
-
-`path: "/"` lets the cookie be sent to all backend routes, including `/auth/me` and `/auth/logout`.
-
-`httpOnly` still matters even when `secure` is false in development. They protect against different threats:
-
-```text
-httpOnly protects against JavaScript reading the cookie.
-secure protects against sending the cookie over non-HTTPS network traffic.
-```
-
-In production, both should be active.
-
-## Step 10: Backend Returns The User
+## Step 11: Backend Returns The User
 
 The route returns a serialized user:
 
@@ -721,13 +783,15 @@ return res.json({ user: serializeUser(user) });
 
 ```js
 export function serializeUser(user) {
+  const plainUser = toPlainUser(user);
+
   return {
-    id: user.id,
-    email: user.email,
-    firstName: user.first_name,
-    lastName: user.last_name,
-    fullName: user.full_name,
-    avatarUrl: user.avatar_url,
+    id: plainUser.id,
+    email: plainUser.email,
+    firstName: plainUser.first_name,
+    lastName: plainUser.last_name,
+    fullName: plainUser.full_name,
+    avatarUrl: plainUser.avatar_url,
   };
 }
 ```
@@ -745,7 +809,7 @@ export type AuthUser = {
 };
 ```
 
-## Step 11: Frontend Stores User In React State
+## Step 12: Frontend Stores User In React State
 
 Back in `Login.tsx`:
 
@@ -765,9 +829,10 @@ const handleLogin = (user: AuthUser) => {
 
 This is only UI state. It lets the navbar immediately render the logged-in view.
 
-It is not the durable source of authentication. The durable source is the backend session cookie plus the session row in PostgreSQL.
+It is not the durable source of authentication. The durable source is the
+backend session cookie plus the session row in PostgreSQL.
 
-## Step 12: Frontend Redirects Home
+## Step 13: Frontend Redirects Home
 
 After setting the user, the login page redirects:
 
@@ -775,7 +840,9 @@ After setting the user, the login page redirects:
 navigate("/", { replace: true });
 ```
 
-`replace: true` removes the login page from the browser history stack for this navigation. After a successful login, pressing Back should not take the user back to the completed login page.
+`replace: true` removes the login page from the browser history stack for this
+navigation. After a successful login, pressing Back should not take the user
+back to the completed login page.
 
 The navbar now sees `authUser` and renders:
 
@@ -835,6 +902,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 }
 ```
 
+Again, `credentials: "include"` matters. It tells the browser to send the
+`adaptfit_session` cookie.
+
 The backend route is:
 
 ```js
@@ -843,54 +913,50 @@ authRouter.get("/me", isAuthenticated, async (req, res) => {
 });
 ```
 
-`isAuthenticated` validates the cookie and loads the user:
+`isAuthenticated` trusts `express-session` to load `req.session` from the
+PostgreSQL session store:
 
 ```js
-const cookies = parseCookies(req.headers.cookie);
-const token = cookies[COOKIE_NAME];
+import { findUserById } from "../models/users.js";
 
-if (!token) {
-  return res.status(401).json({ error: "Not Authenticated" });
-}
+export async function isAuthenticated(req, res, next) {
+  try {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "Not Authenticated" });
+    }
 
-const session = await findSessionByToken(token);
-if (!session) {
-  res.clearCookie(COOKIE_NAME);
-  return res.status(401).json({ error: "Not Authenticated" });
-}
+    const user = await findUserById(req.session.userId);
+    if (!user) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ error: "Not Authenticated" });
+    }
 
-const user = await findUserById(session.user_id);
-if (!user) {
-  res.clearCookie(COOKIE_NAME);
-  return res.status(401).json({ error: "Not Authenticated" });
-}
-
-req.session = session;
-req.user = user;
-next();
-```
-
-`findSessionByToken()` enforces expiry:
-
-```js
-export async function findSessionByToken(token) {
-  const session = await Session.findOne({
-    attributes: ["id", "user_id"],
-    where: {
-      session_token_hash: hashToken(token),
-      expires_at: {
-        [Op.gt]: new Date(),
-      },
-    },
-  });
-
-  return session?.get({ plain: true }) || null;
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Authentication failed." });
+  }
 }
 ```
 
-If the session exists and is not expired, `/auth/me` returns the user and `App` restores `authUser`.
+There is no custom cookie parser here anymore. `express-session` reads the
+cookie, verifies the signed session id, loads the session row from PostgreSQL,
+and attaches the result to `req.session`.
 
-If the session is missing, invalid, or expired, `/auth/me` returns `401`, and the frontend remains logged out.
+If `req.session.userId` exists, `isAuthenticated` loads the current user:
+
+```js
+export async function findUserById(id) {
+  const user = await User.findByPk(id);
+  return toPlainUser(user) || null;
+}
+```
+
+If the user exists, `/auth/me` returns the user and `App` restores `authUser`.
+
+If the session is missing, expired, invalid, or points to a deleted user,
+`/auth/me` returns `401`, and the frontend remains logged out.
 
 ## Failure Cases
 
@@ -918,21 +984,37 @@ Unverified Google account:
 return res.status(401).json({ error: "Google account could not be verified." });
 ```
 
+Missing session secret during backend startup:
+
+```js
+if (!secret) {
+  throw new Error("SESSION_SECRET is not configured.");
+}
+```
+
 Frontend login error:
 
 ```tsx
 setErrorMessage("Google login failed. Please try again.");
 ```
 
-Expired session:
+Missing or invalid app session during restore:
 
 ```js
-expires_at: {
-  [Op.gt]: new Date(),
+if (!req.session?.userId) {
+  return res.status(401).json({ error: "Not Authenticated" });
 }
 ```
 
-If `expires_at` is not greater than `now()`, the session does not authenticate.
+Session points to a deleted user:
+
+```js
+const user = await findUserById(req.session.userId);
+if (!user) {
+  req.session.destroy(() => {});
+  return res.status(401).json({ error: "Not Authenticated" });
+}
+```
 
 ## Developer Checklist
 
@@ -941,12 +1023,15 @@ To make login work locally:
 1. Create the PostgreSQL database.
 2. Set `DATABASE_URL` in `adaptfit-api/.env`.
 3. Set `GOOGLE_CLIENT_ID` in `adaptfit-api/.env`.
-4. Set `VITE_OAUTH_CLIENT_ID` in `adaptfit-app/.env`.
-5. Set `VITE_API_BASE_URL=http://localhost:3000`.
-6. Set `CLIENT_ORIGIN=http://localhost:5173`.
-7. Start the backend so `sequelize.sync({ alter: { drop: false } })` can create missing tables.
-8. Start the frontend.
-9. Confirm Google Cloud has `http://localhost:5173` as an authorized JavaScript origin.
+4. Set `SESSION_SECRET` in `adaptfit-api/.env`.
+5. Set `VITE_OAUTH_CLIENT_ID` in `adaptfit-app/.env`.
+6. Set `VITE_API_BASE_URL=http://localhost:3000`.
+7. Set `CLIENT_ORIGIN=http://localhost:5173`.
+8. Start the backend so Sequelize can create the `users` table and
+   `connect-pg-simple` can create the `session` table.
+9. Start the frontend.
+10. Confirm Google Cloud has `http://localhost:5173` as an authorized JavaScript
+    origin.
 
 ## Key Mental Model
 
@@ -956,20 +1041,26 @@ React state answers:
 What should the UI show right now?
 ```
 
-The backend session answers:
+The Express session answers:
 
 ```text
-Is this browser actually authenticated?
+Is this browser authenticated, and which user id is attached to the session?
 ```
 
 PostgreSQL answers:
 
 ```text
-Which AdaptFit user is authenticated, and is the session still valid?
+Which users exist, and which Express sessions are still valid?
 ```
 
 Sequelize answers:
 
 ```text
-How does the backend express user and session reads/writes in application code?
+How does the backend express user reads/writes in application code?
+```
+
+`connect-pg-simple` answers:
+
+```text
+How does express-session persist sessions in PostgreSQL instead of memory?
 ```

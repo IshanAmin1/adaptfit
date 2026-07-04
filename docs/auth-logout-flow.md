@@ -1,8 +1,12 @@
 # Authentication Logout Flow
 
-This document explains how logout works in AdaptFit from the moment a user clicks `Log out` to the moment the backend session is deleted through Sequelize, the browser cookie is cleared, and the frontend returns to the unauthenticated UI.
+This document explains how logout works in AdaptFit from the moment a user
+clicks `Log out` to the moment the Express session is destroyed, the browser
+cookie is cleared, and the frontend returns to the unauthenticated UI.
 
-Logout is not just a frontend state change. The frontend clears the UI state, but the backend also deletes the session row from PostgreSQL through Sequelize and clears the browser cookie.
+Logout is not just a frontend state change. The frontend clears the UI state,
+but the backend also destroys the app session that `express-session` stored in
+PostgreSQL through `connect-pg-simple`.
 
 ## High-Level Flow
 
@@ -13,28 +17,34 @@ Logout is not just a frontend state change. The frontend clears the UI state, bu
 4. App calls the frontend logout API helper.
 5. Frontend sends POST /auth/logout with credentials: "include".
 6. Browser attaches the session cookie.
-7. Backend reads the raw session token from the cookie.
-8. Backend hashes the token and deletes the matching session row through the Sequelize `Session` model.
-9. Backend clears the session cookie.
-10. Frontend clears authUser from React state.
-11. Navbar re-renders the Log in link.
+7. express-session loads req.session from the PostgreSQL session store.
+8. Backend calls req.session.destroy(...).
+9. connect-pg-simple removes the server-side session from PostgreSQL.
+10. Backend clears the session cookie in the browser.
+11. Frontend clears authUser from React state.
+12. Navbar re-renders the Log in link.
 ```
 
 ## Why Logout Has Frontend And Backend Work
 
-There are two different things to clean up:
+There are three different things to clean up:
 
-1. Local UI state in React.
-2. The server-side app session.
+1. Google Identity Services client helper state.
+2. The server-side AdaptFit app session.
+3. Local UI state in React.
 
-React state controls what the user sees. If `authUser` is set, the navbar shows `Hi, firstName!` and `Log out`. If `authUser` is `null`, the navbar shows `Log in`.
+React state controls what the user sees. If `authUser` is set, the navbar shows
+`Hi, firstName!` and `Log out`. If `authUser` is `null`, the navbar shows
+`Log in`.
 
-The backend session controls whether the browser is actually authenticated. If the session row still exists and the browser still has the cookie, a refresh can restore login through `/auth/me`.
+The backend session controls whether the browser is actually authenticated. If
+the session row still exists and the browser still has the cookie, a refresh can
+restore login through `/auth/me`.
 
 That means a correct logout should:
 
 - clear Google client helper state,
-- delete the AdaptFit session row through Sequelize,
+- destroy the Express session,
 - clear the browser cookie,
 - clear React auth state.
 
@@ -51,9 +61,10 @@ adaptfit-app/src/api/auth.ts
 Backend:
 
 ```text
+adaptfit-api/app.js
+adaptfit-api/models/sessions.js
 adaptfit-api/routers/auth_router.js
 adaptfit-api/middleware/auth.js
-adaptfit-api/models/sessions.js
 ```
 
 ## Starting Point: Authenticated Navbar
@@ -63,27 +74,29 @@ The user can only click `Log out` when `authUser` exists.
 `adaptfit-app/src/components/Navbar.tsx`:
 
 ```tsx
-{authUser ? (
-  <div className="flex items-center gap-3.5">
-    <span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
-      Hi, {authUser.firstName}!
-    </span>
-    <button
-      type="button"
-      className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
-      onClick={handleLogout}
+{
+  authUser ? (
+    <div className="flex items-center gap-3.5">
+      <span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
+        Hi, {authUser.firstName}!
+      </span>
+      <button
+        type="button"
+        className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+        onClick={handleLogout}
+      >
+        Log out
+      </button>
+    </div>
+  ) : (
+    <Link
+      to={location.pathname === "/login" ? "/" : "/login"}
+      className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
     >
-      Log out
-    </button>
-  </div>
-) : (
-  <Link
-    to={location.pathname === "/login" ? "/" : "/login"}
-    className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
-  >
-    {location.pathname === "/login" ? "Dashboard" : "Log in"}
-  </Link>
-)}
+      {location.pathname === "/login" ? "Dashboard" : "Log in"}
+    </Link>
+  );
+}
 ```
 
 `authUser` is passed into `Navbar` from `App`:
@@ -92,7 +105,8 @@ The user can only click `Log out` when `authUser` exists.
 <Navbar authUser={authUser} onLogout={handleLogout} />
 ```
 
-This keeps `Navbar` mostly presentational. It does not own auth state or talk directly to the backend.
+This keeps `Navbar` mostly presentational. It does not own auth state or talk
+directly to the backend.
 
 ## Step 1: Navbar Handles The Click
 
@@ -111,9 +125,10 @@ const handleLogout = async () => {
 };
 ```
 
-`googleLogout()` clears Google Identity Services client-side state.
+`googleLogout()` clears Google Identity Services client-side helper state.
 
-This is separate from the AdaptFit backend session. Google is the identity provider, but AdaptFit owns the app session.
+This is separate from the AdaptFit backend session. Google is the identity
+provider, but AdaptFit owns the app session.
 
 The important distinction:
 
@@ -125,7 +140,7 @@ onLogout()
   -> clears AdaptFit backend session and React auth state
 ```
 
-The navbar awaits `onLogout()` because the parent handler may be asynchronous.
+The navbar awaits `onLogout()` because the parent handler is asynchronous.
 
 ## Step 2: App Calls The Frontend Logout API
 
@@ -151,13 +166,17 @@ The `finally` block matters:
 
 ```tsx
 finally {
-	setAuthUser(null);
+  setAuthUser(null);
 }
 ```
 
-Even if the backend request fails, the current tab should stop showing the user as logged in. This is a UI cleanup step. It does not guarantee the backend session was deleted if the request failed, but it avoids leaving the visible UI stuck in an authenticated state.
+Even if the backend request fails, the current tab should stop showing the user
+as logged in. This is a UI cleanup step. It does not guarantee the backend
+session was destroyed if the request failed, but it avoids leaving the visible UI
+stuck in an authenticated state.
 
-For a production app, a failed backend logout could also show an error or retry. For this minimal implementation, clearing local UI state is acceptable.
+For a production app, a failed backend logout could also show an error or retry.
+For this minimal implementation, clearing local UI state is acceptable.
 
 ## Step 3: Frontend Sends POST /auth/logout
 
@@ -180,48 +199,99 @@ credentials: "include";
 
 That tells the browser to attach the session cookie to the request.
 
-This is required because the backend does not receive the session token in the JSON body or an Authorization header. It receives the session token from the cookie.
+This is required because the backend does not receive a session id in the JSON
+body or an Authorization header. It receives the session id from the signed
+cookie created by `express-session`.
 
-Without `credentials: "include"`, the backend may receive a logout request with no session cookie. It can still clear a cookie by name in the response, but it may not know which session row to delete.
+Without `credentials: "include"`, the backend may receive a logout request with
+no session cookie. In that case, there may be no loaded `req.session` to destroy.
 
 ## Step 4: Browser Sends The Session Cookie
 
-During login, the backend set a cookie like:
+During login, `express-session` set a cookie named:
 
 ```text
-adaptfit_session=<raw-session-token>
+adaptfit_session
 ```
 
-The cookie name comes from:
+The cookie name comes from `adaptfit-api/models/sessions.js`:
 
 ```js
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
 ```
 
-The exact name is not special, but it must be consistent. The backend uses the same name when:
+The exact name is not special, but it must be consistent with the session
+middleware and logout route.
 
-- setting the cookie during login,
-- reading the cookie during `/auth/me`,
-- reading the cookie during `/auth/logout`,
-- clearing the cookie during logout.
+The session middleware uses it here:
 
-If login sets `adaptfit_session` but logout reads `session`, the backend will not find the token to delete.
+```js
+return session({
+  name: COOKIE_NAME,
+  secret,
+  resave: false,
+  saveUninitialized: false,
+  store: new PgSession({
+    pool: sessionPool,
+    tableName: "session",
+    createTableIfMissing: true,
+  }),
+  cookie: getCookieOptions(),
+});
+```
 
-## Step 5: Backend Receives POST /auth/logout
+The logout route uses the same value when clearing the browser cookie:
+
+```js
+res.clearCookie(COOKIE_NAME);
+```
+
+## Step 5: Express Session Loads req.session
+
+The backend installs the session middleware before the auth router:
+
+`adaptfit-api/app.js`:
+
+```js
+app.use(bodyParser.json());
+app.use(sessionMiddleware());
+
+try {
+  await sequelize.authenticate();
+  await sequelize.sync({ alter: { drop: false } });
+  console.log("Connection has been established successfully.");
+} catch (error) {
+  console.error("Unable to connect to the database:", error);
+}
+
+app.get("/api/health", (req, res) => {
+  return res.json({ status: "ok" });
+});
+
+app.use("/auth", authRouter);
+```
+
+The ordering matters. Because `app.use(sessionMiddleware())` runs before
+`app.use("/auth", authRouter)`, every auth route receives `req.session`.
+
+`express-session` reads the signed cookie, uses the session id inside it, and
+loads the corresponding row from the Postgres-backed session store.
+
+## Step 6: Backend Receives POST /auth/logout
 
 The route is in `adaptfit-api/routers/auth_router.js`:
 
 ```js
 authRouter.post("/logout", async (req, res) => {
   try {
-    const token = getSessionToken(req);
-
-    if (token) {
-      await deleteSessionByToken(token);
-    }
-
-    res.clearCookie(COOKIE_NAME, getCookieOptions());
-    return res.json({ ok: true });
+    req.session.destroy((error) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Logout failed." });
+      }
+      res.clearCookie(COOKIE_NAME); // clear cookie in browser
+      return res.json({ ok: true });
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Logout failed." });
@@ -229,158 +299,70 @@ authRouter.post("/logout", async (req, res) => {
 });
 ```
 
-Logout is intentionally tolerant. If there is no token, it still clears the cookie by name and returns `{ ok: true }`.
+The route does not manually parse the `Cookie` header.
 
-That makes logout idempotent from the user's point of view. Clicking logout when the cookie is already missing should still leave the app logged out.
+The route does not hash a token.
 
-## Step 6: Backend Reads The Session Token
+The route does not call a Sequelize `Session` model.
 
-The route calls:
+All of that manual session code was replaced by `express-session`.
+
+## Step 7: Backend Destroys The Express Session
+
+The important backend line is:
 
 ```js
-const token = getSessionToken(req);
+req.session.destroy((error) => {
 ```
 
-`getSessionToken()` lives in `adaptfit-api/middleware/auth.js`:
+`req.session.destroy(...)` asks the configured session store to delete the
+server-side session.
+
+The configured store is in `adaptfit-api/models/sessions.js`:
 
 ```js
-export function getSessionToken(req) {
-  const cookies = parseCookies(req.headers.cookie);
-  return cookies[COOKIE_NAME] || null;
+store: new PgSession({
+  pool: sessionPool,
+  tableName: "session",
+  createTableIfMissing: true,
+}),
+```
+
+Because the store is `connect-pg-simple`, destroying the session removes the
+matching session record from PostgreSQL's `session` table.
+
+If destroy fails, logout returns a server error:
+
+```js
+if (error) {
+  console.error(error);
+  return res.status(500).json({ error: "Logout failed." });
 }
 ```
 
-It uses `parseCookies()`:
-
-```js
-function parseCookies(cookieHeader) {
-  if (!cookieHeader) {
-    return {};
-  }
-
-  return cookieHeader.split(";").reduce((cookies, cookie) => {
-    const [rawName, ...rawValue] = cookie.trim().split("=");
-    cookies[rawName] = decodeURIComponent(rawValue.join("="));
-    return cookies;
-  }, {});
-}
-```
-
-The browser sends cookies as a single header string, roughly like:
-
-```text
-Cookie: adaptfit_session=abc123; other_cookie=value
-```
-
-`parseCookies()` turns that into:
-
-```js
-{
-  adaptfit_session: "abc123",
-  other_cookie: "value"
-}
-```
-
-Then `getSessionToken()` returns the value under `COOKIE_NAME`.
-
-## Step 7: Backend Deletes The Session Row
-
-If the token exists, logout calls:
-
-```js
-await deleteSessionByToken(token);
-```
-
-`adaptfit-api/models/sessions.js`:
-
-```js
-export async function deleteSessionByToken(token) {
-  await Session.destroy({
-    where: {
-      session_token_hash: hashToken(token),
-    },
-  });
-}
-```
-
-The database does not store the raw token. It stores the hash.
-
-So the backend must hash the raw cookie token before deleting:
-
-```js
-function hashToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-```
-
-The Sequelize `Session` model stores:
-
-```js
-session_token_hash: {
-  type: DataTypes.TEXT,
-  allowNull: false,
-  unique: true,
-}
-```
-
-The model also defines the user relationship and expiry timestamp:
-
-```js
-user_id: {
-  type: DataTypes.UUID,
-  allowNull: false,
-  references: {
-    model: User,
-    key: "id",
-  },
-  onDelete: "CASCADE",
-},
-expires_at: {
-  type: DataTypes.DATE,
-  allowNull: false,
-}
-```
-
-Deleting the session row revokes that browser's session. If the browser later tries to call `/auth/me` with the same old cookie token, the backend hashes it, fails to find a matching row, and returns `401`.
+If destroy succeeds, the route continues to clear the browser cookie.
 
 ## Step 8: Backend Clears The Cookie
 
-After deleting the database row, the backend clears the browser cookie:
+After destroying the session, the backend clears the browser cookie:
 
 ```js
-res.clearCookie(COOKIE_NAME, getCookieOptions());
+res.clearCookie(COOKIE_NAME); // clear cookie in browser
 return res.json({ ok: true });
 ```
 
-`getCookieOptions()` is reused from session creation:
+Destroying the server-side session removes the backend's copy of the session.
+Clearing the cookie removes the browser's pointer to that session.
 
-```js
-export function getCookieOptions() {
-  return {
-    httpOnly: true, // JavaScript cannot access the cookie, helps prevent XSS attacks
-    sameSite: "lax", // restricts when cookies are sent, helps prevent CSRF attacks
-    secure: process.env.NODE_ENV === "production", // ensures cookies are only sent over HTTPS in production
-    path: "/",
-  };
-}
-```
+Both are useful:
 
-Using matching cookie options is important because browsers identify cookies by name plus attributes like path and domain. The clear operation should target the same cookie that was set during login.
+- `req.session.destroy(...)` revokes the session server-side.
+- `res.clearCookie(COOKIE_NAME)` tells the browser to delete its cookie.
 
-The cookie was set with:
-
-```js
-res.cookie(COOKIE_NAME, session.token, {
-  ...getCookieOptions(),
-  expires: session.expiresAt,
-});
-```
-
-So logout clears it with:
-
-```js
-res.clearCookie(COOKIE_NAME, getCookieOptions());
-```
+If the cookie remained after the server-side session was destroyed, `/auth/me`
+would still fail because the session id would no longer resolve to valid session
+data. Clearing the cookie keeps the browser clean and avoids sending a stale
+cookie on future requests.
 
 ## Step 9: Frontend Clears React State
 
@@ -417,56 +399,39 @@ The user now sees the logged-out UI.
 
 ## What Happens If Logout Is Clicked Twice
 
-The first logout request deletes the session row and clears the cookie.
+The first logout request destroys the session and clears the cookie.
 
-A second logout request may have no cookie token. In that case:
+A second logout request may have no useful session to destroy. The route is
+still intended to leave the browser logged out. If the session has already been
+removed, the practical result should still be unauthenticated UI plus no usable
+session cookie.
 
-```js
-const token = getSessionToken(req);
-
-if (token) {
-  await deleteSessionByToken(token);
-}
-
-res.clearCookie(COOKIE_NAME, getCookieOptions());
-return res.json({ ok: true });
-```
-
-Because the delete only runs when `token` exists, the route still succeeds and clears the cookie by name again.
-
-This is good behavior. Logout should be safe to call more than once.
+For this implementation, the frontend clears `authUser` in `finally`, so the UI
+returns to logged-out state even if the second backend call has nothing left to
+destroy.
 
 ## What Happens If The Session Already Expired
 
-Session expiry is enforced by `findSessionByToken()` during `/auth/me`, not by logout:
+Session validity is handled by `express-session` and the Postgres-backed store.
+When `/auth/me` runs, `express-session` attempts to load the session. If there is
+no valid session data, `isAuthenticated` sees no `userId`:
 
 ```js
-expires_at: {
-  [Op.gt]: new Date(),
+if (!req.session?.userId) {
+  return res.status(401).json({ error: "Not Authenticated" });
 }
 ```
 
 If a session expired before logout:
 
-- `/auth/me` would treat the user as unauthenticated.
-- logout can still clear the cookie.
-- if the expired row still exists, `deleteSessionByToken()` can delete it because it deletes by token hash only.
+- `/auth/me` treats the user as unauthenticated.
+- logout can still clear the browser cookie.
+- `connect-pg-simple` handles session-store expiry based on the stored session
+  expiration.
 
-Expired rows are also cleaned up when login succeeds:
+There is no custom `deleteExpiredSessions()` function anymore.
 
-```js
-export async function deleteExpiredSessions() {
-  await Session.destroy({
-    where: {
-      expires_at: {
-        [Op.lte]: new Date(),
-      },
-    },
-  });
-}
-```
-
-## Why Logout Does Not Need The Full isAuthenticated Middleware
+## Why Logout Does Not Use isAuthenticated Middleware
 
 `POST /auth/logout` does not use:
 
@@ -476,15 +441,12 @@ isAuthenticated;
 
 That is intentional.
 
-If the session is already expired or missing, the user should still be able to ask the server to clear the cookie. Requiring a fully valid session for logout can make logout awkward in edge cases.
+If the session is already expired, missing, or points to a deleted user, the
+user should still be able to ask the server to clear the cookie. Requiring a
+fully valid user for logout can make logout awkward in edge cases.
 
-Instead, logout directly reads the token if present:
-
-```js
-const token = getSessionToken(req);
-```
-
-Then it deletes the matching row if possible and clears the cookie either way.
+Instead, logout directly destroys whatever Express session is attached to the
+request and clears the cookie name used by the app.
 
 ## Why googleLogout Is Not Enough
 
@@ -492,12 +454,13 @@ Then it deletes the matching row if possible and clears the cookie either way.
 
 It does not know about:
 
-- AdaptFit's `sessions` table,
+- AdaptFit's Express session,
 - the `adaptfit_session` cookie,
-- the PostgreSQL user row,
+- the PostgreSQL `session` table,
 - the Express `/auth/logout` route.
 
-If the app only called `googleLogout()` and did not call the backend, then the AdaptFit session cookie could still authenticate the browser on refresh.
+If the app only called `googleLogout()` and did not call the backend, then the
+AdaptFit session cookie could still authenticate the browser on refresh.
 
 That is why the navbar does both:
 
@@ -516,7 +479,8 @@ If logout only ran:
 setAuthUser(null);
 ```
 
-the navbar would switch to `Log in`, but the browser might still have a valid session cookie.
+the navbar would switch to `Log in`, but the browser might still have a valid
+session cookie.
 
 On refresh, `App` would call:
 
@@ -532,39 +496,57 @@ fetch(`${API_BASE_URL}/auth/me`, {
 });
 ```
 
-If the old session row still existed, `/auth/me` would return the user again, and the app would appear logged back in.
+If the old Express session still existed, `/auth/me` would return the user
+again, and the app would appear logged back in.
 
-That is why logout must delete the backend session row.
+That is why logout must destroy the backend session.
 
 ## Security Notes
 
-The raw session token is in an HttpOnly cookie, not in JavaScript-accessible storage.
+The browser receives an HttpOnly session cookie:
 
-That means this does not expose the session token:
+```js
+httpOnly: true,
+```
+
+That means frontend JavaScript cannot read the cookie:
 
 ```js
 document.cookie;
 ```
 
-The database stores only the hash:
+The session cookie is signed with:
 
 ```js
-hashToken(token);
+secret,
 ```
 
-So if the database leaks, attackers do not immediately get usable session tokens.
+That lets `express-session` detect tampering.
 
-Logout deletes the database row by hash:
+The session data is stored in PostgreSQL through:
 
 ```js
-await Session.destroy({
-  where: {
-    session_token_hash: hashToken(token),
-  },
-});
+store: new PgSession({
+  pool: sessionPool,
+  tableName: "session",
+  createTableIfMissing: true,
+}),
 ```
 
-That revokes the current raw token because it no longer has a matching verifier in PostgreSQL.
+The app does not store raw session tokens in a custom Sequelize model anymore.
+It relies on `express-session` and `connect-pg-simple`.
+
+Logout revokes the current server-side session with:
+
+```js
+req.session.destroy((error) => {
+```
+
+Then it tells the browser to remove the cookie with:
+
+```js
+res.clearCookie(COOKIE_NAME);
+```
 
 ## Debugging Logout
 
@@ -572,17 +554,24 @@ If logout appears to work but refresh logs the user back in, check:
 
 1. Does the frontend call `POST /auth/logout`?
 2. Does that request include `credentials: "include"`?
-3. Does the request include the session cookie in the browser network tab?
-4. Does `SESSION_COOKIE_NAME` match the cookie that login sets?
-5. Does `deleteSessionByToken()` delete a row from `sessions`?
+3. Does the request include the `adaptfit_session` cookie in the browser network
+   tab?
+4. Does `SESSION_COOKIE_NAME` match the cookie created by `express-session`?
+5. Does the backend route call `req.session.destroy(...)`?
 6. Does the response include a `Set-Cookie` header clearing the cookie?
 7. Does `App.tsx` call `setAuthUser(null)`?
+8. Does the `session` table still contain a non-expired row for that browser's
+   session?
 
-If the session row is deleted but the cookie remains, `/auth/me` should still return `401` because the hash lookup fails.
+If the session row is deleted but the cookie remains, `/auth/me` should still
+return `401` because the session id no longer resolves to valid session data.
 
-If the cookie is cleared but the session row remains, that browser is logged out, but the stale database row remains until cleanup or expiry.
+If the cookie is cleared but the session row remains, that browser is logged out
+because it no longer has the session id, but a stale database row may remain
+until expiry.
 
-If neither is cleared, the logout route probably did not receive the cookie or did not run.
+If neither is cleared, the logout route probably did not receive the cookie or
+did not run.
 
 ## End-To-End Summary
 
@@ -594,12 +583,11 @@ Logout:
 4. App calls logout() from src/api/auth.ts.
 5. logout() sends POST /auth/logout with credentials: "include".
 6. Browser includes adaptfit_session cookie.
-7. Backend parses Cookie header.
-8. Backend extracts raw session token.
-9. Backend hashes token.
-10. Backend deletes matching sessions.session_token_hash row.
-11. Backend clears adaptfit_session cookie.
-12. Backend returns { ok: true }.
-13. App clears authUser in React state.
-14. Navbar shows Log in.
+7. express-session loads req.session from PostgreSQL.
+8. Backend calls req.session.destroy(...).
+9. connect-pg-simple deletes the session from the session table.
+10. Backend clears adaptfit_session from the browser.
+11. Backend returns { ok: true }.
+12. App clears authUser in React state.
+13. Navbar shows Log in.
 ```
