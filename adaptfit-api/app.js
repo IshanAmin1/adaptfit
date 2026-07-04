@@ -22,10 +22,15 @@ app.use(sessionMiddleware());
 
 try {
   await sequelize.authenticate();
-  await sequelize.sync({ alter: { drop: false } });
+
+  if (process.env.NODE_ENV !== "production") {
+    await sequelize.sync({ alter: { drop: false } });
+  }
+
   console.log("Connection has been established successfully.");
 } catch (error) {
   console.error("Unable to connect to the database:", error);
+  process.exit(1);
 }
 
 app.get("/api/health", (req, res) => {

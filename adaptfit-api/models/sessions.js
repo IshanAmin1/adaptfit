@@ -9,6 +9,10 @@ const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
 const SESSION_DAYS = Number(process.env.SESSION_DAYS || 7);
 const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60 * 1000;
 
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not configured.");
+}
+
 const sessionPool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });

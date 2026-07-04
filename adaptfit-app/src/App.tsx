@@ -33,13 +33,15 @@ function App() {
 		setAuthUser(user);
 	};
 
-	const handleLogout = async () => {
-		try {
-			await logout();
-		} finally {
-			setAuthUser(null);
-		}
-	};
+const handleLogout = async () => {
+  try {
+    await logout();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setAuthUser(null);
+  }
+};
 
 	return (
 		<Router>
