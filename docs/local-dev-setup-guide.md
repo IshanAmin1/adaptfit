@@ -5,13 +5,16 @@ These instructions run AdaptFit locally with:
 - React/Vite frontend in `adaptfit-app`
 - Express REST API backend in `adaptfit-api`
 - Local PostgreSQL database
+- Sequelize ORM in the backend, using PostgreSQL as its database dialect
 - Google OAuth login with backend-verified sessions
+
+Sequelize is the backend database access layer. PostgreSQL is still the database server, and the SQL migrations remain the source of truth for the schema.
 
 ### 1. Install prerequisites
 
 Install:
 
-- Node.js and npm
+- Node.js 18 or newer and npm
 - PostgreSQL
 - Git
 
@@ -186,6 +189,17 @@ They create:
 - `users`: stores AdaptFit user records linked to Google by `google_sub`
 - `sessions`: stores hashed app session tokens connected to users
 
+The backend reads and writes these tables through Sequelize models while keeping
+PostgreSQL as the database.
+
+The migration runner also uses Sequelize:
+
+```text
+scripts/run-migrations.js -> sequelize.query(sql)
+```
+
+The app does not use `sequelize.sync()` to create or alter tables at startup. Keep schema changes in SQL migration files so PostgreSQL-specific details such as `pgcrypto`, indexes, foreign keys, and triggers remain explicit.
+
 You can verify the tables in `psql`:
 
 ```sql
@@ -258,8 +272,8 @@ With both servers running:
 3. Complete Google login.
 4. The frontend sends the Google credential to `POST /auth/google`.
 5. The backend verifies the token with Google.
-6. The backend creates or updates the user in Postgres.
-7. The backend creates a session and sends an HttpOnly cookie.
+6. The backend creates or updates the user through Sequelize in PostgreSQL.
+7. The backend creates a session through Sequelize and sends an HttpOnly cookie.
 8. The frontend redirects to the dashboard.
 9. The navbar should show `Hi, firstName!`.
 
@@ -279,7 +293,7 @@ The backend:
 
 1. Reads the session cookie.
 2. Hashes the raw session token.
-3. Deletes the matching row from `sessions`.
+3. Deletes the matching row from `sessions` through Sequelize.
 4. Clears the cookie.
 
 The navbar should return to `Log in`.
@@ -318,6 +332,8 @@ If the backend cannot connect to the database, check:
 - The database `adaptfit` exists.
 - `DATABASE_URL` has the correct username, password, host, port, and database name.
 - The database user has privileges on the database and `public` schema.
+- `adaptfit-api/datasource.js` is using `dialect: "postgres"`.
+- `npm install` has installed both `sequelize` and `pg`.
 
 If Google login fails, check:
 

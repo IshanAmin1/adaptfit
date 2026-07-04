@@ -1,8 +1,11 @@
 # AdaptFit API
 
-Minimal Express REST API for AdaptFit authentication.
+Minimal Express REST API for AdaptFit authentication. The API uses Sequelize as
+its ORM/query layer and PostgreSQL as the database.
 
 ## Setup
+
+Requires Node.js 18 or newer.
 
 ```bash
 npm install

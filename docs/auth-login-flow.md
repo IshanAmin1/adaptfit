@@ -1,6 +1,6 @@
 # Authentication Login Flow
 
-This document explains how login works in AdaptFit from the moment a user clicks `Log in` to the moment the user is authenticated, stored in Postgres, given an app session, and redirected to the home page.
+This document explains how login works in AdaptFit from the moment a user clicks `Log in` to the moment the user is authenticated, stored in PostgreSQL through Sequelize, given an app session, and redirected to the home page.
 
 The current implementation is not frontend-only auth. The frontend receives a Google credential, but the backend verifies that credential and becomes the source of truth.
 
@@ -13,9 +13,9 @@ The current implementation is not frontend-only auth. The frontend receives a Go
 4. Google returns a credential response to the frontend.
 5. Frontend sends credentialResponse.credential to POST /auth/google.
 6. Express backend verifies the Google ID token with Google.
-7. Backend creates or updates the user in Postgres.
+7. Backend creates or updates the user through the Sequelize `User` model.
 8. Backend creates an AdaptFit session.
-9. Backend stores only the hashed session token in Postgres.
+9. Backend stores only the hashed session token through the Sequelize `Session` model.
 10. Backend sends the raw session token to the browser as an HttpOnly cookie.
 11. Backend returns the serialized user.
 12. Frontend stores the user in React state.
@@ -63,6 +63,7 @@ adaptfit-api/routers/auth_router.js
 adaptfit-api/models/users.js
 adaptfit-api/models/sessions.js
 adaptfit-api/middleware/auth.js
+adaptfit-api/scripts/run-migrations.js
 adaptfit-api/migrations/001_create_users.sql
 adaptfit-api/migrations/002_create_sessions.sql
 ```
@@ -86,6 +87,8 @@ CLIENT_ORIGIN=http://localhost:5173
 SESSION_COOKIE_NAME=adaptfit_session
 SESSION_DAYS=7
 ```
+
+`DATABASE_URL` is a PostgreSQL connection string. `adaptfit-api/datasource.js` passes it to Sequelize with the `postgres` dialect, and Sequelize uses the `pg` driver underneath.
 
 The frontend and backend both need the Google client ID, but for different reasons.
 
@@ -111,15 +114,15 @@ import "./index.css";
 const rootElement = document.getElementById("root");
 
 if (!rootElement) {
-	throw new Error("Root element not found");
+  throw new Error("Root element not found");
 }
 
 ReactDOM.createRoot(rootElement).render(
-	<StrictMode>
-		<GoogleOAuthProvider clientId={import.meta.env.VITE_OAUTH_CLIENT_ID}>
-			<App />
-		</GoogleOAuthProvider>
-	</StrictMode>,
+  <StrictMode>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_OAUTH_CLIENT_ID}>
+      <App />
+    </GoogleOAuthProvider>
+  </StrictMode>,
 );
 ```
 
@@ -135,25 +138,25 @@ When `authUser` is `null`, the navbar shows the login link:
 
 ```tsx
 {authUser ? (
-	<div className="flex items-center gap-3.5">
-		<span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
-			Hi, {authUser.firstName}!
-		</span>
-		<button
-			type="button"
-			className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
-			onClick={handleLogout}
-		>
-			Log out
-		</button>
-	</div>
+  <div className="flex items-center gap-3.5">
+    <span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
+      Hi, {authUser.firstName}!
+    </span>
+    <button
+      type="button"
+      className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+      onClick={handleLogout}
+    >
+      Log out
+    </button>
+  </div>
 ) : (
-	<Link
-		to={location.pathname === "/login" ? "/" : "/login"}
-		className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
-	>
-		{location.pathname === "/login" ? "Dashboard" : "Log in"}
-	</Link>
+  <Link
+    to={location.pathname === "/login" ? "/" : "/login"}
+    className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
+  >
+    {location.pathname === "/login" ? "Dashboard" : "Log in"}
+  </Link>
 )}
 ```
 
@@ -163,8 +166,8 @@ The route is defined in `adaptfit-app/src/App.tsx`:
 
 ```tsx
 <Routes>
-	<Route path="/" element={<Dashboard />} />
-	<Route path="/login" element={<Login onLogin={handleLogin} />} />
+  <Route path="/" element={<Dashboard />} />
+  <Route path="/login" element={<Login onLogin={handleLogin} />} />
 </Routes>
 ```
 
@@ -176,9 +179,9 @@ The route is defined in `adaptfit-app/src/App.tsx`:
 
 ```tsx
 <GoogleLogin
-	onSuccess={handleGoogleSuccess}
-	onError={handleGoogleError}
-	width="320"
+  onSuccess={handleGoogleSuccess}
+  onError={handleGoogleError}
+  width="320"
 />
 ```
 
@@ -192,7 +195,7 @@ The page stores a visible error message in component state:
 const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 const handleGoogleError = () => {
-	setErrorMessage("Google login failed. Please try again.");
+  setErrorMessage("Google login failed. Please try again.");
 };
 ```
 
@@ -200,9 +203,9 @@ The visible error is rendered as:
 
 ```tsx
 {errorMessage ? (
-	<p className="m-0 text-sm font-semibold text-red-700" role="alert">
-		{errorMessage}
-	</p>
+  <p className="m-0 text-sm font-semibold text-red-700" role="alert">
+    {errorMessage}
+  </p>
 ) : null}
 ```
 
@@ -215,21 +218,19 @@ When Google login succeeds, the callback receives a `CredentialResponse`.
 `adaptfit-app/src/pages/Login.tsx`:
 
 ```tsx
-const handleGoogleSuccess = async (
-	credentialResponse: CredentialResponse,
-) => {
-	if (!credentialResponse.credential) {
-		handleGoogleError();
-		return;
-	}
+const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+  if (!credentialResponse.credential) {
+    handleGoogleError();
+    return;
+  }
 
-	try {
-		const user = await loginWithGoogle(credentialResponse.credential);
-		onLogin(user);
-		navigate("/", { replace: true });
-	} catch {
-		handleGoogleError();
-	}
+  try {
+    const user = await loginWithGoogle(credentialResponse.credential);
+    onLogin(user);
+    navigate("/", { replace: true });
+  } catch {
+    handleGoogleError();
+  }
 };
 ```
 
@@ -239,8 +240,8 @@ The frontend checks that it exists:
 
 ```tsx
 if (!credentialResponse.credential) {
-	handleGoogleError();
-	return;
+  handleGoogleError();
+  return;
 }
 ```
 
@@ -260,32 +261,32 @@ The frontend does not decode the token and does not use it as proof of authentic
 import type { AuthUser } from "../types/auth";
 
 const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 type AuthResponse = {
-	user: AuthUser;
+  user: AuthUser;
 };
 
 async function parseAuthResponse(response: Response): Promise<AuthUser> {
-	const body = (await response.json()) as AuthResponse;
-	return body.user;
+  const body = (await response.json()) as AuthResponse;
+  return body.user;
 }
 
 export async function loginWithGoogle(credential: string): Promise<AuthUser> {
-	const response = await fetch(`${API_BASE_URL}/auth/google`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		credentials: "include",
-		body: JSON.stringify({ credential }),
-	});
+  const response = await fetch(`${API_BASE_URL}/auth/google`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ credential }),
+  });
 
-	if (!response.ok) {
-		throw new Error("Google login failed");
-	}
+  if (!response.ok) {
+    throw new Error("Google login failed");
+  }
 
-	return parseAuthResponse(response);
+  return parseAuthResponse(response);
 }
 ```
 
@@ -300,7 +301,7 @@ The request body looks like:
 The request uses:
 
 ```ts
-credentials: "include"
+credentials: "include";
 ```
 
 This is important because the frontend and backend run on different origins in development:
@@ -327,7 +328,7 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { pool } from "./datasource.js";
+import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
 
 const PORT = process.env.PORT || 3000;
@@ -344,7 +345,7 @@ app.use(
 app.use(bodyParser.json());
 
 try {
-  await pool.query("select 1");
+  await sequelize.authenticate();
   console.log("Connection has been established successfully.");
 } catch (error) {
   console.error("Unable to connect to the database:", error);
@@ -357,18 +358,30 @@ app.get("/api/health", (req, res) => {
 app.use("/auth", authRouter);
 ```
 
+`adaptfit-api/datasource.js` creates the Sequelize connection:
+
+```js
+import "dotenv/config";
+import { Sequelize } from "sequelize";
+
+export const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "postgres",
+  logging: false,
+});
+```
+
 `cors({ origin: CLIENT_ORIGIN, credentials: true })` is the backend half of cross-origin cookie support.
 
 The frontend says:
 
 ```ts
-credentials: "include"
+credentials: "include";
 ```
 
 The backend says:
 
 ```js
-credentials: true
+credentials: true;
 ```
 
 Both are needed.
@@ -424,16 +437,16 @@ authRouter.post("/google", async (req, res) => {
 Then it verifies the Google token:
 
 ```js
-    let payload;
-    try {
-      const ticket = await googleClient.verifyIdToken({
-        idToken: req.body.credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-    } catch {
-      return res.status(401).json({ error: "Invalid Google credential." });
-    }
+let payload;
+try {
+  const ticket = await googleClient.verifyIdToken({
+    idToken: req.body.credential,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+  payload = ticket.getPayload();
+} catch {
+  return res.status(401).json({ error: "Invalid Google credential." });
+}
 ```
 
 `verifyIdToken()` checks that the credential is a real Google ID token and that it was issued for this app's Google client ID.
@@ -443,11 +456,11 @@ This is the key reason the backend exists. The frontend can receive a Google cre
 The route also requires Google to provide a stable user ID, email, and verified email:
 
 ```js
-    if (!payload?.sub || !payload.email || !payload.email_verified) {
-      return res
-        .status(401)
-        .json({ error: "Google account could not be verified." });
-    }
+if (!payload?.sub || !payload.email || !payload.email_verified) {
+  return res
+    .status(401)
+    .json({ error: "Google account could not be verified." });
+}
 ```
 
 `payload.sub` is Google's stable provider user ID. It is better than email as the long-term link to the Google account because a user's email may change.
@@ -457,18 +470,18 @@ The route also requires Google to provide a stable user ID, email, and verified 
 After Google verification succeeds, the backend upserts the user:
 
 ```js
-    const user = await upsertGoogleUser({
-      googleSub: payload.sub,
-      email: payload.email,
-      emailVerified: payload.email_verified,
-      firstName: payload.given_name || null,
-      lastName: payload.family_name || null,
-      fullName: payload.name || null,
-      avatarUrl: payload.picture || null,
-    });
+const user = await upsertGoogleUser({
+  googleSub: payload.sub,
+  email: payload.email,
+  emailVerified: payload.email_verified,
+  firstName: payload.given_name || null,
+  lastName: payload.family_name || null,
+  fullName: payload.name || null,
+  avatarUrl: payload.picture || null,
+});
 ```
 
-The database table comes from `adaptfit-api/migrations/001_create_users.sql`:
+The PostgreSQL table comes from `adaptfit-api/migrations/001_create_users.sql`:
 
 ```sql
 create extension if not exists pgcrypto;
@@ -487,43 +500,27 @@ create table if not exists users (
 );
 ```
 
-`adaptfit-api/models/users.js` contains the upsert:
+`adaptfit-api/models/users.js` defines a Sequelize model for that table and contains the upsert:
 
 ```js
 export async function upsertGoogleUser(profile) {
-  const result = await query(
-    `
-      insert into users (
-        google_sub,
-        email,
-        email_verified,
-        first_name,
-        last_name,
-        full_name,
-        avatar_url
-      )
-      values ($1, $2, $3, $4, $5, $6, $7)
-      on conflict (google_sub) do update set
-        email = excluded.email,
-        email_verified = excluded.email_verified,
-        first_name = excluded.first_name,
-        last_name = excluded.last_name,
-        full_name = excluded.full_name,
-        avatar_url = excluded.avatar_url
-      returning id, email, first_name, last_name, full_name, avatar_url
-    `,
-    [
-      profile.googleSub,
-      profile.email,
-      profile.emailVerified,
-      profile.firstName,
-      profile.lastName,
-      profile.fullName,
-      profile.avatarUrl,
-    ],
+  const [user] = await User.upsert(
+    {
+      google_sub: profile.googleSub,
+      email: profile.email,
+      email_verified: profile.emailVerified,
+      first_name: profile.firstName,
+      last_name: profile.lastName,
+      full_name: profile.fullName,
+      avatar_url: profile.avatarUrl,
+    },
+    {
+      conflictFields: ["google_sub"],
+      returning: true,
+    },
   );
 
-  return result.rows[0];
+  return toPlainUser(user);
 }
 ```
 
@@ -539,12 +536,12 @@ The route does not store Google access tokens or refresh tokens. AdaptFit only u
 After the user exists, the route cleans up expired sessions and creates a new session:
 
 ```js
-    await deleteExpiredSessions();
+await deleteExpiredSessions();
 
-    const session = await createSession(user.id);
+const session = await createSession(user.id);
 ```
 
-The session table comes from `adaptfit-api/migrations/002_create_sessions.sql`:
+The PostgreSQL session table comes from `adaptfit-api/migrations/002_create_sessions.sql`:
 
 ```sql
 create table if not exists sessions (
@@ -563,7 +560,7 @@ create index if not exists sessions_expires_at_idx on sessions(expires_at);
 
 `on delete cascade` means that if a user is deleted, that user's sessions are deleted too.
 
-`adaptfit-api/models/sessions.js` creates the session:
+`adaptfit-api/models/sessions.js` defines a Sequelize `Session` model and creates the session:
 
 ```js
 export async function createSession(userId) {
@@ -571,13 +568,11 @@ export async function createSession(userId) {
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
-  await query(
-    `
-      insert into sessions (user_id, session_token_hash, expires_at)
-      values ($1, $2, $3)
-    `,
-    [userId, tokenHash, expiresAt],
-  );
+  await Session.create({
+    user_id: userId,
+    session_token_hash: tokenHash,
+    expires_at: expiresAt,
+  });
 
   return { token, expiresAt };
 }
@@ -586,7 +581,7 @@ export async function createSession(userId) {
 The raw token is random:
 
 ```js
-crypto.randomBytes(32).toString("hex")
+crypto.randomBytes(32).toString("hex");
 ```
 
 The database stores only the hash:
@@ -597,7 +592,7 @@ function hashToken(token) {
 }
 ```
 
-The raw token goes to the browser cookie. The hash goes to Postgres.
+The raw token goes to the browser cookie. The hash goes to PostgreSQL through Sequelize.
 
 This is intentional. If the database leaks, attackers should not immediately receive usable session tokens. The backend can still verify the cookie by hashing the raw cookie token and comparing it to the stored hash.
 
@@ -606,12 +601,12 @@ This is intentional. If the database leaks, attackers should not immediately rec
 The login route sets a cookie:
 
 ```js
-    res.cookie(COOKIE_NAME, session.token, {
-      ...getCookieOptions(),
-      expires: session.expiresAt,
-    });
+res.cookie(COOKIE_NAME, session.token, {
+  ...getCookieOptions(),
+  expires: session.expiresAt,
+});
 
-    return res.json({ user: serializeUser(user) });
+return res.json({ user: serializeUser(user) });
 ```
 
 `getCookieOptions()` is:
@@ -671,12 +666,12 @@ The frontend expects this shape:
 
 ```ts
 export type AuthUser = {
-	id: string;
-	email: string;
-	firstName: string;
-	lastName?: string | null;
-	fullName?: string | null;
-	avatarUrl?: string | null;
+  id: string;
+  email: string;
+  firstName: string;
+  lastName?: string | null;
+  fullName?: string | null;
+  avatarUrl?: string | null;
 };
 ```
 
@@ -694,13 +689,13 @@ navigate("/", { replace: true });
 
 ```tsx
 const handleLogin = (user: AuthUser) => {
-	setAuthUser(user);
+  setAuthUser(user);
 };
 ```
 
 This is only UI state. It lets the navbar immediately render the logged-in view.
 
-It is not the durable source of authentication. The durable source is the backend session cookie plus the session row in Postgres.
+It is not the durable source of authentication. The durable source is the backend session cookie plus the session row in PostgreSQL.
 
 ## Step 12: Frontend Redirects Home
 
@@ -730,23 +725,23 @@ const [authUser, setAuthUser] = useState<AuthUser | null>(null);
 
 ```tsx
 useEffect(() => {
-	let isMounted = true;
+  let isMounted = true;
 
-	getCurrentUser()
-		.then((user) => {
-			if (isMounted) {
-				setAuthUser(user);
-			}
-		})
-		.catch(() => {
-			if (isMounted) {
-				setAuthUser(null);
-			}
-		});
+  getCurrentUser()
+    .then((user) => {
+      if (isMounted) {
+        setAuthUser(user);
+      }
+    })
+    .catch(() => {
+      if (isMounted) {
+        setAuthUser(null);
+      }
+    });
 
-	return () => {
-		isMounted = false;
-	};
+  return () => {
+    isMounted = false;
+  };
 }, []);
 ```
 
@@ -754,19 +749,19 @@ useEffect(() => {
 
 ```ts
 export async function getCurrentUser(): Promise<AuthUser | null> {
-	const response = await fetch(`${API_BASE_URL}/auth/me`, {
-		credentials: "include",
-	});
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    credentials: "include",
+  });
 
-	if (response.status === 401) {
-		return null;
-	}
+  if (response.status === 401) {
+    return null;
+  }
 
-	if (!response.ok) {
-		throw new Error("Current user request failed");
-	}
+  if (!response.ok) {
+    throw new Error("Current user request failed");
+  }
 
-	return parseAuthResponse(response);
+  return parseAuthResponse(response);
 }
 ```
 
@@ -809,17 +804,17 @@ next();
 
 ```js
 export async function findSessionByToken(token) {
-  const result = await query(
-    `
-      select sessions.id, sessions.user_id
-      from sessions
-      where sessions.session_token_hash = $1
-        and sessions.expires_at > now()
-    `,
-    [hashToken(token)],
-  );
+  const session = await Session.findOne({
+    attributes: ["id", "user_id"],
+    where: {
+      session_token_hash: hashToken(token),
+      expires_at: {
+        [Op.gt]: new Date(),
+      },
+    },
+  });
 
-  return result.rows[0] || null;
+  return session?.get({ plain: true }) || null;
 }
 ```
 
@@ -832,9 +827,7 @@ If the session is missing, invalid, or expired, `/auth/me` returns `401`, and th
 Missing backend Google client ID:
 
 ```js
-return res
-  .status(500)
-  .json({ error: "GOOGLE_CLIENT_ID is not configured." });
+return res.status(500).json({ error: "GOOGLE_CLIENT_ID is not configured." });
 ```
 
 Missing credential from frontend:
@@ -852,9 +845,7 @@ return res.status(401).json({ error: "Invalid Google credential." });
 Unverified Google account:
 
 ```js
-return res
-  .status(401)
-  .json({ error: "Google account could not be verified." });
+return res.status(401).json({ error: "Google account could not be verified." });
 ```
 
 Frontend login error:
@@ -866,8 +857,9 @@ setErrorMessage("Google login failed. Please try again.");
 Expired session:
 
 ```js
-where sessions.session_token_hash = $1
-  and sessions.expires_at > now()
+expires_at: {
+  [Op.gt]: new Date(),
+}
 ```
 
 If `expires_at` is not greater than `now()`, the session does not authenticate.
@@ -876,7 +868,7 @@ If `expires_at` is not greater than `now()`, the session does not authenticate.
 
 To make login work locally:
 
-1. Create the Postgres database.
+1. Create the PostgreSQL database.
 2. Set `DATABASE_URL` in `adaptfit-api/.env`.
 3. Set `GOOGLE_CLIENT_ID` in `adaptfit-api/.env`.
 4. Set `VITE_OAUTH_CLIENT_ID` in `adaptfit-app/.env`.
@@ -901,8 +893,14 @@ The backend session answers:
 Is this browser actually authenticated?
 ```
 
-Postgres answers:
+PostgreSQL answers:
 
 ```text
 Which AdaptFit user is authenticated, and is the session still valid?
+```
+
+Sequelize answers:
+
+```text
+How does the backend express user and session reads/writes in application code?
 ```

@@ -4,6 +4,9 @@
   "description": "Minimal AdaptFit REST API",
   "main": "app.js",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "migrate": "node scripts/run-migrations.js",
     "start": "node app.js",
@@ -14,11 +17,15 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "google-auth-library": "^9.15.1",
-    "pg": "^8.13.1"
+    "google-auth-library": "^10.9.0",
+    "pg": "^8.13.1",
+    "sequelize": "^6.37.8"
   },
   "devDependencies": {
     "nodemon": "^3.1.9",
     "prettier": "^3.4.2"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
   }
 }

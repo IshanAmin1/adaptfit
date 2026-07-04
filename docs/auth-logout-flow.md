@@ -1,8 +1,8 @@
 # Authentication Logout Flow
 
-This document explains how logout works in AdaptFit from the moment a user clicks `Log out` to the moment the backend session is deleted, the browser cookie is cleared, and the frontend returns to the unauthenticated UI.
+This document explains how logout works in AdaptFit from the moment a user clicks `Log out` to the moment the backend session is deleted through Sequelize, the browser cookie is cleared, and the frontend returns to the unauthenticated UI.
 
-Logout is not just a frontend state change. The frontend clears the UI state, but the backend also deletes the session row from Postgres and clears the browser cookie.
+Logout is not just a frontend state change. The frontend clears the UI state, but the backend also deletes the session row from PostgreSQL through Sequelize and clears the browser cookie.
 
 ## High-Level Flow
 
@@ -14,7 +14,7 @@ Logout is not just a frontend state change. The frontend clears the UI state, bu
 5. Frontend sends POST /auth/logout with credentials: "include".
 6. Browser attaches the session cookie.
 7. Backend reads the raw session token from the cookie.
-8. Backend hashes the token and deletes the matching session row from Postgres.
+8. Backend hashes the token and deletes the matching session row through the Sequelize `Session` model.
 9. Backend clears the session cookie.
 10. Frontend clears authUser from React state.
 11. Navbar re-renders the Log in link.
@@ -34,7 +34,7 @@ The backend session controls whether the browser is actually authenticated. If t
 That means a correct logout should:
 
 - clear Google client helper state,
-- delete the AdaptFit session row,
+- delete the AdaptFit session row through Sequelize,
 - clear the browser cookie,
 - clear React auth state.
 
@@ -65,25 +65,25 @@ The user can only click `Log out` when `authUser` exists.
 
 ```tsx
 {authUser ? (
-	<div className="flex items-center gap-3.5">
-		<span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
-			Hi, {authUser.firstName}!
-		</span>
-		<button
-			type="button"
-			className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
-			onClick={handleLogout}
-		>
-			Log out
-		</button>
-	</div>
+  <div className="flex items-center gap-3.5">
+    <span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
+      Hi, {authUser.firstName}!
+    </span>
+    <button
+      type="button"
+      className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+      onClick={handleLogout}
+    >
+      Log out
+    </button>
+  </div>
 ) : (
-	<Link
-		to={location.pathname === "/login" ? "/" : "/login"}
-		className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
-	>
-		{location.pathname === "/login" ? "Dashboard" : "Log in"}
-	</Link>
+  <Link
+    to={location.pathname === "/login" ? "/" : "/login"}
+    className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
+  >
+    {location.pathname === "/login" ? "Dashboard" : "Log in"}
+  </Link>
 )}
 ```
 
@@ -107,8 +107,8 @@ The logout handler is:
 
 ```tsx
 const handleLogout = async () => {
-	googleLogout();
-	await onLogout();
+  googleLogout();
+  await onLogout();
 };
 ```
 
@@ -134,11 +134,11 @@ The navbar awaits `onLogout()` because the parent handler may be asynchronous.
 
 ```tsx
 const handleLogout = async () => {
-	try {
-		await logout();
-	} finally {
-		setAuthUser(null);
-	}
+  try {
+    await logout();
+  } finally {
+    setAuthUser(null);
+  }
 };
 ```
 
@@ -166,17 +166,17 @@ For a production app, a failed backend logout could also show an error or retry.
 
 ```ts
 export async function logout(): Promise<void> {
-	await fetch(`${API_BASE_URL}/auth/logout`, {
-		method: "POST",
-		credentials: "include",
-	});
+  await fetch(`${API_BASE_URL}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
 }
 ```
 
 The request uses:
 
 ```ts
-credentials: "include"
+credentials: "include";
 ```
 
 That tells the browser to attach the session cookie to the request.
@@ -296,9 +296,11 @@ await deleteSessionByToken(token);
 
 ```js
 export async function deleteSessionByToken(token) {
-  await query("delete from sessions where session_token_hash = $1", [
-    hashToken(token),
-  ]);
+  await Session.destroy({
+    where: {
+      session_token_hash: hashToken(token),
+    },
+  });
 }
 ```
 
@@ -383,11 +385,11 @@ Because this happens in `finally`, it also runs if the network request throws:
 
 ```tsx
 const handleLogout = async () => {
-	try {
-		await logout();
-	} finally {
-		setAuthUser(null);
-	}
+  try {
+    await logout();
+  } finally {
+    setAuthUser(null);
+  }
 };
 ```
 
@@ -395,10 +397,10 @@ Once `authUser` becomes `null`, `Navbar` re-renders and shows:
 
 ```tsx
 <Link
-	to={location.pathname === "/login" ? "/" : "/login"}
-	className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
+  to={location.pathname === "/login" ? "/" : "/login"}
+  className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
 >
-	{location.pathname === "/login" ? "Dashboard" : "Log in"}
+  {location.pathname === "/login" ? "Dashboard" : "Log in"}
 </Link>
 ```
 
@@ -430,8 +432,9 @@ This is good behavior. Logout should be safe to call more than once.
 Session expiry is enforced by `findSessionByToken()` during `/auth/me`, not by logout:
 
 ```js
-where sessions.session_token_hash = $1
-  and sessions.expires_at > now()
+expires_at: {
+  [Op.gt]: new Date(),
+}
 ```
 
 If a session expired before logout:
@@ -444,7 +447,13 @@ Expired rows are also cleaned up when login succeeds:
 
 ```js
 export async function deleteExpiredSessions() {
-  await query("delete from sessions where expires_at <= now()");
+  await Session.destroy({
+    where: {
+      expires_at: {
+        [Op.lte]: new Date(),
+      },
+    },
+  });
 }
 ```
 
@@ -476,7 +485,7 @@ It does not know about:
 
 - AdaptFit's `sessions` table,
 - the `adaptfit_session` cookie,
-- the Postgres user row,
+- the PostgreSQL user row,
 - the Express `/auth/logout` route.
 
 If the app only called `googleLogout()` and did not call the backend, then the AdaptFit session cookie could still authenticate the browser on refresh.
@@ -485,8 +494,8 @@ That is why the navbar does both:
 
 ```tsx
 const handleLogout = async () => {
-	googleLogout();
-	await onLogout();
+  googleLogout();
+  await onLogout();
 };
 ```
 
@@ -503,14 +512,14 @@ the navbar would switch to `Log in`, but the browser might still have a valid se
 On refresh, `App` would call:
 
 ```tsx
-getCurrentUser()
+getCurrentUser();
 ```
 
 That sends:
 
 ```ts
 fetch(`${API_BASE_URL}/auth/me`, {
-	credentials: "include",
+  credentials: "include",
 });
 ```
 
@@ -525,13 +534,13 @@ The raw session token is in an HttpOnly cookie, not in JavaScript-accessible sto
 That means this does not expose the session token:
 
 ```js
-document.cookie
+document.cookie;
 ```
 
 The database stores only the hash:
 
 ```js
-hashToken(token)
+hashToken(token);
 ```
 
 So if the database leaks, attackers do not immediately get usable session tokens.
@@ -539,10 +548,14 @@ So if the database leaks, attackers do not immediately get usable session tokens
 Logout deletes the database row by hash:
 
 ```js
-delete from sessions where session_token_hash = $1
+await Session.destroy({
+  where: {
+    session_token_hash: hashToken(token),
+  },
+});
 ```
 
-That revokes the current raw token because it no longer has a matching verifier in Postgres.
+That revokes the current raw token because it no longer has a matching verifier in PostgreSQL.
 
 ## Debugging Logout
 

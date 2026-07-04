@@ -1,60 +1,91 @@
-import { query } from "../datasource.js";
+import { DataTypes, literal } from "sequelize";
+import { sequelize } from "../datasource.js";
+
+export const User = sequelize.define(
+  "User",
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: literal("gen_random_uuid()"),
+    },
+    google_sub: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      unique: true,
+    },
+    email: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      unique: true,
+    },
+    email_verified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    first_name: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    last_name: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    full_name: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    avatar_url: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: "users",
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+  },
+);
+
+function toPlainUser(user) {
+  return user?.get ? user.get({ plain: true }) : user;
+}
 
 export function serializeUser(user) {
+  const plainUser = toPlainUser(user);
+
   return {
-    id: user.id,
-    email: user.email,
-    firstName: user.first_name,
-    lastName: user.last_name,
-    fullName: user.full_name,
-    avatarUrl: user.avatar_url,
+    id: plainUser.id,
+    email: plainUser.email,
+    firstName: plainUser.first_name,
+    lastName: plainUser.last_name,
+    fullName: plainUser.full_name,
+    avatarUrl: plainUser.avatar_url,
   };
 }
 
 export async function findUserById(id) {
-  const result = await query(
-    `
-      select id, email, first_name, last_name, full_name, avatar_url
-      from users
-      where id = $1
-    `,
-    [id]
-  );
-  return result.rows[0] || null;
+  const user = await User.findByPk(id);
+  return toPlainUser(user) || null;
 }
 
 export async function upsertGoogleUser(profile) {
-  const result = await query(
-    `
-      insert into users (
-        google_sub,
-        email,
-        email_verified,
-        first_name,
-        last_name,
-        full_name,
-        avatar_url
-      )
-      values ($1, $2, $3, $4, $5, $6, $7)
-      on conflict (google_sub) do update set
-        email = excluded.email,
-        email_verified = excluded.email_verified,
-        first_name = excluded.first_name,
-        last_name = excluded.last_name,
-        full_name = excluded.full_name,
-        avatar_url = excluded.avatar_url
-      returning id, email, first_name, last_name, full_name, avatar_url
-    `,
-    [
-      profile.googleSub,
-      profile.email,
-      profile.emailVerified,
-      profile.firstName,
-      profile.lastName,
-      profile.fullName,
-      profile.avatarUrl,
-    ]
+  const [user] = await User.upsert(
+    {
+      google_sub: profile.googleSub,
+      email: profile.email,
+      email_verified: profile.emailVerified,
+      first_name: profile.firstName,
+      last_name: profile.lastName,
+      full_name: profile.fullName,
+      avatar_url: profile.avatarUrl,
+    },
+    {
+      conflictFields: ["google_sub"],
+      returning: true,
+    },
   );
 
-  return result.rows[0];
+  return toPlainUser(user);
 }

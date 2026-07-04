@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { pool } from "./datasource.js";
+import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
 
 const PORT = process.env.PORT || 3000;
@@ -14,12 +14,12 @@ app.use(
   cors({
     origin: CLIENT_ORIGIN,
     credentials: true,
-  })
+  }),
 );
 app.use(bodyParser.json());
 
 try {
-  await pool.query("select 1");
+  await sequelize.authenticate();
   console.log("Connection has been established successfully.");
 } catch (error) {
   console.error("Unable to connect to the database:", error);
