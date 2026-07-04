@@ -93,7 +93,7 @@ The user can only click `Log out` when `authUser` exists.
       to={location.pathname === "/login" ? "/" : "/login"}
       className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
     >
-      {location.pathname === "/login" ? "Dashboard" : "Log in"}
+      {location.pathname === "/login" ? "Home" : "Log in"}
     </Link>
   );
 }
@@ -412,7 +412,7 @@ Once `authUser` becomes `null`, `Navbar` re-renders and shows:
   to={location.pathname === "/login" ? "/" : "/login"}
   className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
 >
-  {location.pathname === "/login" ? "Dashboard" : "Log in"}
+  {location.pathname === "/login" ? "Home" : "Log in"}
 </Link>
 ```
 
