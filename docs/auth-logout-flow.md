@@ -601,7 +601,7 @@ Logout:
 1. User clicks Log out.
 2. Navbar calls googleLogout().
 3. Navbar calls App's onLogout callback.
-4. App calls logout() from src/api/auth.ts.
+4. App calls logout() from adaptfit-app/src/api/auth.ts.
 5. logout() sends POST /auth/logout with credentials: "include".
 6. Browser includes adaptfit_session cookie.
 7. express-session loads req.session from PostgreSQL.

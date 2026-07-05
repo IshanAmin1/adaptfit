@@ -191,12 +191,15 @@ The route is defined in `adaptfit-app/src/App.tsx`:
 <Routes>
   <Route path="/" element={<Landing />} />
   <Route path="/login" element={<Login authUser={authUser} onLogin={handleLogin} />} />
-  <Route path="/dashboard" element={<Dashboard />} />
+  <Route
+    path="/dashboard"
+    element={<RequireAuth authChecked={authChecked} authUser={authUser} />}
+  />
 </Routes>
 ```
 
-`App` passes `handleLogin` to `Login` because `App` owns the top-level auth
-state:
+`App` passes `handleLogin` to `Login`, and passes `authChecked` and `authUser`
+to `RequireAuth`, because `App` owns the top-level auth state:
 
 ```tsx
 const [authUser, setAuthUser] = useState<AuthUser | null>(null);

@@ -12,7 +12,7 @@ The main routes are controlled in `src/App.tsx`:
 - `/login` shows the Google login page.
 - `/dashboard` shows the dashboard after authentication.
 
-When the app loads, it calls `getCurrentUser()` from `src/api/auth.ts` to check if the user already has a valid session. The dashboard is wrapped in `RequireAuth`, so users who are not logged in are redirected to `/login`.
+When the app loads, it calls `getCurrentUser()` from `adaptfit-app/src/api/auth.ts` to check if the user already has a valid session. The dashboard is wrapped in `RequireAuth`, so users who are not logged in are redirected to `/login`.
 
 ## Visual Style
 

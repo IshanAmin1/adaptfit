@@ -4,7 +4,6 @@ import {
 	Navigate,
 	Route,
 	Routes,
-	useLocation,
 } from "react-router-dom";
 import { getCurrentUser, logout } from "./api/auth";
 import Dashboard from "./components/Dashboard";
@@ -20,8 +19,6 @@ function RequireAuth({
 	authChecked: boolean;
 	authUser: AuthUser | null;
 }) {
-	const location = useLocation();
-
 	if (!authChecked) {
 		return (
 			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-[#62706b]">
@@ -31,7 +28,7 @@ function RequireAuth({
 	}
 
 	if (!authUser) {
-		return <Navigate to="/login" replace state={{ from: location }} />;
+		return <Navigate to="/login" replace />;
 	}
 
 	return <Dashboard />;
