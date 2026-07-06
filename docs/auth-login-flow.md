@@ -24,7 +24,7 @@ source of truth for whether the browser is authenticated.
 11. connect-pg-simple stores the session data in PostgreSQL.
 12. Backend returns the serialized user.
 13. Frontend stores the user in React state.
-14. Frontend redirects to /.
+14. Frontend redirects to /dashboard.
 15. Navbar renders the authenticated UI.
 ```
 
@@ -177,7 +177,7 @@ When `authUser` is `null`, the navbar shows the login link:
       to={location.pathname === "/login" ? "/" : "/login"}
       className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
     >
-      {location.pathname === "/login" ? "Dashboard" : "Log in"}
+      {location.pathname === "/login" ? "Home" : "Log in"}
     </Link>
   );
 }
@@ -189,13 +189,17 @@ The route is defined in `adaptfit-app/src/App.tsx`:
 
 ```tsx
 <Routes>
-  <Route path="/" element={<Dashboard />} />
-  <Route path="/login" element={<Login onLogin={handleLogin} />} />
+  <Route path="/" element={<Landing />} />
+  <Route path="/login" element={<Login authUser={authUser} onLogin={handleLogin} />} />
+  <Route
+    path="/dashboard"
+    element={<RequireAuth authChecked={authChecked} authUser={authUser} />}
+  />
 </Routes>
 ```
 
-`App` passes `handleLogin` to `Login` because `App` owns the top-level auth
-state:
+`App` passes `handleLogin` to `Login`, and passes `authChecked` and `authUser`
+to `RequireAuth`, because `App` owns the top-level auth state:
 
 ```tsx
 const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -261,7 +265,7 @@ const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
   try {
     const user = await loginWithGoogle(credentialResponse.credential);
     onLogin(user);
-    navigate("/", { replace: true });
+    navigate("/dashboard", { replace: true });
   } catch {
     handleGoogleError();
   }
@@ -838,7 +842,7 @@ Back in `Login.tsx`:
 ```tsx
 const user = await loginWithGoogle(credentialResponse.credential);
 onLogin(user);
-navigate("/", { replace: true });
+navigate("/dashboard", { replace: true });
 ```
 
 `onLogin(user)` calls `App`'s handler:
@@ -854,12 +858,12 @@ This is only UI state. It lets the navbar immediately render the logged-in view.
 It is not the durable source of authentication. The durable source is the
 backend session cookie plus the session row in PostgreSQL.
 
-## Step 13: Frontend Redirects Home
+## Step 13: Frontend Redirects To Dashboard
 
-After setting the user, the login page redirects:
+After setting the user, the login page redirects to the dashboard:
 
 ```tsx
-navigate("/", { replace: true });
+navigate("/dashboard", { replace: true });
 ```
 
 `replace: true` removes the login page from the browser history stack for this

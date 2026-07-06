@@ -22,7 +22,8 @@ PostgreSQL through `connect-pg-simple`.
 9. connect-pg-simple removes the server-side session from PostgreSQL.
 10. Backend clears the session cookie in the browser.
 11. Frontend clears authUser from React state.
-12. Navbar re-renders the Log in link.
+12. Navbar redirects the browser to `/`.
+13. Navbar re-renders the Log in link.
 ```
 
 ## Why Logout Has Frontend And Backend Work
@@ -93,7 +94,7 @@ The user can only click `Log out` when `authUser` exists.
       to={location.pathname === "/login" ? "/" : "/login"}
       className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
     >
-      {location.pathname === "/login" ? "Dashboard" : "Log in"}
+      {location.pathname === "/login" ? "Home" : "Log in"}
     </Link>
   );
 }
@@ -122,6 +123,7 @@ The logout handler is:
 const handleLogout = async () => {
   googleLogout();
   await onLogout();
+  navigate("/", { replace: true });
 };
 ```
 
@@ -140,7 +142,9 @@ onLogout()
   -> clears AdaptFit backend session and React auth state
 ```
 
-The navbar awaits `onLogout()` because the parent handler is asynchronous.
+The navbar awaits `onLogout()` because the parent handler is asynchronous. After
+the app session is cleared, it redirects back to the landing page with
+`navigate("/", { replace: true })`.
 
 ## Step 2: App Calls The Frontend Logout API
 
@@ -412,7 +416,7 @@ Once `authUser` becomes `null`, `Navbar` re-renders and shows:
   to={location.pathname === "/login" ? "/" : "/login"}
   className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline"
 >
-  {location.pathname === "/login" ? "Dashboard" : "Log in"}
+  {location.pathname === "/login" ? "Home" : "Log in"}
 </Link>
 ```
 
@@ -601,7 +605,7 @@ Logout:
 1. User clicks Log out.
 2. Navbar calls googleLogout().
 3. Navbar calls App's onLogout callback.
-4. App calls logout() from src/api/auth.ts.
+4. App calls logout() from adaptfit-app/src/api/auth.ts.
 5. logout() sends POST /auth/logout with credentials: "include".
 6. Browser includes adaptfit_session cookie.
 7. express-session loads req.session from PostgreSQL.
@@ -610,5 +614,6 @@ Logout:
 10. Backend clears adaptfit_session from the browser.
 11. Backend returns { ok: true }.
 12. App clears authUser in React state.
-13. Navbar shows Log in.
+13. Navbar redirects the browser to `/`.
+14. Navbar shows Log in.
 ```
