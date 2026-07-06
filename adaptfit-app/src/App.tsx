@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { apiService } from "./api/api-service";
+import { authService } from "./api/auth-service";
 import Dashboard from "./components/Dashboard";
 import RequireAuth from "./components/common/RequireAuth";
 import Landing from "./pages/Landing";
@@ -15,7 +15,7 @@ function App() {
 	useEffect(() => {
 		let isMounted = true;
 
-		apiService
+		authService
 			.getCurrentUser()
 			.then((user) => {
 				if (isMounted) {
@@ -43,7 +43,7 @@ function App() {
 	};
 
 	const handleLogout = () => {
-		return apiService
+		return authService
 			.logout()
 			.catch((error) => {
 				console.error(error);

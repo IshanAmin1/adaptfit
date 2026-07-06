@@ -11,7 +11,7 @@ function parseAuthResponse(response: Response): Promise<AuthUser> {
 	return response.json().then((body: AuthResponse) => body.user);
 }
 
-export const apiService = {
+export const authService = {
 	loginWithGoogle(credential: string): Promise<AuthUser> {
 		return fetch(`${API_BASE_URL}/auth/google`, {
 			method: "POST",

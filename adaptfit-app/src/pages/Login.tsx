@@ -1,7 +1,7 @@
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { apiService } from "../api/api-service";
+import { authService } from "../api/auth-service";
 import loginImage from "../assets/login-image.jpg";
 import type { AuthUser } from "../types/auth";
 
@@ -24,7 +24,7 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 			return;
 		}
 
-		apiService
+		authService
 			.loginWithGoogle(credentialResponse.credential)
 			.then((user) => {
 				onLogin(user);
