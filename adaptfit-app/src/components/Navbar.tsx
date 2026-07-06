@@ -4,7 +4,7 @@ import type { AuthUser } from "../types/auth";
 
 type NavbarProps = {
 	authUser: AuthUser | null;
-	onLogout: () => void | Promise<void>;
+	onLogout: () => Promise<void>;
 };
 
 type NavItem = {
@@ -39,10 +39,11 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 		}`;
 	};
 
-	const handleLogout = async () => {
+	const handleLogout = () => {
 		googleLogout();
-		await onLogout();
-		navigate("/", { replace: true });
+		onLogout().finally(() => {
+			navigate("/", { replace: true });
+		});
 	};
 
 	return (
