@@ -61,7 +61,7 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 								<GoogleLogin
 									onSuccess={handleGoogleSuccess}
 									onError={handleGoogleError}
-									width="360"
+									width="320"
 								/>
 							</div>
 							{errorMessage ? (

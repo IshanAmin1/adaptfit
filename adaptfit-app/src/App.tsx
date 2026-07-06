@@ -1,38 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-	BrowserRouter as Router,
-	Navigate,
-	Route,
-	Routes,
-} from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { getCurrentUser, logout } from "./api/auth";
 import Dashboard from "./components/Dashboard";
+import RequireAuth from "./components/common/RequireAuth";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
 import type { AuthUser } from "./types/auth";
-
-function RequireAuth({
-	authChecked,
-	authUser,
-}: {
-	authChecked: boolean;
-	authUser: AuthUser | null;
-}) {
-	if (!authChecked) {
-		return (
-			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-[#62706b]">
-				Loading
-			</div>
-		);
-	}
-
-	if (!authUser) {
-		return <Navigate to="/login" replace />;
-	}
-
-	return <Dashboard />;
-}
 
 function App() {
 	const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -91,7 +65,9 @@ function App() {
 						<Route
 							path="/dashboard"
 							element={
-								<RequireAuth authChecked={authChecked} authUser={authUser} />
+								<RequireAuth authChecked={authChecked} authUser={authUser}>
+									<Dashboard />
+								</RequireAuth>
 							}
 						/>
 					</Routes>

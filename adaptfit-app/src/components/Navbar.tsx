@@ -7,15 +7,37 @@ type NavbarProps = {
 	onLogout: () => void | Promise<void>;
 };
 
+type NavItem = {
+	label: string;
+	href: string;
+};
+
+type RouterLocation = ReturnType<typeof useLocation>;
+
+function isActiveLink(item: NavItem, location: RouterLocation) {
+	return item.href.includes("#")
+		? location.pathname + location.hash === item.href
+		: location.pathname === item.href;
+}
+
 export default function Navbar({ authUser, onLogout }: NavbarProps) {
 	const location = useLocation();
 	const navigate = useNavigate();
-	const navItems = [
+	const navItems: NavItem[] = [
 		{ label: "Today", href: "/dashboard" },
 		{ label: "AI Insights", href: "/dashboard#insights" },
 		{ label: "Nutrition", href: "/dashboard#nutrition" },
 		{ label: "Progress", href: "/dashboard#progress" },
 	];
+	const isDashboardPath = location.pathname === "/dashboard";
+
+	const getNavItemClassName = (item: NavItem) => {
+		return `border-b-2 py-2 text-xs font-black uppercase tracking-[0.08em] no-underline ${
+			isActiveLink(item, location)
+				? "border-[#0f8b6f] text-[#0f8b6f]"
+				: "border-transparent text-[#62706b]"
+		}`;
+	};
 
 	const handleLogout = async () => {
 		googleLogout();
@@ -39,20 +61,23 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				className="hidden justify-center gap-7.5 md:flex"
 			>
 				{authUser
-					? navItems.map((item) => (
-							<Link
-								key={item.href}
-								className={`border-b-2 py-2 text-xs font-black uppercase tracking-[0.08em] no-underline ${
-									location.pathname + location.hash === item.href ||
-									(!item.href.includes("#") && location.pathname === item.href)
-										? "border-[#0f8b6f] text-[#0f8b6f]"
-										: "border-transparent text-[#62706b]"
-								}`}
-								to={item.href}
-							>
-								{item.label}
-							</Link>
-						))
+					? navItems.map((item) => {
+							const className = getNavItemClassName(item);
+
+							if (isDashboardPath && item.href.includes("#")) {
+								return (
+									<a key={item.href} className={className} href={item.href}>
+										{item.label}
+									</a>
+								);
+							}
+
+							return (
+								<Link key={item.href} className={className} to={item.href}>
+									{item.label}
+								</Link>
+							);
+						})
 					: null}
 			</nav>
 			{authUser ? (
