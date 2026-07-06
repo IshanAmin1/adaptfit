@@ -1,7 +1,7 @@
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { loginWithGoogle } from "../api/auth";
+import { authService } from "../api/auth-service";
 import loginImage from "../assets/login-image.jpg";
 import type { AuthUser } from "../types/auth";
 
@@ -18,21 +18,21 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 		return <Navigate to="/dashboard" replace />;
 	}
 
-	const handleGoogleSuccess = async (
-		credentialResponse: CredentialResponse,
-	) => {
+	const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
 		if (!credentialResponse.credential) {
 			handleGoogleError();
 			return;
 		}
 
-		try {
-			const user = await loginWithGoogle(credentialResponse.credential);
-			onLogin(user);
-			navigate("/dashboard", { replace: true });
-		} catch {
-			handleGoogleError();
-		}
+		authService
+			.loginWithGoogle(credentialResponse.credential)
+			.then((user) => {
+				onLogin(user);
+				navigate("/dashboard", { replace: true });
+			})
+			.catch(() => {
+				handleGoogleError();
+			});
 	};
 
 	const handleGoogleError = () => {
