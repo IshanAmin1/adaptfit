@@ -55,7 +55,7 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 **Mockup location:** `mockups/index.html`
 
-**Notes:** The mockup shows AdaptFit's core dashboard experience, including the AI-generated workout plan, adaptive insights, nutrition targets, and weekly progress summary.
+**Notes:** The mockup shows AdaptFit's core dashboard experience for a logged-in user. It includes a top navigation bar with links to Today, AI Insights, Nutrition, and Progress. The main Today section shows an AI-generated workout plan with the workout name, estimated time, intensity level, completion percentage, and a short list of recommended exercises with sets and reps. The AI Insights section shows how AdaptFit explains plan adjustments based on user behavior, such as increasing intensity or replacing skipped exercises. The Nutrition section shows personalized daily calorie and macro targets with progress bars for protein, carbs, and fat. The Progress section shows a weekly performance summary with a trend chart to help users see improvement over time.
 
 ### Real-Time Enablement
 
