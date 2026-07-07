@@ -29,7 +29,6 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 		{ label: "Nutrition", href: "/dashboard#nutrition" },
 		{ label: "Progress", href: "/dashboard#progress" },
 	];
-	const isDashboardPath = location.pathname === "/dashboard";
 
 	const getNavItemClassName = (item: NavItem) => {
 		return `border-b-2 py-2 text-xs font-black uppercase tracking-[0.08em] no-underline ${
@@ -63,14 +62,6 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				{authUser
 					? navItems.map((item) => {
 							const className = getNavItemClassName(item);
-
-							if (isDashboardPath && item.href.includes("#")) {
-								return (
-									<a key={item.href} className={className} href={item.href}>
-										{item.label}
-									</a>
-								);
-							}
 
 							return (
 								<Link key={item.href} className={className} to={item.href}>
