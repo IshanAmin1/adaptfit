@@ -1,16 +1,31 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { authService } from "./api/auth-service";
 import Dashboard from "./components/Dashboard";
 import RequireAuth from "./components/common/RequireAuth";
+import RequireSubscription from "./components/common/RequireSubscription";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
+import Subscribe from "./pages/Subscribe";
 import type { AuthUser } from "./types/auth";
 
 function App() {
 	const [authUser, setAuthUser] = useState<AuthUser | null>(null);
 	const [authChecked, setAuthChecked] = useState(false);
+
+	const refreshCurrentUser = useCallback(() => {
+		return authService
+			.getCurrentUser()
+			.then((user) => {
+				setAuthUser(user);
+				return user;
+			})
+			.catch(() => {
+				setAuthUser(null);
+				return null;
+			});
+	}, []);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -65,11 +80,38 @@ function App() {
 							element={<Login authUser={authUser} onLogin={handleLogin} />}
 						/>
 						<Route
-							path="/dashboard"
+							path="/subscribe"
 							element={
 								<RequireAuth authChecked={authChecked} authUser={authUser}>
-									<Dashboard />
+									<Subscribe
+										authChecked={authChecked}
+										authUser={authUser}
+										onUserRefresh={refreshCurrentUser}
+									/>
 								</RequireAuth>
+							}
+						/>
+						<Route
+							path="/subscribe/success"
+							element={
+								<RequireAuth authChecked={authChecked} authUser={authUser}>
+									<Subscribe
+										authChecked={authChecked}
+										authUser={authUser}
+										onUserRefresh={refreshCurrentUser}
+									/>
+								</RequireAuth>
+							}
+						/>
+						<Route
+							path="/dashboard"
+							element={
+								<RequireSubscription
+									authChecked={authChecked}
+									authUser={authUser}
+								>
+									<Dashboard />
+								</RequireSubscription>
 							}
 						/>
 					</Routes>

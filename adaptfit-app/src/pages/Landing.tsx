@@ -17,10 +17,10 @@ export default function Landing() {
 				</p>
 				<div className="mt-8 flex flex-wrap gap-3">
 					<Link
-						to="/#subscription"
-						className="rounded-lg border border-[#b7cbc2] bg-white px-5 py-3 font-black text-[#17211f] no-underline"
+						to="/login"
+						className="rounded-lg bg-[#0f8b6f] px-5 py-3 font-black text-white no-underline"
 					>
-						Purchase subscription
+						Sign in to subscribe
 					</Link>
 				</div>
 			</section>

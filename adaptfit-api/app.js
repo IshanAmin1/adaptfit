@@ -4,6 +4,8 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
+import { billingRouter } from "./routers/billing_router.js";
+import { stripeWebhookRouter } from "./routers/stripe_webhook_router.js";
 import { sessionMiddleware } from "./models/sessions.js";
 
 const PORT = process.env.PORT || 3000;
@@ -17,6 +19,7 @@ app.use(
     credentials: true,
   }),
 );
+app.use("/stripe", stripeWebhookRouter);
 app.use(bodyParser.json());
 app.use(sessionMiddleware());
 
@@ -38,6 +41,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/billing", billingRouter);
 
 app.listen(PORT, (err) => {
   if (err) console.log(err);
