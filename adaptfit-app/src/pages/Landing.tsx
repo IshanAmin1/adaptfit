@@ -4,7 +4,7 @@ export default function Landing() {
 	return (
 		<div className="mx-auto flex min-h-[calc(100vh-78px)] w-full max-w-336 flex-col justify-center gap-12 px-4 py-12 md:px-12">
 			<section className="max-w-176">
-				<p className="mb-4 text-xs font-black uppercase tracking-[0.1em] text-[#0f8b6f]">
+				<p className="mb-4 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
 					Adaptive fitness planning
 				</p>
 				<h1 className="m-0 text-[clamp(2.5rem,7vw,5.75rem)] font-black leading-[0.95] text-[#17211f]">
