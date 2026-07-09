@@ -161,6 +161,8 @@ export async function findStripeCustomerIdForUser(userId) {
   return subscription?.stripe_customer_id || null;
 }
 
+// If a user abandons checkout and comes back,
+// return the same Stripe-hosted URL instead of creating duplicate sessions
 export async function findPendingCheckoutSessionForUser(userId, stripePriceId) {
   const subscription = await Subscription.findOne({
     where: {
@@ -198,14 +200,43 @@ export async function recordCheckoutSession({
   return subscription?.toJSON();
 }
 
+/**
+ * Syncs a Stripe subscription object with the local database.
+ *
+ * This function intelligently maps a Stripe subscription to an AdaptFit user and handles
+ * three different subscription scenarios:
+ *
+ * 1. Existing Subscription: If a subscription with this stripe_subscription_id already
+ *    exists in the database, update it with the latest Stripe data (status changes,
+ *    billing period updates, cancellation info, etc.).
+ *
+ * 2. Pending Checkout Resumption: If no subscription ID exists but there's a pending
+ *    checkout session for this customer/price combination, assume the user completed
+ *    checkout and fill in the subscription ID. This handles the case where a user
+ *    abandons checkout, comes back, and completes it.
+ *
+ * 3. New Subscription: If neither case applies, create a new subscription record or
+ *    upsert by stripe_subscription_id to handle edge cases.
+ *
+ * User Identification: The function derives the user ID from either:
+ *   - stripeSubscription.metadata.appUserId (if webhook carries it)
+ *   - customerSubscription.user_id (from existing related subscription record)
+ * Throws if neither is available, preventing orphaned subscriptions.
+ *
+ * @param {Object} stripeSubscription - Stripe subscription object from API or webhook
+ * @returns {Object} The upserted subscription as a plain JSON object
+ * @throws {Error} If unable to map the subscription to an AdaptFit user
+ */
 export async function upsertStripeSubscription(stripeSubscription) {
   const stripeCustomerId = getStripeId(stripeSubscription.customer);
   const stripeSubscriptionId = stripeSubscription.id;
   const subscriptionItem = stripeSubscription.items?.data?.[0] || null;
   const price = subscriptionItem?.price || null;
+  // case where user has an existing subscription
   const existingSubscription = await Subscription.findOne({
     where: { stripe_subscription_id: stripeSubscriptionId },
   });
+  // case where user abandons checkout and comes back, and completes it
   const pendingCheckoutSubscription = existingSubscription
     ? null
     : await Subscription.findOne({
@@ -216,6 +247,7 @@ export async function upsertStripeSubscription(stripeSubscription) {
         },
         order: [["updated_at", "DESC"]],
       });
+  // handles case where user has no subscription yet
   const customerSubscription =
     existingSubscription ||
     pendingCheckoutSubscription ||
@@ -223,6 +255,7 @@ export async function upsertStripeSubscription(stripeSubscription) {
       where: { stripe_customer_id: stripeCustomerId },
       order: [["updated_at", "DESC"]],
     }));
+  // derive the user ID from the stripe subscription metadata or the customer subscription record
   const userId =
     stripeSubscription.metadata?.appUserId || customerSubscription?.user_id;
 
@@ -247,6 +280,9 @@ export async function upsertStripeSubscription(stripeSubscription) {
     ended_at: toDate(stripeSubscription.ended_at),
   };
 
+  // we don't upsert all three cases by stripe_subscription_id here because we want to handle the case where
+  // a user abandons checkout and comes back, and completes it, which would create a new subscription with a
+  // new stripe_subscription_id but the same stripe_customer_id and stripe_price_id
   if (existingSubscription) {
     await existingSubscription.update(subscriptionValues);
     return existingSubscription.toJSON();

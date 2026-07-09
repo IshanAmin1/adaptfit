@@ -19,6 +19,8 @@ app.use(
     credentials: true,
   }),
 );
+// The webhook route uses express.raw({ type: "application/json" }) because signature verification needs
+// the raw request body bytes, so we cannot use express.json() or bodyParser.json() for the webhook route.
 app.use("/stripe", stripeWebhookRouter);
 app.use(bodyParser.json());
 app.use(sessionMiddleware());

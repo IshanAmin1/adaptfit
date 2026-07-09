@@ -12,6 +12,9 @@ async function syncSubscription(stripeSubscriptionId) {
   await upsertStripeSubscription(stripeSubscription);
 }
 
+// Webhook endpoint for Stripe webhooks.
+// Note this endpoint is not session-authenticated, it uses signature verification (with the STRIPE_WEBHOOK_SECRET)
+// instead of session authentication because Stripe webhooks are sent from Stripe's servers and not from the user's browser.
 stripeWebhookRouter.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -37,6 +40,9 @@ stripeWebhookRouter.post(
        - customer.subscription.deleted: When a subscription is deleted, we upsert it.
        - invoice.paid: When an invoice is paid, we sync the subscription.
        - invoice.payment_failed: When an invoice payment fails, we sync the subscription. 
+
+       Stripe docs: https://stripe.com/docs/webhooks/build
+       Stripe API docs: https://docs.stripe.com/api/events/types
       */
       switch (event.type) {
         case "checkout.session.completed": {

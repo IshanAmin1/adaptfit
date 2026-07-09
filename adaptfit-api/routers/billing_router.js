@@ -15,6 +15,8 @@ import {
 
 export const billingRouter = Router();
 
+const MAX_SUBSCRIPTIONS_TO_FETCH = 100; // Stripe's maximum limit for listing subscriptions
+
 async function getOrCreateStripeCustomer(user) {
   const stripe = getStripeClient();
   const existingCustomerId = await findStripeCustomerIdForUser(user.id);
@@ -34,11 +36,15 @@ async function getOrCreateStripeCustomer(user) {
   return customer.id;
 }
 
+// Syncs all subscriptions for a given Stripe customer ID to the local database,
+// useful for ensuring that the local database is up to date with Stripe's records,
+// especially after a checkout session is completed or when a user logs in, as
+// we cannot ensure webhooks are always received in time or at all.
 async function syncCustomerSubscriptions(stripe, stripeCustomerId) {
   const stripeSubscriptions = await stripe.subscriptions.list({
     customer: stripeCustomerId,
     status: "all",
-    limit: 100,
+    limit: MAX_SUBSCRIPTIONS_TO_FETCH,
   });
 
   await Promise.all(
@@ -142,9 +148,12 @@ billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
       client_reference_id: req.user.id,
       success_url: `${clientOrigin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientOrigin}/subscribe`,
+      // metadata attached to checkout session itself which stripe uses to track checkout sessions
       metadata: {
         appUserId: req.user.id,
       },
+      // attached to subscription object created after user completes checkout,
+      // so subscription webhooks can find the user without a session
       subscription_data: {
         metadata: {
           appUserId: req.user.id,

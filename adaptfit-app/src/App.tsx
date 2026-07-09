@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import {
+	BrowserRouter as Router,
+	Route,
+	Routes,
+	Navigate,
+} from "react-router-dom";
 import { authService } from "./api/auth-service";
 import Dashboard from "./components/Dashboard";
 import RequireAuth from "./components/common/RequireAuth";
@@ -74,7 +79,16 @@ function App() {
 				<Navbar authUser={authUser} onLogout={handleLogout} />
 				<main className="pt-19.5">
 					<Routes>
-						<Route path="/" element={<Landing />} />
+						<Route
+							path="/"
+							element={
+								authChecked && authUser?.hasActiveSubscription ? (
+									<Navigate to="/dashboard" replace />
+								) : (
+									<Landing />
+								)
+							}
+						/>
 						<Route
 							path="/login"
 							element={<Login authUser={authUser} onLogin={handleLogin} />}
