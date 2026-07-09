@@ -10,33 +10,33 @@ const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 authRouter.post("/google", async (req, res) => {
-  try {
-    if (!process.env.GOOGLE_CLIENT_ID) {
-      return res
-        .status(500)
-        .json({ error: "GOOGLE_CLIENT_ID is not configured." });
-    }
+	try {
+		if (!process.env.GOOGLE_CLIENT_ID) {
+			return res
+				.status(500)
+				.json({ error: "GOOGLE_CLIENT_ID is not configured." });
+		}
 
-    if (!req.body.credential) {
-      return res.status(400).json({ error: "Google credential is required." });
-    }
+		if (!req.body.credential) {
+			return res.status(400).json({ error: "Google credential is required." });
+		}
 
-    let payload;
-    try {
-      const ticket = await googleClient.verifyIdToken({
-        idToken: req.body.credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-    } catch {
-      return res.status(401).json({ error: "Invalid Google credential." });
-    }
+		let payload;
+		try {
+			const ticket = await googleClient.verifyIdToken({
+				idToken: req.body.credential,
+				audience: process.env.GOOGLE_CLIENT_ID,
+			});
+			payload = ticket.getPayload();
+		} catch {
+			return res.status(401).json({ error: "Invalid Google credential." });
+		}
 
-    if (!payload?.sub || !payload.email || !payload.email_verified) {
-      return res
-        .status(401)
-        .json({ error: "Google account could not be verified." });
-    }
+		if (!payload?.sub || !payload.email || !payload.email_verified) {
+			return res
+				.status(401)
+				.json({ error: "Google account could not be verified." });
+		}
 
     const user = await upsertGoogleUser({
       googleSub: payload.sub,
@@ -49,11 +49,11 @@ authRouter.post("/google", async (req, res) => {
     });
     const billingStatus = await getBillingStatusForUser(user.id);
 
-    req.session.regenerate((regenerateError) => {
-      if (regenerateError) {
-        console.error(regenerateError);
-        return res.status(500).json({ error: "Google login failed." });
-      }
+		req.session.regenerate((regenerateError) => {
+			if (regenerateError) {
+				console.error(regenerateError);
+				return res.status(500).json({ error: "Google login failed." });
+			}
 
       req.session.userId = user.id;
       return res.json({ user: serializeUser(user, billingStatus) });
@@ -75,17 +75,17 @@ authRouter.get("/me", isAuthenticated, async (req, res) => {
 });
 
 authRouter.post("/logout", async (req, res) => {
-  try {
-    req.session.destroy((error) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Logout failed." });
-      }
-      res.clearCookie(COOKIE_NAME); // clear cookie in browser
-      return res.json({ ok: true });
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Logout failed." });
-  }
+	try {
+		req.session.destroy((error) => {
+			if (error) {
+				console.error(error);
+				return res.status(500).json({ error: "Logout failed." });
+			}
+			res.clearCookie(COOKIE_NAME); // clear cookie in browser
+			return res.json({ ok: true });
+		});
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: "Logout failed." });
+	}
 });

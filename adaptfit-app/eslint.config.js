@@ -3,10 +3,9 @@ import tseslint from "typescript-eslint";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
-import { defineConfig, globalIgnores } from "eslint/config";
+import { defineConfig } from "eslint/config";
 
 export default defineConfig([
-	globalIgnores(["dist"]),
 	{
 		files: ["**/*.{js,ts,jsx,tsx}"],
 		extends: [
@@ -18,7 +17,10 @@ export default defineConfig([
 		languageOptions: {
 			ecmaVersion: 2020,
 			globals: globals.browser,
-			parserOptions: { ecmaFeatures: { jsx: true } },
+			parserOptions: {
+				ecmaFeatures: { jsx: true },
+				tsconfigRootDir: import.meta.dirname,
+			},
 		},
 	},
 ]);

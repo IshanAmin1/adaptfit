@@ -48,11 +48,11 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-center px-4 py-8 md:px-12">
-			<section className="mx-auto grid w-full max-w-256 -translate-y-5 overflow-hidden rounded-lg border border-[#d9e5df] bg-white shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[0.9fr_1.1fr]">
+			<section className="mx-auto grid w-full max-w-5xl -translate-y-5 overflow-hidden rounded-lg border border-[#d9e5df] bg-white shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[0.9fr_1.1fr]">
 				<div className="flex min-h-132 flex-col justify-center bg-[#f0faf5] p-6 sm:p-10 lg:p-12">
 					<div className="mx-auto flex w-full max-w-104 flex-col gap-8">
 						<div>
-							<p className="mb-3 text-xs font-black uppercase tracking-[0.1em] text-[#0f8b6f]">
+							<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
 								Sign in
 							</p>
 							<h2 className="m-0 text-[clamp(2rem,7vw,2.75rem)] font-black leading-none text-[#17211f]">
