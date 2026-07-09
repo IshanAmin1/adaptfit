@@ -1,24 +1,36 @@
 {
-	"name": "adaptfit",
-	"private": true,
-	"version": "0.0.0",
-	"type": "module",
+  "name": "adaptfit",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-		"prepare": "husky"
-	},
-	"devDependencies": {
-		"@eslint/js": "^10.0.1",
-		"eslint": "^10.6.0",
-		"husky": "^9.1.7",
-		"lint-staged": "^17.0.8",
-		"prettier": "^3.9.4"
-	},
+    "prepare": "husky",
+    "format": "prettier --write **/*.json \"adaptfit-app/**/*.{js,jsx,ts,tsx}\" \"adaptfit-api/**/*.{js,jsx,ts,tsx}\"",
+    "lint": "eslint --fix \"adaptfit-app/**/*.{js,jsx,ts,tsx}\" \"adaptfit-api/**/*.{js,jsx,ts,tsx}\"",
+    "tidy": "npm run format && npm run lint"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.4"
+  },
   "workspaces": [
     "adaptfit-app",
     "adaptfit-api"
   ],
-	"lint-staged": {
-    "adaptfit-app/**/*.{js,jsx,ts,tsx}": ["prettier --write", "eslint --fix"],
-    "adaptfit-api/**/*.{js,ts}": ["prettier --write", "eslint --fix"]
+  "lint-staged": {
+    "**/*.json": [
+      "prettier --write"
+    ],
+    "adaptfit-app/**/*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "adaptfit-api/**/*.{js,ts}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }
