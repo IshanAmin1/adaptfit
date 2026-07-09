@@ -1,39 +1,40 @@
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
 import {
-  findPendingCheckoutSessionForUser,
-  findStripeCustomerIdForUser,
-  getBillingStatusForUser,
-  recordCheckoutSession,
-  upsertStripeSubscription,
+	findPendingCheckoutSessionForUser,
+	findStripeCustomerIdForUser,
+	getBillingStatusForUser,
+	recordCheckoutSession,
+	upsertStripeSubscription,
 } from "../models/subscriptions.js";
 import {
-  getClientOrigin,
-  getStripeClient,
-  getStripeMonthlyPriceId,
+	getClientOrigin,
+	getStripeClient,
+	getStripeMonthlyPriceId,
 } from "../services/stripe.js";
 
 export const billingRouter = Router();
 
 const MAX_SUBSCRIPTIONS_TO_FETCH = 100; // Stripe's maximum limit for listing subscriptions
 
+// See https://docs.stripe.com/api/checkout/sessions/retrieve?lang=node
 async function getOrCreateStripeCustomer(user) {
-  const stripe = getStripeClient();
-  const existingCustomerId = await findStripeCustomerIdForUser(user.id);
+	const stripe = getStripeClient();
+	const existingCustomerId = await findStripeCustomerIdForUser(user.id);
 
-  if (existingCustomerId) {
-    return existingCustomerId;
-  }
+	if (existingCustomerId) {
+		return existingCustomerId;
+	}
 
-  const customer = await stripe.customers.create({
-    email: user.email,
-    name: user.full_name || undefined,
-    metadata: {
-      appUserId: user.id,
-    },
-  });
+	const customer = await stripe.customers.create({
+		email: user.email,
+		name: user.full_name || undefined,
+		metadata: {
+			appUserId: user.id,
+		},
+	});
 
-  return customer.id;
+	return customer.id;
 }
 
 // Syncs all subscriptions for a given Stripe customer ID to the local database,
@@ -41,160 +42,159 @@ async function getOrCreateStripeCustomer(user) {
 // especially after a checkout session is completed or when a user logs in, as
 // we cannot ensure webhooks are always received in time or at all.
 async function syncCustomerSubscriptions(stripe, stripeCustomerId) {
-  const stripeSubscriptions = await stripe.subscriptions.list({
-    customer: stripeCustomerId,
-    status: "all",
-    limit: MAX_SUBSCRIPTIONS_TO_FETCH,
-  });
+	const stripeSubscriptions = await stripe.subscriptions.list({
+		customer: stripeCustomerId,
+		status: "all",
+		limit: MAX_SUBSCRIPTIONS_TO_FETCH,
+	});
 
-  await Promise.all(
-    stripeSubscriptions.data.map((stripeSubscription) =>
-      upsertStripeSubscription(stripeSubscription),
-    ),
-  );
+	await Promise.all(
+		stripeSubscriptions.data.map((stripeSubscription) =>
+			upsertStripeSubscription(stripeSubscription),
+		),
+	);
 }
 
 async function getReusableCheckoutUrl({
-  stripe,
-  userId,
-  stripeCustomerId,
-  stripePriceId,
+	stripe,
+	userId,
+	stripeCustomerId,
+	stripePriceId,
 }) {
-  const pendingCheckoutSession = await findPendingCheckoutSessionForUser(
-    userId,
-    stripePriceId,
-  );
+	const pendingCheckoutSession = await findPendingCheckoutSessionForUser(
+		userId,
+		stripePriceId,
+	);
+	// no pending checkout session found, so we cannot reuse any existing checkout URL
+	if (!pendingCheckoutSession?.stripe_checkout_session_id) {
+		return null;
+	}
 
-  if (!pendingCheckoutSession?.stripe_checkout_session_id) {
-    return null;
-  }
+	const checkoutSession = await stripe.checkout.sessions.retrieve(
+		pendingCheckoutSession.stripe_checkout_session_id,
+	);
+	// open status means the checkout session is still in progress. Payment processing has not started
+	if (checkoutSession.status === "open" && checkoutSession.url) {
+		return checkoutSession.url;
+	}
 
-  const checkoutSession = await stripe.checkout.sessions.retrieve(
-    pendingCheckoutSession.stripe_checkout_session_id,
-  );
+	const stripeSubscriptionId =
+		typeof checkoutSession.subscription === "string" // could be a string or an object depending on the API version
+			? checkoutSession.subscription
+			: checkoutSession.subscription?.id;
 
-  if (checkoutSession.status === "open" && checkoutSession.url) {
-    return checkoutSession.url;
-  }
+	if (stripeSubscriptionId) {
+		const stripeSubscription =
+			await stripe.subscriptions.retrieve(stripeSubscriptionId);
+		await upsertStripeSubscription(stripeSubscription);
+	} else {
+		await syncCustomerSubscriptions(stripe, stripeCustomerId);
+	}
 
-  const stripeSubscriptionId =
-    typeof checkoutSession.subscription === "string"
-      ? checkoutSession.subscription
-      : checkoutSession.subscription?.id;
-
-  if (stripeSubscriptionId) {
-    const stripeSubscription =
-      await stripe.subscriptions.retrieve(stripeSubscriptionId);
-    await upsertStripeSubscription(stripeSubscription);
-  } else {
-    await syncCustomerSubscriptions(stripe, stripeCustomerId);
-  }
-
-  return null;
+	return null;
 }
 
-billingRouter.get("/status", isAuthenticated, async (req, res) => {
-  try {
-    const stripe = getStripeClient();
-    const stripeCustomerId = await findStripeCustomerIdForUser(req.user.id);
+billingRouter.post("/sync", isAuthenticated, async (req, res) => {
+	try {
+		const stripe = getStripeClient();
+		const stripeCustomerId = await findStripeCustomerIdForUser(req.user.id);
 
-    if (stripeCustomerId) {
-      await syncCustomerSubscriptions(stripe, stripeCustomerId);
-    }
+		if (stripeCustomerId) {
+			await syncCustomerSubscriptions(stripe, stripeCustomerId);
+		}
 
-    const billingStatus = await getBillingStatusForUser(req.user.id);
-    return res.json(billingStatus);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Billing status request failed." });
-  }
+		return res.json({ ok: true });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: "Billing sync failed." });
+	}
 });
 
 billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
-  try {
-    const stripe = getStripeClient();
-    const monthlyPriceId = getStripeMonthlyPriceId();
-    const clientOrigin = getClientOrigin();
-    const stripeCustomerId = await getOrCreateStripeCustomer(req.user);
+	try {
+		const stripe = getStripeClient();
+		const monthlyPriceId = getStripeMonthlyPriceId();
+		const clientOrigin = getClientOrigin();
+		const stripeCustomerId = await getOrCreateStripeCustomer(req.user);
 
-    await syncCustomerSubscriptions(stripe, stripeCustomerId);
+		await syncCustomerSubscriptions(stripe, stripeCustomerId);
 
-    const billingStatus = await getBillingStatusForUser(req.user.id);
+		const billingStatus = await getBillingStatusForUser(req.user.id);
 
-    if (billingStatus.hasActiveSubscription) {
-      return res.json({ alreadySubscribed: true });
-    }
+		if (billingStatus.hasActiveSubscription) {
+			return res.json({ alreadySubscribed: true });
+		}
 
-    const reusableCheckoutUrl = await getReusableCheckoutUrl({
-      stripe,
-      userId: req.user.id,
-      stripeCustomerId,
-      stripePriceId: monthlyPriceId,
-    });
+		const reusableCheckoutUrl = await getReusableCheckoutUrl({
+			stripe,
+			userId: req.user.id,
+			stripeCustomerId,
+			stripePriceId: monthlyPriceId,
+		});
 
-    if (reusableCheckoutUrl) {
-      return res.json({ url: reusableCheckoutUrl, reused: true });
-    }
+		if (reusableCheckoutUrl) {
+			return res.json({ url: reusableCheckoutUrl, reused: true });
+		}
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: stripeCustomerId,
-      line_items: [
-        {
-          price: monthlyPriceId,
-          quantity: 1,
-        },
-      ],
-      client_reference_id: req.user.id,
-      success_url: `${clientOrigin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${clientOrigin}/subscribe`,
-      // metadata attached to checkout session itself which stripe uses to track checkout sessions
-      metadata: {
-        appUserId: req.user.id,
-      },
-      // attached to subscription object created after user completes checkout,
-      // so subscription webhooks can find the user without a session
-      subscription_data: {
-        metadata: {
-          appUserId: req.user.id,
-        },
-      },
-    });
+		const checkoutSession = await stripe.checkout.sessions.create({
+			mode: "subscription",
+			customer: stripeCustomerId,
+			line_items: [
+				{
+					price: monthlyPriceId,
+					quantity: 1,
+				},
+			],
+			client_reference_id: req.user.id,
+			success_url: `${clientOrigin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${clientOrigin}/subscribe`,
+			// metadata attached to checkout session itself which stripe uses to track checkout sessions
+			metadata: {
+				appUserId: req.user.id,
+			},
+			// attached to subscription object created after user completes checkout,
+			// so subscription webhooks can find the user without a session
+			subscription_data: {
+				metadata: {
+					appUserId: req.user.id,
+				},
+			},
+		});
 
-    await recordCheckoutSession({
-      userId: req.user.id,
-      stripeCustomerId,
-      stripeCheckoutSessionId: checkoutSession.id,
-      stripePriceId: monthlyPriceId,
-    });
+		await recordCheckoutSession({
+			userId: req.user.id,
+			stripeCustomerId,
+			stripeCheckoutSessionId: checkoutSession.id,
+			stripePriceId: monthlyPriceId,
+		});
 
-    return res.json({ url: checkoutSession.url });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Checkout session creation failed." });
-  }
+		return res.json({ url: checkoutSession.url });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: "Checkout session creation failed." });
+	}
 });
 
 billingRouter.post("/portal-session", isAuthenticated, async (req, res) => {
-  try {
-    const stripeCustomerId = await findStripeCustomerIdForUser(req.user.id);
+	try {
+		const stripeCustomerId = await findStripeCustomerIdForUser(req.user.id);
 
-    if (!stripeCustomerId) {
-      return res
-        .status(400)
-        .json({ error: "No Stripe customer is linked to this user." });
-    }
+		if (!stripeCustomerId) {
+			return res
+				.status(400)
+				.json({ error: "No Stripe customer is linked to this user." });
+		}
 
-    const stripe = getStripeClient();
-    const clientOrigin = getClientOrigin();
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: stripeCustomerId,
-      return_url: `${clientOrigin}/subscribe`,
-    });
+		const stripe = getStripeClient();
+		const clientOrigin = getClientOrigin();
+		const portalSession = await stripe.billingPortal.sessions.create({
+			customer: stripeCustomerId,
+			return_url: `${clientOrigin}/subscribe`,
+		});
 
-    return res.json({ url: portalSession.url });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Portal session creation failed." });
-  }
+		return res.json({ url: portalSession.url });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: "Portal session creation failed." });
+	}
 });

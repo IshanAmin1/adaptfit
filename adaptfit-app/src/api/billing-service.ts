@@ -6,10 +6,6 @@ type BillingRedirectResponse = {
 	alreadySubscribed?: boolean;
 };
 
-type BillingStatusResponse = {
-	hasActiveSubscription: boolean;
-};
-
 function parseRedirectResponse(
 	response: Response,
 	errorMessage: string,
@@ -22,15 +18,14 @@ function parseRedirectResponse(
 }
 
 export const billingService = {
-	getStatus(): Promise<BillingStatusResponse> {
-		return fetch(`${API_BASE_URL}/billing/status`, {
+	syncSubscription(): Promise<void> {
+		return fetch(`${API_BASE_URL}/billing/sync`, {
+			method: "POST",
 			credentials: "include",
 		}).then((response) => {
 			if (!response.ok) {
-				throw new Error("Billing status request failed");
+				throw new Error("Billing sync request failed");
 			}
-
-			return response.json();
 		});
 	},
 

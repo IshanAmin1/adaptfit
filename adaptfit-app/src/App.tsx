@@ -94,19 +94,7 @@ function App() {
 							element={<Login authUser={authUser} onLogin={handleLogin} />}
 						/>
 						<Route
-							path="/subscribe"
-							element={
-								<RequireAuth authChecked={authChecked} authUser={authUser}>
-									<Subscribe
-										authChecked={authChecked}
-										authUser={authUser}
-										onUserRefresh={refreshCurrentUser}
-									/>
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/subscribe/success"
+							path="/subscribe/*"
 							element={
 								<RequireAuth authChecked={authChecked} authUser={authUser}>
 									<Subscribe

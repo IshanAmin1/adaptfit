@@ -32,6 +32,7 @@ export default function Subscribe({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const isSuccessReturn = location.pathname === "/subscribe/success";
 	const authUserId = authUser?.id;
+	// cache the subscription date text to avoid unnecessary re-renders when the authUser object changes
 	const subscriptionDateText = useMemo(() => {
 		const subscription = authUser?.subscription;
 
@@ -74,9 +75,11 @@ export default function Subscribe({
 	useEffect(() => {
 		let isMounted = true;
 
-		if (authChecked && authUserId) {
+		if (authChecked && authUserId && isSuccessReturn) {
+			// Stripe webhooks can lag behind the redirect, so force a sync before
+			// refreshing the local auth user shown on this page.
 			billingService
-				.getStatus()
+				.syncSubscription()
 				.then(() => onUserRefresh())
 				.catch(() => {
 					if (isMounted) {
