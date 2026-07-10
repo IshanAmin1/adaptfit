@@ -38,16 +38,16 @@ authRouter.post("/google", async (req, res) => {
 				.json({ error: "Google account could not be verified." });
 		}
 
-    const user = await upsertGoogleUser({
-      googleSub: payload.sub,
-      email: payload.email,
-      emailVerified: payload.email_verified,
-      firstName: payload.given_name || null,
-      lastName: payload.family_name || null,
-      fullName: payload.name || null,
-      avatarUrl: payload.picture || null,
-    });
-    const billingStatus = await getBillingStatusForUser(user.id);
+		const user = await upsertGoogleUser({
+			googleSub: payload.sub,
+			email: payload.email,
+			emailVerified: payload.email_verified,
+			firstName: payload.given_name || null,
+			lastName: payload.family_name || null,
+			fullName: payload.name || null,
+			avatarUrl: payload.picture || null,
+		});
+		const billingStatus = await getBillingStatusForUser(user.id);
 
 		req.session.regenerate((regenerateError) => {
 			if (regenerateError) {
@@ -55,23 +55,23 @@ authRouter.post("/google", async (req, res) => {
 				return res.status(500).json({ error: "Google login failed." });
 			}
 
-      req.session.userId = user.id;
-      return res.json({ user: serializeUser(user, billingStatus) });
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Google login failed." });
-  }
+			req.session.userId = user.id;
+			return res.json({ user: serializeUser(user, billingStatus) });
+		});
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: "Google login failed." });
+	}
 });
 
 authRouter.get("/me", isAuthenticated, async (req, res) => {
-  try {
-    const billingStatus = await getBillingStatusForUser(req.user.id);
-    return res.json({ user: serializeUser(req.user, billingStatus) });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Current user request failed." });
-  }
+	try {
+		const billingStatus = await getBillingStatusForUser(req.user.id);
+		return res.json({ user: serializeUser(req.user, billingStatus) });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: "Current user request failed." });
+	}
 });
 
 authRouter.post("/logout", async (req, res) => {

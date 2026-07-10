@@ -18,7 +18,8 @@ Required values:
 
 - `DATABASE_URL`: Postgres connection string.
 - `GOOGLE_CLIENT_ID`: same Google OAuth client ID used by the Vite frontend.
-- `CLIENT_ORIGIN`: frontend origin, usually `http://localhost:5173` in development.
+- `CLIENT_ORIGIN`: frontend origin, usually `http://localhost:5173` in
+  development.
 - `SESSION_SECRET`: secret used to sign the Express session cookie.
 
 On startup, the API calls `sequelize.sync({ alter: { drop: false } })`, matching
@@ -29,6 +30,7 @@ stored in PostgreSQL by `connect-pg-simple`.
 
 ## Auth Routes
 
-- `POST /auth/google`: verifies a Google ID token, upserts a user, and sets an app session cookie.
+- `POST /auth/google`: verifies a Google ID token, upserts a user, and sets an
+  app session cookie.
 - `GET /auth/me`: returns the current session user.
 - `POST /auth/logout`: deletes the current app session.
