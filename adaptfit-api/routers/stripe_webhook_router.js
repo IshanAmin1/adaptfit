@@ -25,7 +25,13 @@ stripeWebhookRouter.post(
 			}
 
 			const stripe = getStripeClient();
-			const signature = req.headers["stripe-signature"];
+			const signatureHeader = req.headers["stripe-signature"];
+			const signature = Array.isArray(signatureHeader)
+				? signatureHeader[0]
+				: signatureHeader;
+			if (!signature) {
+				return res.status(400).json({ error: "Missing Stripe signature." });
+			}
 			const event = stripe.webhooks.constructEvent(
 				req.body,
 				signature,
