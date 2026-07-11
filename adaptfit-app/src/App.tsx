@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	BrowserRouter as Router,
 	Route,
@@ -18,45 +18,38 @@ import type { AuthUser } from "./types/auth";
 function App() {
 	const [authUser, setAuthUser] = useState<AuthUser | null>(null);
 	const [authChecked, setAuthChecked] = useState(false);
+	const isMountedRef = useRef(false);
 
 	const refreshCurrentUser = useCallback(() => {
 		return authService
 			.getCurrentUser()
 			.then((user) => {
-				setAuthUser(user);
+				if (isMountedRef.current) {
+					setAuthUser(user);
+				}
 				return user;
 			})
 			.catch(() => {
-				setAuthUser(null);
+				if (isMountedRef.current) {
+					setAuthUser(null);
+				}
 				return null;
 			});
 	}, []);
 
 	useEffect(() => {
-		let isMounted = true;
+		isMountedRef.current = true;
 
-		authService
-			.getCurrentUser()
-			.then((user) => {
-				if (isMounted) {
-					setAuthUser(user);
-				}
-			})
-			.catch(() => {
-				if (isMounted) {
-					setAuthUser(null);
-				}
-			})
-			.finally(() => {
-				if (isMounted) {
-					setAuthChecked(true);
-				}
-			});
+		refreshCurrentUser().finally(() => {
+			if (isMountedRef.current) {
+				setAuthChecked(true);
+			}
+		});
 
 		return () => {
-			isMounted = false;
+			isMountedRef.current = false;
 		};
-	}, []);
+	}, [refreshCurrentUser]);
 
 	const handleLogin = (user: AuthUser) => {
 		setAuthUser(user);

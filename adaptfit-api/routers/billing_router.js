@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
 import {
+	deleteCheckoutSession,
 	findPendingCheckoutSessionForUser,
 	findStripeCustomerIdForUser,
 	getBillingStatusForUser,
@@ -88,6 +89,11 @@ async function getReusableCheckoutUrl({
 			await stripe.subscriptions.retrieve(stripeSubscriptionId);
 		await upsertStripeSubscription(stripeSubscription);
 	} else {
+		if (checkoutSession.status === "expired") {
+			await deleteCheckoutSession(pendingCheckoutSession.id);
+			return null;
+		}
+
 		await syncCustomerSubscriptions(stripe, stripeCustomerId);
 	}
 

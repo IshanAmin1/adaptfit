@@ -208,6 +208,18 @@ export async function recordCheckoutSession({
 	return subscription?.toJSON();
 }
 
+export async function deleteCheckoutSession(subscriptionId) {
+	const subscription = await Subscription.findByPk(subscriptionId);
+
+	if (!subscription) {
+		return null;
+	}
+
+	await subscription.destroy();
+
+	return true;
+}
+
 /**
  * Syncs a Stripe subscription object with the local database.
  *
