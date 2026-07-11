@@ -419,7 +419,7 @@ With `stripe listen` still running:
 4. Return to AdaptFit.
 5. Open `Manage membership` again.
 
-The membership page automatically calls `/billing/status`, which syncs the
+The membership page automatically calls `POST /billing/sync`, which syncs the
 customer's subscription state from Stripe and refreshes the displayed
 membership state.
 
@@ -532,7 +532,7 @@ If payment succeeds but the membership page stays pending or unpaid, check:
 - The backend was restarted after updating `STRIPE_WEBHOOK_SECRET`.
 - The `stripe listen` terminal shows `POST /stripe/webhook [200]`.
 - The `subscriptions` table has a row with `status = active`.
-- Opening `/subscribe` triggers `/billing/status`, which can sync missed local
+- Opening `/subscribe` triggers `POST /billing/sync`, which can sync missed local
   webhook state from Stripe.
 
 If login succeeds but refresh logs you out, check:

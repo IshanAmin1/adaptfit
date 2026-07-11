@@ -57,10 +57,9 @@ Assistant response summary:
   - billing-period dates
   - cancellation fields
 - Added backend billing routes:
-  - `GET /billing/status`
+  - `POST /billing/sync`
   - `POST /billing/checkout-session`
   - `POST /billing/portal-session`
-- Added Stripe webhook handling at `POST /stripe/webhook`.
 - Mounted the webhook route before JSON body parsing so Stripe signature
   verification can use the raw request body.
 - Updated auth responses to include `hasActiveSubscription` and subscription
@@ -179,9 +178,9 @@ Assistant response summary:
   - Sync customer subscriptions from Stripe before creating a new Checkout
     Session.
   - Reuse an existing open pending Checkout Session for the same user/price.
-  - Allow `/billing/status` to self-heal local state from Stripe when webhooks
+  - Allow `/billing/sync` to self-heal local state from Stripe when webhooks
     were missed.
-- Updated frontend status refresh behavior to use `/billing/status`.
+- Updated frontend status refresh behavior to use `/billing/sync`.
 - Recommended canceling or cleaning up duplicate sandbox subscriptions in
   Stripe rather than only deleting local database rows.
 
