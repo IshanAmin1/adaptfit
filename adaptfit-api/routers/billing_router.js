@@ -174,7 +174,7 @@ billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
 			stripePriceId: monthlyPriceId,
 		});
 
-		return res.json({ url: checkoutSession.url });
+		return res.json({ url: checkoutSession.url, reused: false });
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ error: "Checkout session creation failed." });
