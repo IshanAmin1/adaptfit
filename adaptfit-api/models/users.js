@@ -48,7 +48,7 @@ export const User = sequelize.define(
 	},
 );
 
-export function serializeUser(user) {
+export function serializeUser(user, billingStatus = null) {
 	return {
 		id: user.id,
 		email: user.email,
@@ -56,6 +56,8 @@ export function serializeUser(user) {
 		lastName: user.last_name,
 		fullName: user.full_name,
 		avatarUrl: user.avatar_url,
+		hasActiveSubscription: Boolean(billingStatus?.hasActiveSubscription),
+		subscription: billingStatus?.subscription || null,
 	};
 }
 

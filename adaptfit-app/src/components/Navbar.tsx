@@ -29,6 +29,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 		{ label: "Nutrition", href: "/dashboard#nutrition" },
 		{ label: "Progress", href: "/dashboard#progress" },
 	];
+	const hasPaidAccess = Boolean(authUser?.hasActiveSubscription);
 
 	const getNavItemClassName = (item: NavItem) => {
 		return `border-b-2 py-2 text-xs font-black uppercase tracking-[0.08em] no-underline ${
@@ -48,7 +49,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 	return (
 		<header className="fixed left-0 top-0 z-10 grid h-19.5 w-full grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-[#d9e5df] bg-white/90 px-4 backdrop-blur-sm md:px-12">
 			<Link
-				to={authUser ? "/dashboard" : "/"}
+				to={authUser ? (hasPaidAccess ? "/dashboard" : "/subscribe") : "/"}
 				className="flex items-center gap-2.5 text-[22px] font-black text-inherit no-underline"
 			>
 				<div className="grid h-10 w-10 place-items-center rounded-lg bg-[#0f8b6f] font-black text-white">
@@ -60,7 +61,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				aria-label="Main navigation"
 				className="hidden justify-center gap-7.5 md:flex"
 			>
-				{authUser
+				{hasPaidAccess
 					? navItems.map((item) => {
 							const className = getNavItemClassName(item);
 
@@ -74,9 +75,21 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 			</nav>
 			{authUser ? (
 				<div className="flex items-center gap-3.5">
-					<span className="hidden whitespace-nowrap text-sm font-black text-[#17211f] sm:inline">
-						Hi, {authUser.firstName}!
-					</span>
+					{hasPaidAccess ? (
+						<Link
+							to="/subscribe"
+							className="rounded-lg bg-[#0f8b6f] px-4.25 py-2.75 font-black text-white no-underline"
+						>
+							Manage membership
+						</Link>
+					) : (
+						<Link
+							to="/subscribe"
+							className="rounded-lg bg-[#0f8b6f] px-4.25 py-2.75 font-black text-white no-underline"
+						>
+							Subscribe
+						</Link>
+					)}
 					<button
 						type="button"
 						className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"

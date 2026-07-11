@@ -1,6 +1,7 @@
 import { OAuth2Client } from "google-auth-library";
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
+import { getBillingStatusForUser } from "../models/subscriptions.js";
 import { serializeUser, upsertGoogleUser } from "../models/users.js";
 
 export const authRouter = Router();
@@ -46,6 +47,7 @@ authRouter.post("/google", async (req, res) => {
 			fullName: payload.name || null,
 			avatarUrl: payload.picture || null,
 		});
+		const billingStatus = await getBillingStatusForUser(user.id);
 
 		req.session.regenerate((regenerateError) => {
 			if (regenerateError) {
@@ -54,7 +56,7 @@ authRouter.post("/google", async (req, res) => {
 			}
 
 			req.session.userId = user.id;
-			return res.json({ user: serializeUser(user) });
+			return res.json({ user: serializeUser(user, billingStatus) });
 		});
 	} catch (error) {
 		console.error(error);
@@ -63,7 +65,13 @@ authRouter.post("/google", async (req, res) => {
 });
 
 authRouter.get("/me", isAuthenticated, async (req, res) => {
-	return res.json({ user: serializeUser(req.user) });
+	try {
+		const billingStatus = await getBillingStatusForUser(req.user.id);
+		return res.json({ user: serializeUser(req.user, billingStatus) });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: "Current user request failed." });
+	}
 });
 
 authRouter.post("/logout", async (req, res) => {

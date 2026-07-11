@@ -15,7 +15,12 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	if (authUser) {
-		return <Navigate to="/dashboard" replace />;
+		return (
+			<Navigate
+				to={authUser.hasActiveSubscription ? "/dashboard" : "/subscribe"}
+				replace
+			/>
+		);
 	}
 
 	const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
@@ -28,7 +33,9 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 			.loginWithGoogle(credentialResponse.credential)
 			.then((user) => {
 				onLogin(user);
-				navigate("/dashboard", { replace: true });
+				navigate(user.hasActiveSubscription ? "/dashboard" : "/subscribe", {
+					replace: true,
+				});
 			})
 			.catch(() => {
 				handleGoogleError();

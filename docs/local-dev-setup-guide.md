@@ -9,11 +9,14 @@ These instructions run AdaptFit locally with:
 - `express-session` for app sessions
 - `connect-pg-simple` for storing Express sessions in PostgreSQL
 - Google OAuth login with backend-verified Google ID tokens
+- Stripe Checkout and Customer Portal for monthly subscription billing
+- Stripe webhooks for syncing subscription state
 
 Sequelize is still the backend database access layer for application models. In
-the current auth implementation, Sequelize defines and syncs the `users` table.
-Express session data is not represented by a Sequelize model anymore.
-`connect-pg-simple` creates and uses its own PostgreSQL `session` table.
+the current implementation, Sequelize defines and syncs the `users` and
+`subscriptions` tables. Express session data is not represented by a Sequelize
+model anymore. `connect-pg-simple` creates and uses its own PostgreSQL
+`session` table.
 
 On backend startup:
 
@@ -21,7 +24,7 @@ On backend startup:
    store.
 2. `sequelize.authenticate()` verifies the database connection.
 3. In non-production environments, `sequelize.sync({ alter: { drop: false } })`
-   creates or updates the Sequelize-managed `users` table.
+   creates or updates the Sequelize-managed `users` and `subscriptions` tables.
 4. `connect-pg-simple` creates the `session` table if it is missing when the
    session store is used.
 
@@ -32,6 +35,7 @@ Install:
 - Node.js 18 or newer and npm
 - PostgreSQL
 - Git
+- Stripe CLI, for local webhook forwarding
 
 On Windows, install PostgreSQL from the official installer. During installation,
 remember:
@@ -110,6 +114,9 @@ CLIENT_ORIGIN=http://localhost:5173
 SESSION_COOKIE_NAME=adaptfit_session
 SESSION_DAYS=7
 SESSION_SECRET=replace_with_a_long_random_secret
+STRIPE_SECRET_KEY=sk_test_replace_with_your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_replace_after_running_stripe_listen
+STRIPE_MONTHLY_PRICE_ID=price_replace_with_your_monthly_price_id
 ```
 
 If you created the optional `adaptfit_user`, use that account in `DATABASE_URL`
@@ -154,6 +161,20 @@ cookie `maxAge` in milliseconds.
 `SESSION_SECRET` signs the Express session cookie. It is required. Use a long,
 unguessable value in real environments.
 
+`STRIPE_SECRET_KEY` is the backend-only Stripe secret key. Use a test-mode
+`sk_test_...` key for local development.
+
+`STRIPE_MONTHLY_PRICE_ID` is the recurring monthly Stripe Price ID sold through
+Checkout. It should look like `price_...`.
+
+`STRIPE_WEBHOOK_SECRET` verifies incoming Stripe webhook requests. For local
+development, this value comes from `stripe listen`, not from the Stripe
+Dashboard. See the Stripe section below.
+
+The frontend does not need a Stripe public key for the current implementation
+because users are redirected to Stripe-hosted Checkout and Stripe-hosted
+Customer Portal from backend-created sessions.
+
 ### 4. Configure the frontend environment
 
 Create this file:
@@ -188,7 +209,55 @@ For this Google Identity Services flow, the frontend receives the Google
 credential and sends it to the backend. The backend verifies it using
 `GOOGLE_CLIENT_ID`.
 
-### 6. Install backend dependencies
+### 6. Configure Stripe for local development
+
+In the Stripe Dashboard, use test mode and create:
+
+1. A Product, such as `AdaptFit Monthly`.
+2. A recurring monthly Price for that product.
+
+Copy the Price ID into `adaptfit-api/.env`:
+
+```env
+STRIPE_MONTHLY_PRICE_ID=price_...
+```
+
+Also copy your test secret key into `adaptfit-api/.env`:
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+```
+
+Enable/configure the Stripe Customer Portal in the Stripe Dashboard. AdaptFit
+uses it for payment-method updates and subscription cancellation.
+
+For local webhooks, install and log in to the Stripe CLI, then run this in a
+separate terminal while the backend is running:
+
+```bash
+stripe listen --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed --forward-to localhost:3000/stripe/webhook
+```
+
+The Stripe CLI prints a webhook signing secret:
+
+```text
+whsec_...
+```
+
+Copy that value into `adaptfit-api/.env`:
+
+```env
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Restart the backend after changing `.env`.
+
+Keep the `stripe listen` terminal open while testing local Checkout and
+subscription cancellation. If you close it, Stripe events will not reach your
+local backend. If you restart `stripe listen`, copy the newly printed
+`whsec_...` value into `.env` and restart the backend again.
+
+### 7. Install backend dependencies
 
 From the project root:
 
@@ -197,14 +266,16 @@ cd adaptfit-api
 npm install
 ```
 
-The backend auth-related dependencies include:
+The backend dependencies include:
 
 - `google-auth-library`: verifies Google ID tokens on the server
 - `express-session`: creates and reads app sessions through `req.session`
 - `connect-pg-simple`: stores Express session data in PostgreSQL
 - `sequelize` and `pg`: connect to PostgreSQL and manage AdaptFit models
+- `stripe`: creates Checkout/Customer Portal sessions and verifies webhook
+  events
 
-### 7. Start the backend
+### 8. Start the backend
 
 From `adaptfit-api`:
 
@@ -232,7 +303,8 @@ Expected response:
 
 When the backend starts locally, it connects to PostgreSQL and runs
 `sequelize.sync({ alter: { drop: false } })` because `NODE_ENV` is not
-`production`. That creates or updates the Sequelize-managed `users` table.
+`production`. That creates or updates the Sequelize-managed `users` and
+`subscriptions` tables.
 
 In production, the backend skips `sequelize.sync(...)`; production schema
 changes should be handled by migrations or deployment-time database management.
@@ -260,6 +332,7 @@ Expected auth-related tables:
 
 ```text
 users
+subscriptions
 session
 ```
 
@@ -270,7 +343,11 @@ The `session` table is owned by `connect-pg-simple`. It stores serialized
 Express session data, including the `userId` set during login. It is not the old
 custom `sessions` table with hashed session tokens.
 
-### 8. Install frontend dependencies
+The `subscriptions` table stores Stripe customer/subscription IDs, subscription
+status, billing-period dates, cancellation dates, and the Stripe price/product
+IDs used for membership access.
+
+### 9. Install frontend dependencies
 
 Open another terminal from the project root:
 
@@ -279,7 +356,7 @@ cd adaptfit-app
 npm install
 ```
 
-### 9. Start the frontend
+### 10. Start the frontend
 
 From `adaptfit-app`:
 
@@ -293,7 +370,7 @@ The frontend should run at:
 http://localhost:5173
 ```
 
-### 10. Test the login flow
+### 11. Test the login and subscription flow
 
 With both servers running:
 
@@ -307,14 +384,62 @@ With both servers running:
 8. The backend stores `req.session.userId = user.id`.
 9. `express-session` sends an HttpOnly `adaptfit_session` cookie.
 10. `connect-pg-simple` stores the session in PostgreSQL.
-11. The frontend redirects to the dashboard.
-12. The navbar should show `Hi, firstName!`.
+11. If the user does not have an active subscription, the frontend redirects to
+    `/subscribe`.
+12. Click `Subscribe monthly`.
+13. The backend creates a Stripe Checkout Session.
+14. Complete Checkout with a Stripe test card, for example:
+
+```text
+4242 4242 4242 4242
+```
+
+15. Stripe redirects back to AdaptFit.
+16. Stripe sends webhook events to the local backend through `stripe listen`.
+17. The backend updates the `subscriptions` table.
+18. The frontend unlocks `/dashboard` when `/auth/me` returns
+    `hasActiveSubscription: true`.
 
 After logging in, refresh the page. The app should stay logged in because
 `App.tsx` calls `/auth/me`, and the browser sends the session cookie to the
 backend with `credentials: "include"`.
 
-### 11. Test logout
+Subscribed users can open `Manage membership` from the navbar. That page shows
+membership status and billing-period dates from AdaptFit's own UI. The
+`Open billing portal` button opens Stripe Customer Portal for payment-method
+changes and cancellation.
+
+### 12. Test cancellation
+
+With `stripe listen` still running:
+
+1. Open `Manage membership`.
+2. Click `Open billing portal`.
+3. Cancel the subscription in Stripe Customer Portal.
+4. Return to AdaptFit.
+5. Open `Manage membership` again.
+
+The membership page automatically calls `POST /billing/sync`, which syncs the
+customer's subscription state from Stripe and refreshes the displayed
+membership state.
+
+If cancellation is scheduled for the end of the billing period, the subscription
+can still have:
+
+```text
+status = active
+cancel_at = future timestamp
+```
+
+In that state, dashboard access remains allowed until Stripe ends the
+subscription. If the subscription is canceled immediately, Stripe should return:
+
+```text
+status = canceled
+ended_at = timestamp
+```
+
+### 13. Test logout
 
 Click `Log out`.
 
@@ -358,6 +483,12 @@ cd adaptfit-app
 npm run build
 ```
 
+Stripe webhook forwarding:
+
+```bash
+stripe listen --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed --forward-to localhost:3000/stripe/webhook
+```
+
 ### Common setup issues
 
 If the backend cannot connect to the database, check:
@@ -368,8 +499,8 @@ If the backend cannot connect to the database, check:
   name.
 - The database user has privileges on the database and `public` schema.
 - `adaptfit-api/datasource.js` is using `dialect: "postgres"`.
-- `npm install` has installed `sequelize`, `pg`, `express-session`, and
-  `connect-pg-simple`.
+- `npm install` has installed `sequelize`, `pg`, `express-session`,
+  `connect-pg-simple`, and `stripe`.
 
 If the backend exits with `SESSION_SECRET is not configured.`, check:
 
@@ -383,6 +514,26 @@ If Google login fails, check:
 - The two client IDs match.
 - Google Cloud Console includes `http://localhost:5173` as an authorized
   JavaScript origin.
+
+If subscription checkout fails, check:
+
+- `STRIPE_SECRET_KEY` exists in `adaptfit-api/.env`.
+- `STRIPE_MONTHLY_PRICE_ID` exists and points to a recurring monthly test-mode
+  Price.
+- The backend was restarted after editing `.env`.
+- The user is logged in before trying to subscribe.
+- Stripe Customer Portal is configured if the billing portal route fails.
+
+If payment succeeds but the membership page stays pending or unpaid, check:
+
+- `stripe listen` is still running.
+- `STRIPE_WEBHOOK_SECRET` matches the current `whsec_...` printed by
+  `stripe listen`.
+- The backend was restarted after updating `STRIPE_WEBHOOK_SECRET`.
+- The `stripe listen` terminal shows `POST /stripe/webhook [200]`.
+- The `subscriptions` table has a row with `status = active`.
+- Opening `/subscribe` triggers `POST /billing/sync`, which can sync missed local
+  webhook state from Stripe.
 
 If login succeeds but refresh logs you out, check:
 
