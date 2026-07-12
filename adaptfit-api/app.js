@@ -5,6 +5,7 @@ import cors from "cors";
 import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
 import { billingRouter } from "./routers/billing_router.js";
+import { onboardingRouter } from "./routers/onboarding_router.js";
 import { stripeWebhookRouter } from "./routers/stripe_webhook_router.js";
 import { sessionMiddleware } from "./models/sessions.js";
 
@@ -44,6 +45,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/auth", authRouter);
 app.use("/billing", billingRouter);
+app.use("/onboarding", onboardingRouter);
 
 app.listen(PORT, (err) => {
 	if (err) console.log(err);

@@ -21,6 +21,10 @@ function formatSubscriptionDate(value?: string | null) {
 	}).format(new Date(value));
 }
 
+function getSubscribedPath(user: AuthUser) {
+	return user.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
+}
+
 export default function Subscribe({
 	authChecked,
 	authUser,
@@ -113,8 +117,10 @@ export default function Subscribe({
 			.createCheckoutSession()
 			.then((response) => {
 				if (response.alreadySubscribed) {
-					return onUserRefresh().then(() => {
-						navigate("/dashboard", { replace: true });
+					return onUserRefresh().then((user) => {
+						if (user) {
+							navigate(getSubscribedPath(user), { replace: true });
+						}
 					});
 				}
 
@@ -177,9 +183,11 @@ export default function Subscribe({
 									type="button"
 									className="rounded-lg bg-[#0f8b6f] px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
 									disabled={isLoading}
-									onClick={() => navigate("/dashboard")}
+									onClick={() => navigate(getSubscribedPath(authUser))}
 								>
-									Open dashboard
+									{authUser.hasCompletedOnboarding
+										? "Open dashboard"
+										: "Start onboarding"}
 								</button>
 								<button
 									type="button"

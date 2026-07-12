@@ -40,6 +40,14 @@ export const User = sequelize.define(
 			type: DataTypes.TEXT,
 			allowNull: true,
 		},
+		onboarding_profile: {
+			type: DataTypes.JSONB,
+			allowNull: true,
+		},
+		onboarding_completed_at: {
+			type: DataTypes.DATE,
+			allowNull: true,
+		},
 	},
 	{
 		tableName: "users",
@@ -58,6 +66,7 @@ export function serializeUser(user, billingStatus = null) {
 		avatarUrl: user.avatar_url,
 		hasActiveSubscription: Boolean(billingStatus?.hasActiveSubscription),
 		subscription: billingStatus?.subscription || null,
+		hasCompletedOnboarding: Boolean(user.onboarding_completed_at),
 	};
 }
 
@@ -86,4 +95,23 @@ export async function upsertGoogleUser(profile) {
 	);
 
 	return user?.toJSON();
+}
+
+export async function saveOnboardingProfile(userId, profile) {
+	const [updatedCount, updatedUsers] = await User.update(
+		{
+			onboarding_profile: profile,
+			onboarding_completed_at: new Date(),
+		},
+		{
+			where: { id: userId },
+			returning: true,
+		},
+	);
+
+	if (!updatedCount) {
+		return null;
+	}
+
+	return updatedUsers?.[0]?.toJSON() || (await findUserById(userId));
 }

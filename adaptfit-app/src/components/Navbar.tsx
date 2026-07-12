@@ -20,6 +20,18 @@ function isActiveLink(item: NavItem, location: RouterLocation) {
 		: location.pathname === item.href;
 }
 
+function getHomePath(authUser: AuthUser | null) {
+	if (!authUser) {
+		return "/";
+	}
+
+	if (!authUser.hasActiveSubscription) {
+		return "/subscribe";
+	}
+
+	return authUser.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
+}
+
 export default function Navbar({ authUser, onLogout }: NavbarProps) {
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -49,7 +61,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 	return (
 		<header className="fixed left-0 top-0 z-10 grid h-19.5 w-full grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-[#d9e5df] bg-white/90 px-4 backdrop-blur-sm md:px-12">
 			<Link
-				to={authUser ? (hasPaidAccess ? "/dashboard" : "/subscribe") : "/"}
+				to={getHomePath(authUser)}
 				className="flex items-center gap-2.5 text-[22px] font-black text-inherit no-underline"
 			>
 				<div className="grid h-10 w-10 place-items-center rounded-lg bg-[#0f8b6f] font-black text-white">
@@ -61,7 +73,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				aria-label="Main navigation"
 				className="hidden justify-center gap-7.5 md:flex"
 			>
-				{hasPaidAccess
+				{hasPaidAccess && authUser?.hasCompletedOnboarding
 					? navItems.map((item) => {
 							const className = getNavItemClassName(item);
 

@@ -10,17 +10,20 @@ type LoginProps = {
 	onLogin: (user: AuthUser) => void;
 };
 
+function getPostLoginPath(user: AuthUser) {
+	if (!user.hasActiveSubscription) {
+		return "/subscribe";
+	}
+
+	return user.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
+}
+
 export default function Login({ authUser, onLogin }: LoginProps) {
 	const navigate = useNavigate();
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	if (authUser) {
-		return (
-			<Navigate
-				to={authUser.hasActiveSubscription ? "/dashboard" : "/subscribe"}
-				replace
-			/>
-		);
+		return <Navigate to={getPostLoginPath(authUser)} replace />;
 	}
 
 	const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
@@ -33,7 +36,7 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 			.loginWithGoogle(credentialResponse.credential)
 			.then((user) => {
 				onLogin(user);
-				navigate(user.hasActiveSubscription ? "/dashboard" : "/subscribe", {
+				navigate(getPostLoginPath(user), {
 					replace: true,
 				});
 			})
