@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
+import { saveOnboardingProfile } from "../models/onboarding.js";
 import { hasActiveSubscription } from "../middleware/subscription.js";
 import { getBillingStatusForUser } from "../models/subscriptions.js";
-import { saveOnboardingProfile, serializeUser } from "../models/users.js";
+import { serializeUser } from "../models/users.js";
 
 export const onboardingRouter = Router();
 
