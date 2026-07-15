@@ -208,7 +208,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const progressPercent = Math.round(
-		(stepIndex / Math.max(steps.length - 1, 1)) * 100,
+		(stepIndex / Math.max(steps.length, 1)) * 100,
 	);
 	const isLastStep = stepIndex === steps.length - 1;
 	const goalTarget = goalTargetCopy[profile.primaryGoal] || {
