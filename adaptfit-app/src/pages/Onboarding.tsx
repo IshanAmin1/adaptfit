@@ -808,23 +808,21 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 										Edit answers
 									</button>
 								) : null}
-								<button
-									type="button"
-									className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
-									disabled={
-										isSubmitting ||
-										submissionState.status !== "success" ||
-										!submissionState.user
-									}
-									onClick={() => {
-										if (submissionState.user) {
-											onComplete(submissionState.user);
-											navigate("/dashboard", { replace: true });
-										}
-									}}
-								>
-									Continue to dashboard
-								</button>
+								{submissionState.status === "success" ? (
+									<button
+										type="button"
+										className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+										disabled={isSubmitting || !submissionState.user}
+										onClick={() => {
+											if (submissionState.user) {
+												onComplete(submissionState.user);
+												navigate("/dashboard", { replace: true });
+											}
+										}}
+									>
+										Continue to dashboard
+									</button>
+								) : null}
 							</>
 						) : (
 							<>
