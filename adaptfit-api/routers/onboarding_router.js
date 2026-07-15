@@ -21,6 +21,8 @@ const REQUIRED_FIELDS = [
 	"dietType",
 ];
 
+const INTEGER_FIELDS = ["age", "height", "currentWeight", "daysPerWeek"];
+
 function hasRequiredOnboardingFields(profile) {
 	return REQUIRED_FIELDS.every((field) => {
 		const value = profile?.[field];
@@ -30,6 +32,13 @@ function hasRequiredOnboardingFields(profile) {
 		}
 
 		return value !== undefined && value !== null && value !== "";
+	});
+}
+
+function hasValidIntegerFields(profile) {
+	return INTEGER_FIELDS.every((field) => {
+		const value = Number(profile?.[field]);
+		return Number.isInteger(value);
 	});
 }
 
@@ -51,6 +60,12 @@ onboardingRouter.post(
 				return res
 					.status(400)
 					.json({ error: "Required onboarding fields are missing." });
+			}
+
+			if (!hasValidIntegerFields(profile)) {
+				return res
+					.status(400)
+					.json({ error: "Numeric onboarding fields must be whole numbers." });
 			}
 
 			const user = await saveOnboardingProfile(req.user.id, profile);
