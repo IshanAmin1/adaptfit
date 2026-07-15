@@ -1,27 +1,8 @@
 import type { AuthUser } from "../types/auth";
+import { OnboardingProfile } from "../types/onboarding";
 
 const API_BASE_URL =
 	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-export type OnboardingProfile = {
-	age: string;
-	biologicalSex: string;
-	height: string;
-	currentWeight: string;
-	primaryGoal: string;
-	targetWeightOrTimeline?: string;
-	experienceLevel: string;
-	injuriesOrLimitations: string;
-	trainingLocation: string;
-	equipmentAvailable: string[];
-	machineTypes: string[];
-	customMachines?: string;
-	daysPerWeek: string;
-	preferredSessionLength: string;
-	dietType: string;
-	allergiesOrFoodsToAvoid: string;
-	mealFrequencyPreference?: string;
-};
 
 type OnboardingResponse = {
 	user: AuthUser;

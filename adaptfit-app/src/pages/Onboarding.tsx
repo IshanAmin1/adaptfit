@@ -1,20 +1,18 @@
 import { useState } from "react";
-import type { ReactNode } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import {
-	onboardingService,
-	type OnboardingProfile,
-} from "../api/onboarding-service";
+import { onboardingService } from "../api/onboarding-service";
 import type { AuthUser } from "../types/auth";
+import type { Option } from "../components/common/Select";
+import ChoiceGrid from "../components/common/ChoiceGrid";
+import Field from "../components/common/Field";
+import Select from "../components/common/Select";
+import TextArea from "../components/common/TextArea";
+import TextInput from "../components/common/TextInput";
+import { OnboardingProfile } from "../types/onboarding";
 
 type OnboardingProps = {
 	authUser: AuthUser | null;
 	onComplete: (user: AuthUser) => void;
-};
-
-type Option = {
-	label: string;
-	value: string;
 };
 
 const MIN_REASONABLE_AGE = 13;
@@ -131,147 +129,6 @@ const dietOptions: Option[] = [
 	{ label: "Vegetarian", value: "vegetarian" },
 	{ label: "Vegan", value: "vegan" },
 ];
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-	return (
-		<div className="grid text-lg font-black text-[#17211f]">
-			<span>{label}</span>
-			{children}
-		</div>
-	);
-}
-
-function TextInput({
-	value,
-	onChange,
-	placeholder,
-	type = "text",
-	required = false,
-	min,
-	max,
-	step,
-}: {
-	value: string;
-	onChange: (value: string) => void;
-	placeholder?: string;
-	type?: string;
-	required?: boolean;
-	min?: number;
-	max?: number;
-	step?: number;
-}) {
-	return (
-		<input
-			className="min-h-12 rounded-lg border border-[#b7cbc2] bg-white px-4 text-base font-semibold text-[#17211f] outline-none focus:border-[#0f8b6f] focus:ring-4 focus:ring-[#0f8b6f]/15"
-			type={type}
-			value={value}
-			required={required}
-			min={min}
-			max={max}
-			step={step}
-			placeholder={placeholder}
-			onChange={(event) => onChange(event.target.value)}
-		/>
-	);
-}
-
-function TextArea({
-	value,
-	onChange,
-	placeholder,
-}: {
-	value: string;
-	onChange: (value: string) => void;
-	placeholder?: string;
-}) {
-	return (
-		<textarea
-			className="min-h-28 resize-y rounded-lg border border-[#b7cbc2] bg-white px-4 py-3 text-base font-semibold text-[#17211f] outline-none focus:border-[#0f8b6f] focus:ring-4 focus:ring-[#0f8b6f]/15"
-			value={value}
-			placeholder={placeholder}
-			onChange={(event) => onChange(event.target.value)}
-		/>
-	);
-}
-
-function Select({
-	value,
-	onChange,
-	options,
-	placeholder,
-	required = false,
-}: {
-	value: string;
-	onChange: (value: string) => void;
-	options: Option[];
-	placeholder: string;
-	required?: boolean;
-}) {
-	return (
-		<select
-			className="min-h-12 rounded-lg border border-[#b7cbc2] bg-white px-4 text-base font-semibold text-[#17211f] outline-none focus:border-[#0f8b6f] focus:ring-4 focus:ring-[#0f8b6f]/15"
-			value={value}
-			required={required}
-			onChange={(event) => onChange(event.target.value)}
-		>
-			<option value="">{placeholder}</option>
-			{options.map((option) => (
-				<option key={option.value} value={option.value}>
-					{option.label}
-				</option>
-			))}
-		</select>
-	);
-}
-
-function ChoiceGrid({
-	options,
-	value,
-	onChange,
-	multi = false,
-	className = "sm:grid-cols-2",
-}: {
-	options: Option[];
-	value: string | string[];
-	onChange: (value: string | string[]) => void;
-	multi?: boolean;
-	className?: string;
-}) {
-	const selectedValues = Array.isArray(value) ? value : [value];
-
-	return (
-		<div className={`grid gap-3 ${className}`}>
-			{options.map((option) => {
-				const isSelected = selectedValues.includes(option.value);
-
-				return (
-					<button
-						key={option.value}
-						type="button"
-						className={`min-h-12 rounded-lg border px-4 py-3 text-left text-sm font-semibold transition ${
-							isSelected
-								? "border-[#0f8b6f] bg-[#e7f6ef] text-[#0f8b6f]"
-								: "border-[#d9e5df] bg-white text-[#17211f] hover:border-[#8db7a7]"
-						}`}
-						onClick={() => {
-							if (!multi) {
-								onChange(option.value);
-								return;
-							}
-
-							const nextValues = isSelected
-								? selectedValues.filter((item) => item !== option.value)
-								: [...selectedValues, option.value];
-							onChange(nextValues);
-						}}
-					>
-						{option.label}
-					</button>
-				);
-			})}
-		</div>
-	);
-}
 
 function getAgeError(age: string) {
 	const parsedAge = Number(age);
@@ -435,7 +292,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 				<div className="grid gap-4">
 					<div className="flex flex-wrap items-end justify-between gap-4">
 						<div>
-							<p className="mb-3 text-xs font-black uppercase tracking-[0.1em] text-[#0f8b6f]">
+							<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
 								Step {stepIndex + 1} of {steps.length}
 							</p>
 							<h1 className="m-0 text-[clamp(2rem,5vw,3.25rem)] font-black leading-none text-[#17211f]">
@@ -455,7 +312,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 				</div>
 
 				<form
-					className="mt-2 grid min-h-[32rem] content-between gap-6 md:mt-4"
+					className="mt-2 grid min-h-128 content-between gap-6 md:mt-4"
 					onSubmit={(event) => {
 						event.preventDefault();
 
