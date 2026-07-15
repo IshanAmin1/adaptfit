@@ -134,10 +134,10 @@ const dietOptions: Option[] = [
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
 	return (
-		<label className="grid text-lg font-black text-[#17211f]">
+		<div className="grid text-lg font-black text-[#17211f]">
 			<span>{label}</span>
 			{children}
-		</label>
+		</div>
 	);
 }
 
@@ -350,7 +350,9 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const [profile, setProfile] = useState<OnboardingProfile>(initialProfile);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const progressPercent = Math.round(((stepIndex + 1) / steps.length) * 100);
+	const progressPercent = Math.round(
+		(stepIndex / Math.max(steps.length - 1, 1)) * 100,
+	);
 	const isLastStep = stepIndex === steps.length - 1;
 	const goalTarget = goalTargetCopy[profile.primaryGoal] || {
 		label: "Target or timeline",
@@ -526,15 +528,17 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 									}
 								/>
 							</Field>
-							<Field label={goalTarget.label}>
-								<TextInput
-									value={profile.targetWeightOrTimeline || ""}
-									placeholder={goalTarget.placeholder}
-									onChange={(value) =>
-										updateProfile("targetWeightOrTimeline", value)
-									}
-								/>
-							</Field>
+							{profile.primaryGoal ? (
+								<Field label={goalTarget.label}>
+									<TextInput
+										value={profile.targetWeightOrTimeline || ""}
+										placeholder={goalTarget.placeholder}
+										onChange={(value) =>
+											updateProfile("targetWeightOrTimeline", value)
+										}
+									/>
+								</Field>
+							) : null}
 						</div>
 					) : null}
 

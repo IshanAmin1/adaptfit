@@ -23,6 +23,47 @@ const REQUIRED_FIELDS = [
 
 const INTEGER_FIELDS = ["age", "height", "currentWeight", "daysPerWeek"];
 
+const NUMBER_RANGES = {
+	age: [13, 100],
+	height: [100, 250],
+	currentWeight: [30, 300],
+	daysPerWeek: [1, 7],
+};
+
+const VALID_OPTIONS = {
+	biologicalSex: ["male", "female", "intersex", "prefer_not_to_say"],
+	primaryGoal: [
+		"lose_weight",
+		"build_muscle",
+		"improve_endurance",
+		"general_fitness",
+		"build_strength",
+		"improve_flexibility",
+	],
+	experienceLevel: ["beginner", "intermediate", "advanced"],
+	trainingLocation: ["home", "gym", "outdoors"],
+	preferredSessionLength: ["30", "45", "60", "60_plus"],
+	dietType: ["no_restrictions", "vegetarian", "vegan"],
+};
+
+const VALID_EQUIPMENT = [
+	"dumbbells",
+	"barbell",
+	"machines",
+	"bands",
+	"bodyweight_only",
+	"full_gym_access",
+];
+
+const VALID_MACHINES = [
+	"cable_machine",
+	"leg_press",
+	"smith_machine",
+	"lat_pulldown",
+	"chest_press",
+	"leg_curl_extension",
+];
+
 function hasRequiredOnboardingFields(profile) {
 	return REQUIRED_FIELDS.every((field) => {
 		const value = profile?.[field];
@@ -35,11 +76,50 @@ function hasRequiredOnboardingFields(profile) {
 	});
 }
 
-function hasValidIntegerFields(profile) {
-	return INTEGER_FIELDS.every((field) => {
+function getValidationError(profile) {
+	const hasValidNumbers = INTEGER_FIELDS.every((field) => {
 		const value = Number(profile?.[field]);
-		return Number.isInteger(value);
+		const [min, max] = NUMBER_RANGES[field];
+		return Number.isInteger(value) && value >= min && value <= max;
 	});
+
+	if (!hasValidNumbers) {
+		return "Numeric onboarding fields are invalid.";
+	}
+
+	const hasValidOptions = Object.entries(VALID_OPTIONS).every(
+		([field, options]) => options.includes(profile?.[field]),
+	);
+
+	if (!hasValidOptions) {
+		return "One or more selected options are invalid.";
+	}
+
+	const hasValidEquipment = profile.equipmentAvailable.every((item) =>
+		VALID_EQUIPMENT.includes(item),
+	);
+
+	if (!hasValidEquipment) {
+		return "Equipment contains an invalid option.";
+	}
+
+	const machineTypes = profile.machineTypes || [];
+	const hasValidMachines =
+		Array.isArray(machineTypes) &&
+		machineTypes.every((item) => VALID_MACHINES.includes(item));
+
+	if (!hasValidMachines) {
+		return "Machine types contain an invalid option.";
+	}
+
+	if (
+		!profile.equipmentAvailable.includes("machines") &&
+		machineTypes.length > 0
+	) {
+		return "Machine types require machines to be selected.";
+	}
+
+	return null;
 }
 
 onboardingRouter.post(
@@ -62,10 +142,10 @@ onboardingRouter.post(
 					.json({ error: "Required onboarding fields are missing." });
 			}
 
-			if (!hasValidIntegerFields(profile)) {
-				return res
-					.status(400)
-					.json({ error: "Numeric onboarding fields must be whole numbers." });
+			const validationError = getValidationError(profile);
+
+			if (validationError) {
+				return res.status(400).json({ error: validationError });
 			}
 
 			const user = await saveOnboardingProfile(req.user.id, profile);
