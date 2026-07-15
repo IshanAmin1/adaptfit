@@ -42,7 +42,15 @@ const initialProfile: OnboardingProfile = {
 	mealFrequencyPreference: "",
 };
 
-const steps = ["Basics", "Goals", "Experience", "Training", "Nutrition"];
+const steps = [
+	"Basics",
+	"Goals",
+	"Experience",
+	"Training",
+	"Nutrition",
+	"Confirmation",
+	"Result",
+];
 
 const sexOptions: Option[] = [
 	{ label: "Male", value: "male" },
@@ -130,6 +138,18 @@ const dietOptions: Option[] = [
 	{ label: "Vegan", value: "vegan" },
 ];
 
+function formatList(values: string[]) {
+	if (!values.length) {
+		return "None";
+	}
+
+	return values.join(", ");
+}
+
+function formatValue(value: string | undefined | null) {
+	return value ? value : "Not provided";
+}
+
 function getAgeError(age: string) {
 	const parsedAge = Number(age);
 
@@ -207,17 +227,31 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const [profile, setProfile] = useState<OnboardingProfile>(initialProfile);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [submissionState, setSubmissionState] = useState<{
+		status: "idle" | "success" | "error";
+		message: string | null;
+		user: AuthUser | null;
+	}>({
+		status: "idle",
+		message: null,
+		user: null,
+	});
+	const isConfirmationStep = stepIndex === steps.length - 2;
+	const isResultStep = stepIndex === steps.length - 1;
 	const progressPercent = Math.round(
-		(stepIndex / Math.max(steps.length, 1)) * 100,
+		(stepIndex / Math.max(steps.length - 1, 1)) * 100,
 	);
-	const isLastStep = stepIndex === steps.length - 1;
 	const goalTarget = goalTargetCopy[profile.primaryGoal] || {
 		label: "Target or timeline",
 		placeholder: "Optional",
 	};
 	const hasMachines = profile.equipmentAvailable.includes("machines");
 
-	if (authUser?.hasCompletedOnboarding) {
+	if (
+		authUser?.hasCompletedOnboarding &&
+		!isConfirmationStep &&
+		!isResultStep
+	) {
 		return <Navigate to="/dashboard" replace />;
 	}
 
@@ -258,33 +292,158 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 	const goToPreviousStep = () => {
 		setErrorMessage(null);
+		setSubmissionState({
+			status: "idle",
+			message: null,
+			user: null,
+		});
 		setStepIndex((currentStep) => Math.max(currentStep - 1, 0));
 	};
 
-	const handleSubmit = () => {
-		const stepError = getStepError(stepIndex, profile);
+	const goToConfirmationStep = () => {
+		setStepIndex(steps.length - 2);
+	};
 
-		if (stepError) {
-			setErrorMessage(stepError);
+	const goToEditableStep = () => {
+		setSubmissionState({
+			status: "idle",
+			message: null,
+			user: null,
+		});
+		setErrorMessage(null);
+		setStepIndex(steps.length - 3);
+	};
+
+	const handleSubmit = () => {
+		if (!isConfirmationStep) {
 			return;
 		}
 
 		setIsSubmitting(true);
 		setErrorMessage(null);
+		setSubmissionState({
+			status: "idle",
+			message: null,
+			user: null,
+		});
 
 		onboardingService
 			.submitProfile(profile)
 			.then((user) => {
-				onComplete(user);
-				navigate("/dashboard", { replace: true });
+				setSubmissionState({
+					status: "success",
+					message: "Your onboarding details were saved successfully.",
+					user,
+				});
+				setStepIndex(steps.length - 1);
 			})
-			.catch(() => {
-				setErrorMessage("Your onboarding details could not be saved.");
+			.catch((error: unknown) => {
+				const message =
+					error instanceof Error
+						? error.message
+						: "Your onboarding details could not be saved.";
+
+				setSubmissionState({
+					status: "error",
+					message,
+					user: null,
+				});
+				setStepIndex(steps.length - 1);
 			})
 			.finally(() => {
 				setIsSubmitting(false);
 			});
 	};
+
+	const handleEditSubmission = () => {
+		goToEditableStep();
+	};
+
+	const summarySections = [
+		{
+			title: "Basics",
+			items: [
+				{ label: "Age", value: formatValue(profile.age) },
+				{ label: "Biological sex", value: formatValue(profile.biologicalSex) },
+				{
+					label: "Height",
+					value: profile.height ? `${profile.height} cm` : "Not provided",
+				},
+				{
+					label: "Current weight",
+					value: profile.currentWeight
+						? `${profile.currentWeight} kg`
+						: "Not provided",
+				},
+			],
+		},
+		{
+			title: "Goals",
+			items: [
+				{ label: "Primary goal", value: formatValue(profile.primaryGoal) },
+				{
+					label: goalTarget.label,
+					value: formatValue(profile.targetWeightOrTimeline),
+				},
+			],
+		},
+		{
+			title: "Experience",
+			items: [
+				{
+					label: "Experience level",
+					value: formatValue(profile.experienceLevel),
+				},
+				{
+					label: "Injuries or limitations",
+					value: formatValue(profile.injuriesOrLimitations),
+				},
+			],
+		},
+		{
+			title: "Training",
+			items: [
+				{
+					label: "Training location",
+					value: formatValue(profile.trainingLocation),
+				},
+				{
+					label: "Equipment available",
+					value: formatList(profile.equipmentAvailable),
+				},
+				{
+					label: "Machines available",
+					value: formatList(profile.machineTypes),
+				},
+				{
+					label: "Other machines",
+					value: formatValue(profile.customMachines),
+				},
+				{
+					label: "Days per week",
+					value: formatValue(profile.daysPerWeek),
+				},
+				{
+					label: "Session length",
+					value: formatValue(profile.preferredSessionLength),
+				},
+			],
+		},
+		{
+			title: "Nutrition",
+			items: [
+				{ label: "Diet type", value: formatValue(profile.dietType) },
+				{
+					label: "Allergies / foods to avoid",
+					value: formatValue(profile.allergiesOrFoodsToAvoid),
+				},
+				{
+					label: "Meal frequency",
+					value: formatValue(profile.mealFrequencyPreference),
+				},
+			],
+		},
+	];
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-start px-4 py-8 md:px-12">
@@ -316,12 +475,17 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 					onSubmit={(event) => {
 						event.preventDefault();
 
-						if (!isLastStep) {
-							goToNextStep();
+						if (isConfirmationStep) {
+							handleSubmit();
 							return;
 						}
 
-						handleSubmit();
+						if (isResultStep) {
+							goToConfirmationStep();
+							return;
+						}
+
+						goToNextStep();
 					}}
 				>
 					{stepIndex === 0 ? (
@@ -527,7 +691,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 						</div>
 					) : null}
 
-					{errorMessage ? (
+					{!isConfirmationStep && errorMessage ? (
 						<p
 							className="m-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
 							role="alert"
@@ -536,26 +700,151 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 						</p>
 					) : null}
 
+					{isConfirmationStep ? (
+						<div className="grid gap-5">
+							<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-5">
+								<div className="grid gap-2">
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+										Review answers
+									</p>
+									<p className="m-0 text-lg font-bold text-[#17211f]">
+										Please confirm the details below before we save your
+										profile.
+									</p>
+								</div>
+								{summarySections.map((section) => (
+									<div
+										key={section.title}
+										className="grid gap-2 rounded-lg border border-[#d9e5df] bg-white p-4"
+									>
+										<p className="m-0 text-sm font-black uppercase tracking-widest text-[#62706b]">
+											{section.title}
+										</p>
+										<div className="grid gap-2">
+											{section.items.map((item) => (
+												<div
+													key={item.label}
+													className="grid gap-1 border-b border-dashed border-[#e2ece7] pb-2 last:border-b-0 last:pb-0"
+												>
+													<p className="m-0 text-xs font-bold uppercase tracking-widest text-[#8a9a95]">
+														{item.label}
+													</p>
+													<p className="m-0 text-sm font-semibold text-[#17211f]">
+														{item.value}
+													</p>
+												</div>
+											))}
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					) : null}
+
+					{isResultStep ? (
+						<div className="grid gap-5">
+							<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-5">
+								<div className="grid gap-2">
+									<p
+										className={`m-0 text-xs font-black uppercase tracking-widest ${
+											submissionState.status === "error"
+												? "text-red-600"
+												: "text-[#0f8b6f]"
+										}`}
+									>
+										{submissionState.status === "error"
+											? "Submission failed"
+											: "Submission complete"}
+									</p>
+									<p className="m-0 text-lg font-bold text-[#17211f]">
+										{submissionState.message ??
+											"Your onboarding submission has been processed."}
+									</p>
+								</div>
+								{submissionState.status === "success" ? (
+									<p className="m-0 text-sm leading-6 text-[#62706b]">
+										Your onboarding profile is ready. You can continue to your
+										dashboard now.
+									</p>
+								) : null}
+								{submissionState.status === "error" ? (
+									<p className="m-0 text-sm leading-6 text-red-700">
+										Please review your answers and make any needed changes
+										before submitting again.
+									</p>
+								) : null}
+							</div>
+						</div>
+					) : null}
+
 					<div className="flex flex-wrap justify-between gap-3 border-t border-[#d9e5df] pt-5">
-						<button
-							type="button"
-							className="h-10 min-w-40 rounded-md border border-[#b7cbc2] bg-white px-10 font-black text-[#17211f] disabled:cursor-not-allowed disabled:opacity-50"
-							disabled={stepIndex === 0 || isSubmitting}
-							onClick={goToPreviousStep}
-						>
-							Back
-						</button>
-						<button
-							type="submit"
-							className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
-							disabled={isSubmitting}
-						>
-							{isLastStep
-								? isSubmitting
-									? "Saving"
-									: "Generate plan"
-								: "Next"}
-						</button>
+						{isConfirmationStep ? (
+							<>
+								<button
+									type="button"
+									className="h-10 min-w-40 rounded-md border border-[#b7cbc2] bg-white px-10 font-black text-[#17211f] disabled:cursor-not-allowed disabled:opacity-50"
+									disabled={isSubmitting}
+									onClick={handleEditSubmission}
+								>
+									Edit answers
+								</button>
+								<button
+									type="submit"
+									className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+									disabled={isSubmitting}
+								>
+									{isSubmitting ? "Saving" : "Submit answers"}
+								</button>
+							</>
+						) : isResultStep ? (
+							<>
+								{submissionState.status === "error" ? (
+									<button
+										type="button"
+										className="h-10 min-w-40 rounded-md border border-[#b7cbc2] bg-white px-10 font-black text-[#17211f] disabled:cursor-not-allowed disabled:opacity-50"
+										disabled={isSubmitting}
+										onClick={handleEditSubmission}
+									>
+										Edit answers
+									</button>
+								) : null}
+								<button
+									type="button"
+									className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+									disabled={
+										isSubmitting ||
+										submissionState.status !== "success" ||
+										!submissionState.user
+									}
+									onClick={() => {
+										if (submissionState.user) {
+											onComplete(submissionState.user);
+											navigate("/dashboard", { replace: true });
+										}
+									}}
+								>
+									Continue to dashboard
+								</button>
+							</>
+						) : (
+							<>
+								<button
+									type="button"
+									className="h-10 min-w-40 rounded-md border border-[#b7cbc2] bg-white px-10 font-black text-[#17211f] disabled:cursor-not-allowed disabled:opacity-50"
+									disabled={stepIndex === 0 || isSubmitting}
+									onClick={goToPreviousStep}
+								>
+									Back
+								</button>
+								<button
+									type="submit"
+									className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+									disabled={isSubmitting}
+								>
+									{stepIndex === steps.length - 3 ? "Review answers" : "Next"}
+								</button>
+							</>
+						)}
 					</div>
 				</form>
 			</section>
