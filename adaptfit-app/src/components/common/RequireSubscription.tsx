@@ -5,12 +5,14 @@ import type { AuthUser } from "../../types/auth";
 type RequireSubscriptionProps = {
 	authChecked: boolean;
 	authUser: AuthUser | null;
+	requireOnboarding?: boolean;
 	children: ReactNode;
 };
 
 export default function RequireSubscription({
 	authChecked,
 	authUser,
+	requireOnboarding = true,
 	children,
 }: RequireSubscriptionProps) {
 	if (!authChecked) {
@@ -27,6 +29,10 @@ export default function RequireSubscription({
 
 	if (!authUser.hasActiveSubscription) {
 		return <Navigate to="/subscribe" replace />;
+	}
+
+	if (requireOnboarding && !authUser.hasCompletedOnboarding) {
+		return <Navigate to="/onboarding" replace />;
 	}
 
 	return children;

@@ -19,5 +19,6 @@ export type AuthUser = {
 	fullName?: string | null;
 	avatarUrl?: string | null;
 	hasActiveSubscription: boolean;
+	hasCompletedOnboarding: boolean;
 	subscription?: UserSubscription | null;
 };

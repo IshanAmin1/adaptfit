@@ -58,11 +58,14 @@ export function serializeUser(user, billingStatus = null) {
 		avatarUrl: user.avatar_url,
 		hasActiveSubscription: Boolean(billingStatus?.hasActiveSubscription),
 		subscription: billingStatus?.subscription || null,
+		hasCompletedOnboarding: Boolean(user.onboardingProfile?.completed_at),
 	};
 }
 
 export async function findUserById(id) {
-	const user = await User.findByPk(id);
+	const user = await User.findByPk(id, {
+		include: [{ association: "onboardingProfile" }],
+	});
 	return user?.toJSON() || null;
 }
 
@@ -85,5 +88,5 @@ export async function upsertGoogleUser(profile) {
 		},
 	);
 
-	return user?.toJSON();
+	return user ? findUserById(user.id) : null;
 }

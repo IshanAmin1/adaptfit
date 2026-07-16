@@ -12,8 +12,17 @@ import RequireSubscription from "./components/common/RequireSubscription";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
+import Onboarding from "./pages/Onboarding";
 import Subscribe from "./pages/Subscribe";
 import type { AuthUser } from "./types/auth";
+
+function getAuthenticatedPath(user: AuthUser) {
+	if (!user.hasActiveSubscription) {
+		return "/subscribe";
+	}
+
+	return user.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
+}
 
 function App() {
 	const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -75,8 +84,8 @@ function App() {
 						<Route
 							path="/"
 							element={
-								authChecked && authUser?.hasActiveSubscription ? (
-									<Navigate to="/dashboard" replace />
+								authChecked && authUser ? (
+									<Navigate to={getAuthenticatedPath(authUser)} replace />
 								) : (
 									<Landing />
 								)
@@ -96,6 +105,18 @@ function App() {
 										onUserRefresh={refreshCurrentUser}
 									/>
 								</RequireAuth>
+							}
+						/>
+						<Route
+							path="/onboarding"
+							element={
+								<RequireSubscription
+									authChecked={authChecked}
+									authUser={authUser}
+									requireOnboarding={false}
+								>
+									<Onboarding authUser={authUser} onComplete={handleLogin} />
+								</RequireSubscription>
 							}
 						/>
 						<Route
