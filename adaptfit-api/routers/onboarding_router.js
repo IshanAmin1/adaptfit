@@ -4,14 +4,13 @@ import { hasActiveSubscription } from "../middleware/subscription.js";
 import { getBillingStatusForUser } from "../models/subscriptions.js";
 import { saveOnboardingProfile } from "../models/onboarding.js";
 import { serializeUser } from "../models/users.js";
+import {
+	OPENROUTER_API_KEY,
+	OPENROUTER_API_URL,
+	OPENROUTER_MODEL,
+} from "../config/openrouter.js";
 
 export const onboardingRouter = Router();
-
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
-const OPENROUTER_SITE_URL =
-	process.env.CLIENT_ORIGIN || "http://localhost:5173";
-const OPENROUTER_APP_TITLE = process.env.OPENROUTER_APP_TITLE || "AdaptFit";
 
 const REQUIRED_FIELDS = [
 	"age",
@@ -189,19 +188,11 @@ function formatValidationError(invalidFields) {
 }
 
 async function validateOnboardingWithOpenRouter(profile) {
-	const apiKey = process.env.OPENROUTER_API_KEY;
-
-	if (!apiKey) {
-		throw new Error("OpenRouter API key is missing.");
-	}
-
 	const response = await fetch(OPENROUTER_API_URL, {
 		method: "POST",
 		headers: {
-			Authorization: `Bearer ${apiKey}`,
+			Authorization: `Bearer ${OPENROUTER_API_KEY}`,
 			"Content-Type": "application/json",
-			"HTTP-Referer": OPENROUTER_SITE_URL,
-			"X-OpenRouter-Title": OPENROUTER_APP_TITLE,
 		},
 		body: JSON.stringify({
 			model: OPENROUTER_MODEL,

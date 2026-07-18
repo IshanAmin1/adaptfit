@@ -8,19 +8,17 @@ import {
 	recordCheckoutSession,
 	upsertStripeSubscription,
 } from "../models/subscriptions.js";
-import {
-	getClientOrigin,
-	getStripeClient,
-	getStripeMonthlyPriceId,
-} from "../services/stripe.js";
+import { getStripeClient } from "../services/stripe.js";
+
+import { CLIENT_ORIGIN } from "../config/server.js";
+import { STRIPE_MONTHLY_PRICE_ID } from "../config/stripe.js";
 
 export const billingRouter = Router();
 
 const MAX_SUBSCRIPTIONS_TO_FETCH = 100; // Stripe's maximum limit for listing subscriptions
 
 // See https://docs.stripe.com/api/checkout/sessions/retrieve?lang=node
-async function getOrCreateStripeCustomer(user) {
-	const stripe = getStripeClient();
+async function getOrCreateStripeCustomer(stripe, user) {
 	const existingCustomerId = await findStripeCustomerIdForUser(user.id);
 
 	if (existingCustomerId) {
@@ -119,9 +117,7 @@ billingRouter.post("/sync", isAuthenticated, async (req, res) => {
 billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
 	try {
 		const stripe = getStripeClient();
-		const monthlyPriceId = getStripeMonthlyPriceId();
-		const clientOrigin = getClientOrigin();
-		const stripeCustomerId = await getOrCreateStripeCustomer(req.user);
+		const stripeCustomerId = await getOrCreateStripeCustomer(stripe, req.user);
 
 		await syncCustomerSubscriptions(stripe, stripeCustomerId);
 
@@ -135,7 +131,7 @@ billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
 			stripe,
 			userId: req.user.id,
 			stripeCustomerId,
-			stripePriceId: monthlyPriceId,
+			stripePriceId: STRIPE_MONTHLY_PRICE_ID,
 		});
 
 		if (reusableCheckoutUrl) {
@@ -147,13 +143,13 @@ billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
 			customer: stripeCustomerId,
 			line_items: [
 				{
-					price: monthlyPriceId,
+					price: STRIPE_MONTHLY_PRICE_ID,
 					quantity: 1,
 				},
 			],
 			client_reference_id: req.user.id,
-			success_url: `${clientOrigin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${clientOrigin}/subscribe`,
+			success_url: `${CLIENT_ORIGIN}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${CLIENT_ORIGIN}/subscribe`,
 			// metadata attached to checkout session itself which stripe uses to track checkout sessions
 			metadata: {
 				appUserId: req.user.id,
@@ -171,7 +167,7 @@ billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
 			userId: req.user.id,
 			stripeCustomerId,
 			stripeCheckoutSessionId: checkoutSession.id,
-			stripePriceId: monthlyPriceId,
+			stripePriceId: STRIPE_MONTHLY_PRICE_ID,
 		});
 
 		return res.json({ url: checkoutSession.url, reused: false });
@@ -192,10 +188,9 @@ billingRouter.post("/portal-session", isAuthenticated, async (req, res) => {
 		}
 
 		const stripe = getStripeClient();
-		const clientOrigin = getClientOrigin();
 		const portalSession = await stripe.billingPortal.sessions.create({
 			customer: stripeCustomerId,
-			return_url: `${clientOrigin}/subscribe`,
+			return_url: `${CLIENT_ORIGIN}/subscribe`,
 		});
 
 		return res.json({ url: portalSession.url });

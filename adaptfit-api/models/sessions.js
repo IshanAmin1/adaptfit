@@ -1,17 +1,20 @@
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pg from "pg";
-import { databaseUrl } from "../datasource.js";
+import { DATABASE_URL } from "../config/db.js";
+import {
+	COOKIE_NAME,
+	SESSION_DAYS,
+	SESSION_SECRET,
+} from "../config/session.js";
 
 const PgSession = connectPgSimple(session);
 const { Pool } = pg;
 
-const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
-const SESSION_DAYS = Number(process.env.SESSION_DAYS || 7);
 const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60 * 1000;
 
 const sessionPool = new Pool({
-	connectionString: databaseUrl,
+	connectionString: DATABASE_URL,
 });
 
 function getBaseCookieOptions() {
@@ -31,15 +34,9 @@ export function getCookieOptions() {
 }
 
 export function sessionMiddleware() {
-	const secret = process.env.SESSION_SECRET;
-
-	if (!secret) {
-		throw new Error("SESSION_SECRET is not configured.");
-	}
-
 	return session({
 		name: COOKIE_NAME,
-		secret,
+		secret: SESSION_SECRET,
 		resave: false,
 		saveUninitialized: false,
 		store: new PgSession({
