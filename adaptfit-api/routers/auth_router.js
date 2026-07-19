@@ -3,8 +3,8 @@ import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
 import { getBillingStatusForUser } from "../models/subscriptions.js";
 import { serializeUser, upsertGoogleUser } from "../models/users.js";
-import { GOOGLE_CLIENT_ID } from "../config/google.js";
-import { COOKIE_NAME } from "../config/session.js";
+import { GOOGLE_CLIENT_ID } from "../config/env/google.js";
+import { COOKIE_NAME } from "../config/env/session.js";
 
 export const authRouter = Router();
 

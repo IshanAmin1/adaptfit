@@ -1,0 +1,28 @@
+version: "3.5"
+services:
+  # Redis
+  redis:
+    # you can browse all images at https://hub.docker.com/
+    image: redis:7.2.5-alpine
+    # what am I exposing to the public - YOU SHOULD NOT DO THIS IN PRODUCTION
+    ports:
+      - 6381:6379
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+  # Generic PostgreSQL database
+  postgres:
+    image: postgres:16
+    ports:
+      # Different port in case host has Postgres installed already - YOU SHOULD NOT DO THIS IN PRODUCTION
+      - 5433:5432
+    environment:
+      - POSTGRES_USER=adaptfit_user
+      - POSTGRES_PASSWORD=adaptfit
+      - POSTGRES_DB=adaptfit
+    # For any persistent storage, you would need to mount a volume to the docker container
+    # so that your data stays intact.
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+volumes:
+  postgres-volume:

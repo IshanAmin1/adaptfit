@@ -10,8 +10,8 @@ import {
 } from "../models/subscriptions.js";
 import { getStripeClient } from "../services/stripe.js";
 
-import { CLIENT_ORIGIN } from "../config/server.js";
-import { STRIPE_MONTHLY_PRICE_ID } from "../config/stripe.js";
+import { CLIENT_ORIGIN } from "../config/env/server.js";
+import { STRIPE_MONTHLY_PRICE_ID } from "../config/env/stripe.js";
 
 export const billingRouter = Router();
 

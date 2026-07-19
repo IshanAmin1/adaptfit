@@ -8,7 +8,7 @@ import { billingRouter } from "./routers/billing_router.js";
 import { onboardingRouter } from "./routers/onboarding_router.js";
 import { stripeWebhookRouter } from "./routers/stripe_webhook_router.js";
 import { sessionMiddleware } from "./models/sessions.js";
-import { PORT, CLIENT_ORIGIN } from "./config/server.js";
+import { PORT, CLIENT_ORIGIN } from "./config/env/server.js";
 
 export const app = express();
 

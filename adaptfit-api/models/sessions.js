@@ -1,12 +1,12 @@
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pg from "pg";
-import { DATABASE_URL } from "../config/db.js";
+import { DATABASE_URL } from "../config/env/storage.js";
 import {
 	COOKIE_NAME,
 	SESSION_DAYS,
 	SESSION_SECRET,
-} from "../config/session.js";
+} from "../config/env/session.js";
 
 const PgSession = connectPgSimple(session);
 const { Pool } = pg;

@@ -1,7 +1,7 @@
 import express, { Router } from "express";
 import { upsertStripeSubscription } from "../models/subscriptions.js";
 import { getStripeClient } from "../services/stripe.js";
-import { STRIPE_WEBHOOK_SECRET } from "../config/stripe.js";
+import { STRIPE_WEBHOOK_SECRET } from "../config/env/stripe.js";
 
 export const stripeWebhookRouter = Router();
 

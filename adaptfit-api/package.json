@@ -9,23 +9,30 @@
 	},
 	"scripts": {
 		"start": "node app.js",
+		"start:dev-stripe": "stripe listen --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed --forward-to localhost:3000/stripe/webhook",
+		"start:dev-docker": "docker-compose up -d",
+		"start:dev-worker": "nodemon --inspect=9231 --env-file=.env workers/verify-onboarding-worker.js",
 		"start:dev": "nodemon --inspect app.js"
 	},
 	"dependencies": {
+		"@socket.io/redis-adapter": "^8.3.0",
 		"body-parser": "^1.20.3",
+		"bullmq": "^5.80.8",
 		"connect-pg-simple": "^10.0.0",
 		"cors": "^2.8.5",
 		"dotenv": "^16.4.7",
 		"express": "^4.21.2",
 		"express-session": "^1.19.0",
 		"google-auth-library": "^10.9.0",
+		"ioredis": "^5.11.1",
 		"pg": "^8.13.1",
 		"sequelize": "^6.37.8",
-		"stripe": "^16.12.0"
+		"socket.io": "^4.8.3",
+		"stripe": "^16.12.0",
+		"zod": "^4.4.3"
 	},
 	"devDependencies": {
-		"nodemon": "^3.1.9",
-		"prettier": "^3.4.2"
+		"nodemon": "^3.1.9"
 	},
 	"overrides": {
 		"uuid": "11.1.1"

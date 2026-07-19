@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { STRIPE_SECRET_KEY } from "../config/stripe.js";
+import { STRIPE_SECRET_KEY } from "../config/env/stripe.js";
 
 let stripeClient;
 
