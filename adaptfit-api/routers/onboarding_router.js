@@ -83,7 +83,7 @@ function formatValidationError(invalidFields) {
 	return `You need to fix ${count} ${label}: ${invalidFields.join(", ")}.`;
 }
 
-function sendOnboardingStreamEvent(res, event) {
+function sendOnboardingSseMessage(res, event) {
 	res.write(`data: ${JSON.stringify(event)}\n\n`);
 }
 
@@ -214,15 +214,15 @@ onboardingRouter.post(
 				req.body?.profile,
 				req.user.id,
 				(event) => {
-					sendOnboardingStreamEvent(res, { type: "progress", ...event });
+					sendOnboardingSseMessage(res, { type: "progress", ...event });
 				},
 			);
 
-			sendOnboardingStreamEvent(res, { type: "complete", user });
+			sendOnboardingSseMessage(res, { type: "complete", user });
 			return res.end();
 		} catch (error) {
 			console.error(error);
-			sendOnboardingStreamEvent(res, {
+			sendOnboardingSseMessage(res, {
 				type: "error",
 				error: error.message || "Onboarding validation could not be completed.",
 				invalidFields: error.invalidFields,
