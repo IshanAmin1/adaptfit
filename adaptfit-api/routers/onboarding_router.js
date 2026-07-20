@@ -4,9 +4,9 @@ import { hasActiveSubscription } from "../middleware/subscription.js";
 import * as z from "zod";
 import {
 	getQueueWithListener,
-	streamQueueJobStatus,
 	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
+import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
 import { saveOnboardingProfile } from "../utils/models/onboarding.js";
 import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
 import { serializeUser } from "../utils/models/users.js";
