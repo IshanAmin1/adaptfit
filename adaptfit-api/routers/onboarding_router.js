@@ -200,7 +200,7 @@ async function completeQueuedOnboarding(profile, userId, sendProgress) {
 }
 
 onboardingRouter.post(
-	"/stream",
+	"/progress",
 	isAuthenticated,
 	hasActiveSubscription,
 	async (req, res) => {

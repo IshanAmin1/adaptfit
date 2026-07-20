@@ -21,7 +21,7 @@ onboardingService.submitProfileWithProgress(profile, onProgress)
 3. `onboarding-service.ts` opens a streaming request with `@microsoft/fetch-event-source`:
 
 ```ts
-fetchEventSource(`${API_BASE_URL}/onboarding/stream`, {
+fetchEventSource(`${API_BASE_URL}/onboarding/progress`, {
 	method: "POST",
 	credentials: "include",
 	headers: {
@@ -35,7 +35,7 @@ fetchEventSource(`${API_BASE_URL}/onboarding/stream`, {
 4. The backend receives the request at:
 
 ```text
-POST /onboarding/stream
+POST /onboarding/progress
 ```
 
 5. The Express route enables SSE by setting:

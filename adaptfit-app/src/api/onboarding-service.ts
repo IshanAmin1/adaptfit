@@ -34,7 +34,7 @@ export const onboardingService = {
 		const controller = new AbortController();
 		let completedUser: AuthUser | null = null;
 
-		await fetchEventSource(`${API_BASE_URL}/onboarding/stream`, {
+		await fetchEventSource(`${API_BASE_URL}/onboarding/progress`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
