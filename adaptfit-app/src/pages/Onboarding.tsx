@@ -222,41 +222,6 @@ function getStepError(stepIndex: number, profile: OnboardingProfile) {
 	return null;
 }
 
-const validationProgressSteps = [
-	{ stage: "received", label: "Preparing submission" },
-	{ stage: "queued", label: "Queued" },
-	{ stage: "processing", label: "Worker starting" },
-	{ stage: "ai_validation", label: "AI validation" },
-	{ stage: "ai_complete", label: "Validation complete" },
-	{ stage: "saving", label: "Saving profile" },
-	{ stage: "complete", label: "Finishing up" },
-];
-
-function getLatestProgressEvent(
-	progressEvents: OnboardingProgressEvent[],
-	stage: string,
-) {
-	for (let index = progressEvents.length - 1; index >= 0; index -= 1) {
-		if (progressEvents[index].stage === stage) {
-			return progressEvents[index];
-		}
-	}
-
-	return null;
-}
-
-function getProgressDotClass(hasEvent: boolean, isCurrent: boolean) {
-	if (isCurrent) {
-		return "border-[#f59e0b] bg-[#f59e0b]";
-	}
-
-	if (hasEvent) {
-		return "border-[#0f8b6f] bg-[#0f8b6f]";
-	}
-
-	return "border-[#9fb8ae] bg-transparent";
-}
-
 export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const navigate = useNavigate();
 	const [stepIndex, setStepIndex] = useState(0);
@@ -832,66 +797,42 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 										<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
 											Validation details
 										</p>
-										{(() => {
-											const latestProgressStage =
-												submissionProgress[submissionProgress.length - 1]
-													?.stage;
+										{submissionProgress.map((event, index) => {
+											const isError = event.stage === "error";
+											const isCurrent =
+												isSubmitting && index === submissionProgress.length - 1;
 
-											return validationProgressSteps.map((step) => {
-												const event = getLatestProgressEvent(
-													submissionProgress,
-													step.stage,
-												);
-												const isCurrent =
-													isSubmitting && latestProgressStage === step.stage;
-
-												return (
-													<div
-														key={step.stage}
-														className="grid grid-cols-[0.75rem_1fr] items-start gap-3"
-													>
-														<span
-															className={`mt-1 h-3 w-3 rounded-full border ${getProgressDotClass(
-																Boolean(event),
-																isCurrent,
-															)}`}
-														/>
-														<div className="grid gap-0.5">
-															<p
-																className={`m-0 text-sm font-black ${
-																	event ? "text-[#17211f]" : "text-[#8a9a95]"
-																}`}
-															>
-																{step.label}
+											return (
+												<div
+													key={`${event.stage}-${index}`}
+													className="grid grid-cols-[0.75rem_1fr] items-start gap-3"
+												>
+													<span
+														className={`mt-1 h-3 w-3 rounded-full border ${
+															isError
+																? "border-red-500 bg-red-500"
+																: isCurrent
+																	? "border-[#f59e0b] bg-[#f59e0b]"
+																	: "border-[#0f8b6f] bg-[#0f8b6f]"
+														}`}
+													/>
+													<div className="grid gap-0.5">
+														<p
+															className={`m-0 text-sm font-black ${
+																isError ? "text-red-700" : "text-[#17211f]"
+															}`}
+														>
+															{isError ? "Needs changes" : event.message}
+														</p>
+														{isError ? (
+															<p className="m-0 text-sm leading-5 text-red-700">
+																{event.message}
 															</p>
-															{event ? (
-																<p className="m-0 text-sm leading-5 text-[#62706b]">
-																	{event.message}
-																</p>
-															) : null}
-														</div>
+														) : null}
 													</div>
-												);
-											});
-										})()}
-										{getLatestProgressEvent(submissionProgress, "error") ? (
-											<div className="grid grid-cols-[0.75rem_1fr] items-start gap-3">
-												<span className="mt-1 h-3 w-3 rounded-full border border-red-500 bg-red-500" />
-												<div className="grid gap-0.5">
-													<p className="m-0 text-sm font-black text-[#17211f]">
-														Needs changes
-													</p>
-													<p className="m-0 text-sm leading-5 text-red-700">
-														{
-															getLatestProgressEvent(
-																submissionProgress,
-																"error",
-															)?.message
-														}
-													</p>
 												</div>
-											</div>
-										) : null}
+											);
+										})}
 									</div>
 								) : null}
 							</div>

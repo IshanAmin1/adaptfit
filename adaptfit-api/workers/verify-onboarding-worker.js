@@ -61,12 +61,6 @@ async function verifyOnboarding(profile, job) {
 
 	if (content) {
 		const invalidFields = ValidationResultSchema.parse(JSON.parse(content));
-
-		await job.updateProgress({
-			stage: "ai_complete",
-			message: "The AI validator finished reviewing your details.",
-		});
-
 		return { invalidFields };
 	} else {
 		throw Error("Model could not produce a valid output.");

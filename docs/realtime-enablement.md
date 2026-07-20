@@ -137,9 +137,7 @@ If invalid fields exist, the backend sends an SSE `error` event and closes the s
 ```text
 received       -> Preparing submission
 queued         -> Queued
-processing     -> Worker starting
 ai_validation  -> AI validation
-ai_complete    -> Validation complete
 saving         -> Saving profile
 complete       -> Finishing up
 error          -> Needs changes
@@ -152,7 +150,7 @@ We are **not streaming the raw model response** to the frontend.
 OpenRouter validation currently runs as a normal request/response call inside the worker. The real-time part is the app-level progress around the queued task:
 
 ```text
-request received -> queued -> worker running -> AI validation -> save -> complete
+request received -> queued -> AI validation -> save -> complete
 ```
 
 This keeps the frontend UI focused on useful status updates instead of exposing raw validation JSON or partial model output.

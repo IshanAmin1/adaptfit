@@ -31,7 +31,6 @@ export const onboardingService = {
 		profile: OnboardingProfile,
 		onProgress: (event: OnboardingProgressEvent) => void,
 	): Promise<AuthUser> {
-		const controller = new AbortController();
 		let completedUser: AuthUser | null = null;
 
 		await fetchEventSource(`${API_BASE_URL}/onboarding/progress`, {
@@ -42,7 +41,6 @@ export const onboardingService = {
 			},
 			credentials: "include",
 			body: JSON.stringify({ profile }),
-			signal: controller.signal,
 			openWhenHidden: true,
 			onmessage(message) {
 				if (!message.data) {
@@ -78,7 +76,6 @@ export const onboardingService = {
 
 				if (event.type === "complete") {
 					completedUser = event.user;
-					controller.abort();
 				}
 			},
 			onerror(error) {

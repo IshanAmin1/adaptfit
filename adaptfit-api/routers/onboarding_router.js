@@ -129,11 +129,6 @@ async function enqueueOnboardingValidation(profile, userId, sendProgress) {
 		profile,
 	);
 
-	sendProgress({
-		stage: "processing",
-		message: "Waiting for the validation worker to start.",
-	});
-
 	const handleProgress = ({ jobId, data }) => {
 		if (String(jobId) !== String(job.id)) {
 			return;
