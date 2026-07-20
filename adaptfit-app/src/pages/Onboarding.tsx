@@ -53,6 +53,13 @@ const steps = [
 	"Result",
 ];
 
+const submissionProgressStages = [
+	"start",
+	"ai_validation",
+	"saving",
+	"complete",
+];
+
 const sexOptions: Option[] = [
 	{ label: "Male", value: "male" },
 	{ label: "Female", value: "female" },
@@ -242,9 +249,28 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	>([]);
 	const isConfirmationStep = stepIndex === steps.length - 2;
 	const isResultStep = stepIndex === steps.length - 1;
-	const progressPercent = Math.round(
-		(stepIndex / Math.max(steps.length - 1, 1)) * 100,
+	const confirmationProgressPercent = Math.round(
+		((steps.length - 2) / Math.max(steps.length - 1, 1)) * 100,
 	);
+	const completedSubmissionStages = new Set(
+		submissionProgress
+			.filter((event) => event.stage !== "error")
+			.map((event) => event.stage),
+	);
+	const completedSubmissionStageCount = submissionProgressStages.filter(
+		(stage) => completedSubmissionStages.has(stage),
+	).length;
+	const submissionProgressPercent =
+		submissionState.status === "success"
+			? 100
+			: confirmationProgressPercent +
+				Math.round(
+					(completedSubmissionStageCount / submissionProgressStages.length) *
+						(100 - confirmationProgressPercent),
+				);
+	const progressPercent = isResultStep
+		? submissionProgressPercent
+		: Math.round((stepIndex / Math.max(steps.length - 1, 1)) * 100);
 	const goalTarget = goalTargetCopy[profile.primaryGoal] || {
 		label: "Target or timeline",
 		placeholder: "Optional",
