@@ -40,7 +40,14 @@ async function verifyOnboarding(profile) {
 	const content = await queryModelWithRetries(
 		"You validate onboarding details and return only valid JSON. The JSON must be an array of field names that are incorrect. The field names must be strings.",
 		buildValidationPrompt(profile),
-		z.array(z.enum(AI_VALIDATION_FIELD_NAMES)),
+		(output) => {
+			const schema = z.array(z.enum(AI_VALIDATION_FIELD_NAMES));
+			output = JSON.parse(output);
+
+			const parsedResult = schema.safeDecode(output);
+			return !parsedResult.success;
+		},
+		1,
 	);
 
 	if (content) {

@@ -1,4 +1,4 @@
-import { findUserById } from "../models/users.js";
+import { findUserById } from "../utils/models/users.js";
 
 export async function isAuthenticated(req, res, next) {
 	try {

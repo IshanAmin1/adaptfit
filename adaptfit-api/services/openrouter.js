@@ -60,39 +60,31 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
  * Query an OpenRouter model with retries
  * @param {string} systemPrompt - System prompt
  * @param {string} userPrompt - User prompt
+ * @param {(output: any) => boolean} shouldRetry - Function that determines when to retry
  * @param {number} retries - Number of retries, default = 1
- * @param {*} outputSchema - Zod schema for the expected output
  * @param {*} args - Object containing extra args to pass to OpenRouter
  * @returns
  */
 export async function queryModelWithRetries(
 	systemPrompt,
 	userPrompt,
-	outputSchema,
+	shouldRetry,
 	retries = 1,
 	args = {},
 ) {
-	if (!systemPrompt || !userPrompt || !outputSchema) {
+	if (!systemPrompt || !userPrompt || !shouldRetry) {
 		return null;
 	}
 
 	let result = null;
 	while (retries > 0) {
-		let content;
-		try {
-			content = JSON.parse(await queryModel(systemPrompt, userPrompt, args));
-		} catch {
-			return null;
-		}
+		const content = await queryModel(systemPrompt, userPrompt, args);
 
-		if (content && outputSchema.safeParse) {
-			const parseResult = outputSchema.safeParse(content);
-			if (parseResult.success) {
-				result = parseResult.data;
-				break;
-			} else {
-				retries--;
-			}
+		if (content && !shouldRetry(content)) {
+			result = content;
+			break;
+		} else {
+			retries--;
 		}
 	}
 

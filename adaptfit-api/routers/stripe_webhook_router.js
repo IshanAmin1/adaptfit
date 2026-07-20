@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { upsertStripeSubscription } from "../models/subscriptions.js";
+import { upsertStripeSubscription } from "../utils/models/subscriptions.js";
 import { getStripeClient } from "../services/stripe.js";
 import { STRIPE_WEBHOOK_SECRET } from "../config/env/stripe.js";
 

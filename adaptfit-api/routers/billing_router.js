@@ -7,7 +7,7 @@ import {
 	getBillingStatusForUser,
 	recordCheckoutSession,
 	upsertStripeSubscription,
-} from "../models/subscriptions.js";
+} from "../utils/models/subscriptions.js";
 import { getStripeClient } from "../services/stripe.js";
 
 import { CLIENT_ORIGIN } from "../config/env/server.js";
