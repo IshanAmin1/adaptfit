@@ -26,21 +26,69 @@ type OnboardingStreamMessage =
 			user: AuthUser;
 	  };
 
+type StartOnboardingJobResponse = {
+	jobId: string;
+	statusUrl: string;
+};
+
+type OnboardingErrorResponse = {
+	error?: string;
+	message?: string;
+};
+
+function getStatusUrl(statusUrl: string) {
+	if (statusUrl.startsWith("http")) {
+		return statusUrl;
+	}
+
+	return `${API_BASE_URL}${statusUrl}`;
+}
+
 export const onboardingService = {
 	async submitProfileWithProgress(
 		profile: OnboardingProfile,
 		onProgress: (event: OnboardingProgressEvent) => void,
 	): Promise<AuthUser> {
 		let completedUser: AuthUser | null = null;
+		onProgress({
+			stage: "received",
+			message: "Reviewing your answers.",
+		});
 
-		await fetchEventSource(`${API_BASE_URL}/onboarding/progress`, {
+		const response = await fetch(`${API_BASE_URL}/onboarding`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Accept: "text/event-stream",
 			},
 			credentials: "include",
 			body: JSON.stringify({ profile }),
+		});
+
+		const body = (await response.json().catch(() => null)) as
+			StartOnboardingJobResponse | OnboardingErrorResponse | null;
+
+		if (!response.ok) {
+			const errorBody = body as OnboardingErrorResponse | null;
+			const message =
+				errorBody?.error || errorBody?.message || "Onboarding request failed";
+
+			onProgress({
+				stage: "error",
+				message,
+			});
+			throw new Error(message);
+		}
+
+		if (!body || !("statusUrl" in body) || !body.statusUrl) {
+			throw new Error("Onboarding request failed");
+		}
+
+		await fetchEventSource(getStatusUrl(body.statusUrl), {
+			method: "GET",
+			headers: {
+				Accept: "text/event-stream",
+			},
+			credentials: "include",
 			openWhenHidden: true,
 			onmessage(message) {
 				if (!message.data) {

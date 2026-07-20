@@ -56,20 +56,35 @@ async function verifyOnboarding(profile, job) {
 				return true;
 			}
 		},
-		1,
+		3,
+		{
+			response_format: {
+				type: "json_schema",
+				json_schema: {
+					name: "onboarding_validation",
+					schema: {
+						type: "array",
+						items: {
+							type: "string",
+							enum: AI_VALIDATION_FIELD_NAMES,
+						},
+					},
+				},
+			},
+		},
 	);
 
 	if (content) {
 		const invalidFields = ValidationResultSchema.parse(JSON.parse(content));
 		return { invalidFields };
 	} else {
-		throw Error("Model could not produce a valid output.");
+		throw Error("AI validation is temporarily unavailable. Please try again.");
 	}
 }
 
 new Worker(
 	VALIDATE_ONBOARDING_QUEUE_NAME,
-	async (job) => verifyOnboarding(job.data, job),
+	async (job) => verifyOnboarding(job.data.profile, job),
 	{
 		connection: {
 			host: REDIS_HOST,
