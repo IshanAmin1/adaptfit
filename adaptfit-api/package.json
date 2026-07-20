@@ -12,7 +12,7 @@
 		"start:dev-stripe": "stripe listen --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed --forward-to localhost:3000/stripe/webhook",
 		"start:dev-docker": "docker-compose up -d",
 		"start:dev-worker": "nodemon --inspect=9231 --env-file=.env workers/verify-onboarding-worker.js",
-		"start:dev": "nodemon --inspect app.js"
+		"start:dev-server": "nodemon --inspect app.js"
 	},
 	"dependencies": {
 		"@socket.io/redis-adapter": "^8.3.0",
