@@ -6,8 +6,12 @@ import {
 	getQueueWithListener,
 	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
+import { saveOnboardingProfile } from "../utils/models/onboarding.js";
+import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
+import { serializeUser } from "../utils/models/users.js";
 
 export const onboardingRouter = Router();
+const ONBOARDING_QUEUE_WAIT_TIMEOUT_MS = 120000;
 
 const OnboardingProfileSchema = z
 	.object({
@@ -79,53 +83,151 @@ function formatValidationError(invalidFields) {
 	return `You need to fix ${count} ${label}: ${invalidFields.join(", ")}.`;
 }
 
+function sendOnboardingStreamEvent(res, event) {
+	res.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function validateProfile(profile) {
+	if (!profile || typeof profile !== "object") {
+		const error = new Error("Onboarding profile is required.");
+		error.status = 400;
+		throw error;
+	}
+
+	const parseResult = OnboardingProfileSchema.safeParse(profile);
+
+	if (!parseResult.success) {
+		const invalidFields = [
+			...new Set(
+				parseResult.error.issues
+					.map((issue) => issue.path[0])
+					.filter((field) => typeof field === "string"),
+			),
+		];
+
+		const error = new Error(formatValidationError(invalidFields));
+		error.status = 422;
+		error.invalidFields = invalidFields;
+		throw error;
+	}
+
+	return parseResult.data;
+}
+
+async function enqueueOnboardingValidation(profile, userId, sendProgress) {
+	const { queue, listener } = getQueueWithListener(
+		VALIDATE_ONBOARDING_QUEUE_NAME,
+	);
+
+	sendProgress({
+		stage: "queued",
+		message: "Adding your onboarding details to the validation queue.",
+	});
+
+	const job = await queue.add(
+		`${VALIDATE_ONBOARDING_QUEUE_NAME}-${userId}`,
+		profile,
+	);
+
+	sendProgress({
+		stage: "processing",
+		message: "Waiting for the validation worker to start.",
+	});
+
+	const handleProgress = ({ jobId, data }) => {
+		if (String(jobId) !== String(job.id)) {
+			return;
+		}
+
+		sendProgress(data);
+	};
+
+	listener.on("progress", handleProgress);
+
+	try {
+		return await job.waitUntilFinished(
+			listener,
+			ONBOARDING_QUEUE_WAIT_TIMEOUT_MS,
+		);
+	} finally {
+		listener.off("progress", handleProgress);
+	}
+}
+
+async function completeQueuedOnboarding(profile, userId, sendProgress) {
+	sendProgress({
+		stage: "received",
+		message: "Reviewing your answers.",
+	});
+
+	const parsedProfile = validateProfile(profile);
+	const validationResult = await enqueueOnboardingValidation(
+		parsedProfile,
+		userId,
+		sendProgress,
+	);
+	const invalidFields = validationResult.invalidFields || [];
+
+	if (invalidFields.length > 0) {
+		const error = new Error(formatValidationError(invalidFields));
+		error.status = 422;
+		error.invalidFields = invalidFields;
+		throw error;
+	}
+
+	sendProgress({
+		stage: "saving",
+		message: "Saving your onboarding profile.",
+	});
+
+	const user = await saveOnboardingProfile(userId, parsedProfile);
+
+	if (!user) {
+		const error = new Error("User could not be found.");
+		error.status = 404;
+		throw error;
+	}
+
+	const billingStatus = await getBillingStatusForUser(user.id);
+	const serializedUser = serializeUser(user, billingStatus);
+
+	sendProgress({
+		stage: "complete",
+		message: "Your onboarding profile is ready.",
+	});
+
+	return serializedUser;
+}
+
 onboardingRouter.post(
-	"/",
+	"/stream",
 	isAuthenticated,
 	hasActiveSubscription,
 	async (req, res) => {
+		res.setHeader("Content-Type", "text/event-stream");
+		res.setHeader("Connection", "keep-alive");
+		res.setHeader("Cache-Control", "no-cache");
+		res.flushHeaders?.();
+
 		try {
-			const profile = req.body?.profile;
-
-			if (!profile || typeof profile !== "object") {
-				return res
-					.status(400)
-					.json({ error: "Onboarding profile is required." });
-			}
-
-			const parseResult = OnboardingProfileSchema.safeParse(profile);
-
-			if (!parseResult.success) {
-				const invalidFields = [
-					...new Set(
-						parseResult.error.issues
-							.map((issue) => issue.path[0])
-							.filter((field) => typeof field === "string"),
-					),
-				];
-
-				return res.status(422).json({
-					error: formatValidationError(invalidFields),
-					invalidFields,
-				});
-			}
-
-			const { queue } = getQueueWithListener(VALIDATE_ONBOARDING_QUEUE_NAME);
-			const job = await queue.add(
-				`${VALIDATE_ONBOARDING_QUEUE_NAME}-${req.user.id}`,
-				parseResult.data,
+			const user = await completeQueuedOnboarding(
+				req.body?.profile,
+				req.user.id,
+				(event) => {
+					sendOnboardingStreamEvent(res, { type: "progress", ...event });
+				},
 			);
 
-			return res.status(202).json({
-				job_id: job.id,
-				status: "processing",
-				status_url: "<status_url>",
-			});
+			sendOnboardingStreamEvent(res, { type: "complete", user });
+			return res.end();
 		} catch (error) {
 			console.error(error);
-			return res
-				.status(503)
-				.json({ error: "Onboarding validation could not be completed." });
+			sendOnboardingStreamEvent(res, {
+				type: "error",
+				error: error.message || "Onboarding validation could not be completed.",
+				invalidFields: error.invalidFields,
+			});
+			return res.end();
 		}
 	},
 );

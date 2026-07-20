@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { onboardingService } from "../api/onboarding-service";
+import type { OnboardingProgressEvent } from "../api/onboarding-service";
 import type { AuthUser } from "../types/auth";
 import type { Option } from "../components/common/Select";
 import ChoiceGrid from "../components/common/ChoiceGrid";
@@ -221,6 +222,41 @@ function getStepError(stepIndex: number, profile: OnboardingProfile) {
 	return null;
 }
 
+const validationProgressSteps = [
+	{ stage: "received", label: "Preparing submission" },
+	{ stage: "queued", label: "Queued" },
+	{ stage: "processing", label: "Worker starting" },
+	{ stage: "ai_validation", label: "AI validation" },
+	{ stage: "ai_complete", label: "Validation complete" },
+	{ stage: "saving", label: "Saving profile" },
+	{ stage: "complete", label: "Finishing up" },
+];
+
+function getLatestProgressEvent(
+	progressEvents: OnboardingProgressEvent[],
+	stage: string,
+) {
+	for (let index = progressEvents.length - 1; index >= 0; index -= 1) {
+		if (progressEvents[index].stage === stage) {
+			return progressEvents[index];
+		}
+	}
+
+	return null;
+}
+
+function getProgressDotClass(hasEvent: boolean, isCurrent: boolean) {
+	if (isCurrent) {
+		return "border-[#f59e0b] bg-[#f59e0b]";
+	}
+
+	if (hasEvent) {
+		return "border-[#0f8b6f] bg-[#0f8b6f]";
+	}
+
+	return "border-[#9fb8ae] bg-transparent";
+}
+
 export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const navigate = useNavigate();
 	const [stepIndex, setStepIndex] = useState(0);
@@ -236,6 +272,9 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 		message: null,
 		user: null,
 	});
+	const [submissionProgress, setSubmissionProgress] = useState<
+		OnboardingProgressEvent[]
+	>([]);
 	const isConfirmationStep = stepIndex === steps.length - 2;
 	const isResultStep = stepIndex === steps.length - 1;
 	const progressPercent = Math.round(
@@ -297,6 +336,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 			message: null,
 			user: null,
 		});
+		setSubmissionProgress([]);
 		setStepIndex((currentStep) => Math.max(currentStep - 1, 0));
 	};
 
@@ -310,49 +350,56 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 			message: null,
 			user: null,
 		});
+		setSubmissionProgress([]);
 		setErrorMessage(null);
 		setStepIndex(steps.length - 3);
 	};
 
-	const handleSubmit = () => {
+	const handleSubmit = async () => {
 		if (!isConfirmationStep) {
 			return;
 		}
 
 		setIsSubmitting(true);
 		setErrorMessage(null);
+		setSubmissionProgress([]);
 		setSubmissionState({
 			status: "idle",
 			message: null,
 			user: null,
 		});
+		setStepIndex(steps.length - 1);
 
-		onboardingService
-			.submitProfile(profile)
-			.then((user) => {
-				setSubmissionState({
-					status: "success",
-					message: "Your onboarding details were saved successfully.",
-					user,
-				});
-				setStepIndex(steps.length - 1);
-			})
-			.catch((error: unknown) => {
-				const message =
-					error instanceof Error
-						? error.message
-						: "Your onboarding details could not be saved.";
+		try {
+			const user = await onboardingService.submitProfileWithProgress(
+				profile,
+				(progressEvent) => {
+					setSubmissionProgress((currentProgress) => [
+						...currentProgress,
+						progressEvent,
+					]);
+				},
+			);
 
-				setSubmissionState({
-					status: "error",
-					message,
-					user: null,
-				});
-				setStepIndex(steps.length - 1);
-			})
-			.finally(() => {
-				setIsSubmitting(false);
+			setSubmissionState({
+				status: "success",
+				message: "Your onboarding details were saved successfully.",
+				user,
 			});
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Your onboarding details could not be saved.";
+
+			setSubmissionState({
+				status: "error",
+				message,
+				user: null,
+			});
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	const handleEditSubmission = () => {
@@ -754,13 +801,20 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 									>
 										{submissionState.status === "error"
 											? "Submission failed"
-											: "Submission complete"}
+											: submissionState.status === "success"
+												? "Submission complete"
+												: "Submission in progress"}
 									</p>
 									<p className="m-0 text-lg font-bold text-[#17211f]">
 										{submissionState.message ??
-											"Your onboarding submission has been processed."}
+											"Hang tight while your onboarding details are checked."}
 									</p>
 								</div>
+								{submissionState.status === "idle" ? (
+									<p className="m-0 text-sm leading-6 text-[#62706b]">
+										Validation updates will appear below as they stream in.
+									</p>
+								) : null}
 								{submissionState.status === "success" ? (
 									<p className="m-0 text-sm leading-6 text-[#62706b]">
 										Your onboarding profile is ready. You can continue to your
@@ -772,6 +826,73 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 										Please review your answers and make any needed changes
 										before submitting again.
 									</p>
+								) : null}
+								{submissionProgress.length > 0 ? (
+									<div className="grid gap-2 border-t border-[#d9e5df] pt-4">
+										<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+											Validation details
+										</p>
+										{(() => {
+											const latestProgressStage =
+												submissionProgress[submissionProgress.length - 1]
+													?.stage;
+
+											return validationProgressSteps.map((step) => {
+												const event = getLatestProgressEvent(
+													submissionProgress,
+													step.stage,
+												);
+												const isCurrent =
+													isSubmitting && latestProgressStage === step.stage;
+
+												return (
+													<div
+														key={step.stage}
+														className="grid grid-cols-[0.75rem_1fr] items-start gap-3"
+													>
+														<span
+															className={`mt-1 h-3 w-3 rounded-full border ${getProgressDotClass(
+																Boolean(event),
+																isCurrent,
+															)}`}
+														/>
+														<div className="grid gap-0.5">
+															<p
+																className={`m-0 text-sm font-black ${
+																	event ? "text-[#17211f]" : "text-[#8a9a95]"
+																}`}
+															>
+																{step.label}
+															</p>
+															{event ? (
+																<p className="m-0 text-sm leading-5 text-[#62706b]">
+																	{event.message}
+																</p>
+															) : null}
+														</div>
+													</div>
+												);
+											});
+										})()}
+										{getLatestProgressEvent(submissionProgress, "error") ? (
+											<div className="grid grid-cols-[0.75rem_1fr] items-start gap-3">
+												<span className="mt-1 h-3 w-3 rounded-full border border-red-500 bg-red-500" />
+												<div className="grid gap-0.5">
+													<p className="m-0 text-sm font-black text-[#17211f]">
+														Needs changes
+													</p>
+													<p className="m-0 text-sm leading-5 text-red-700">
+														{
+															getLatestProgressEvent(
+																submissionProgress,
+																"error",
+															)?.message
+														}
+													</p>
+												</div>
+											</div>
+										) : null}
+									</div>
 								) : null}
 							</div>
 						</div>
@@ -793,7 +914,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 									className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
 									disabled={isSubmitting}
 								>
-									{isSubmitting ? "Saving" : "Submit answers"}
+									{isSubmitting ? "Working" : "Submit answers"}
 								</button>
 							</>
 						) : isResultStep ? (
