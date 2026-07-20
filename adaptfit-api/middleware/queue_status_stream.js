@@ -55,7 +55,7 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 				console.error(error);
 				send({
 					type: "error",
-					error: error.message || "Task could not be completed.",
+					error: error.message || "Request could not be completed.",
 					invalidFields: error.invalidFields,
 				});
 			}
@@ -70,7 +70,7 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 
 			send({
 				type: "error",
-				error: failedReason || "Task failed.",
+				error: failedReason || "request failed.",
 			});
 			cleanup();
 		};
@@ -79,12 +79,6 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 		listener.on("completed", onCompletedEvent);
 		listener.on("failed", onFailed);
 		req.on("close", cleanup);
-
-		send({
-			type: "progress",
-			stage: "queued",
-			message: "Your request is in the task queue.",
-		});
 
 		const state = await job.getState();
 

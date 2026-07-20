@@ -51,8 +51,8 @@ export const onboardingService = {
 	): Promise<AuthUser> {
 		let completedUser: AuthUser | null = null;
 		onProgress({
-			stage: "received",
-			message: "Reviewing your answers.",
+			stage: "start",
+			message: "Starting validation process.",
 		});
 
 		const response = await fetch(`${API_BASE_URL}/onboarding`, {

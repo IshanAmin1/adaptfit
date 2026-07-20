@@ -41,7 +41,7 @@ function buildValidationPrompt(profile) {
 async function verifyOnboarding(profile, job) {
 	await job.updateProgress({
 		stage: "ai_validation",
-		message: "Asking the AI validator to review your details.",
+		message: "Validating...",
 	});
 
 	const content = await queryModelWithRetries(
