@@ -63,7 +63,9 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 **Required question:** What technology/library are you using?
 
-**Answer:** TODO: Example: Socket.IO, WebSockets, Firebase Realtime Database, Supabase Realtime, etc.
+**Answer:** AdaptFit uses Server-Sent Events (SSE) with `@microsoft/fetch-event-source` on the frontend and Express streaming responses on the backend. Onboarding validation runs through a BullMQ task queue: the frontend first submits the onboarding profile with `POST /onboarding`, the backend returns a `jobId` and `statusUrl`, and the frontend then listens to `GET /onboarding/status/:jobId/stream` for progress events.
+
+The backend exposes the queue-backed stream through reusable middleware in `adaptfit-api/middleware/queue_status_stream.js`. Workers update BullMQ progress as the job moves through stages such as `queued`, `ai_validation`, and `saving`, and the SSE stream forwards those status events to the onboarding UI. We are not streaming raw model output; only task progress and final completion/error events are sent to the browser.
 
 ### AI Integration with MCP / Tools
 
