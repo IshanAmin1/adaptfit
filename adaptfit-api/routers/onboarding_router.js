@@ -6,6 +6,10 @@ import {
 	getQueueWithListener,
 	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
+import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
+import { saveOnboardingProfile } from "../utils/models/onboarding.js";
+import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
+import { serializeUser } from "../utils/models/users.js";
 
 export const onboardingRouter = Router();
 
@@ -79,53 +83,123 @@ function formatValidationError(invalidFields) {
 	return `You need to fix ${count} ${label}: ${invalidFields.join(", ")}.`;
 }
 
+function validateProfile(profile) {
+	if (!profile || typeof profile !== "object") {
+		const error = new Error("Onboarding profile is required.");
+		error.status = 400;
+		throw error;
+	}
+
+	const parseResult = OnboardingProfileSchema.safeParse(profile);
+
+	if (!parseResult.success) {
+		const invalidFields = [
+			...new Set(
+				parseResult.error.issues
+					.map((issue) => issue.path[0])
+					.filter((field) => typeof field === "string"),
+			),
+		];
+
+		const error = new Error(formatValidationError(invalidFields));
+		error.status = 422;
+		error.invalidFields = invalidFields;
+		throw error;
+	}
+
+	return parseResult.data;
+}
+
+async function completeOnboardingFromValidationResult(
+	validationResult,
+	profile,
+	userId,
+	sendProgress,
+) {
+	const invalidFields = validationResult?.invalidFields || [];
+
+	if (invalidFields.length > 0) {
+		const error = new Error(formatValidationError(invalidFields));
+		error.status = 422;
+		error.invalidFields = invalidFields;
+		throw error;
+	}
+
+	sendProgress({
+		stage: "saving",
+		message: "Saving your onboarding profile.",
+	});
+
+	const user = await saveOnboardingProfile(userId, profile);
+
+	if (!user) {
+		const error = new Error("User could not be found.");
+		error.status = 404;
+		throw error;
+	}
+
+	const billingStatus = await getBillingStatusForUser(user.id);
+	const serializedUser = serializeUser(user, billingStatus);
+
+	sendProgress({
+		stage: "complete",
+		message: "Your onboarding profile is ready.",
+	});
+
+	return serializedUser;
+}
+
 onboardingRouter.post(
 	"/",
 	isAuthenticated,
 	hasActiveSubscription,
 	async (req, res) => {
 		try {
-			const profile = req.body?.profile;
-
-			if (!profile || typeof profile !== "object") {
-				return res
-					.status(400)
-					.json({ error: "Onboarding profile is required." });
-			}
-
-			const parseResult = OnboardingProfileSchema.safeParse(profile);
-
-			if (!parseResult.success) {
-				const invalidFields = [
-					...new Set(
-						parseResult.error.issues
-							.map((issue) => issue.path[0])
-							.filter((field) => typeof field === "string"),
-					),
-				];
-
-				return res.status(422).json({
-					error: formatValidationError(invalidFields),
-					invalidFields,
-				});
-			}
-
+			const profile = validateProfile(req.body?.profile);
 			const { queue } = getQueueWithListener(VALIDATE_ONBOARDING_QUEUE_NAME);
 			const job = await queue.add(
 				`${VALIDATE_ONBOARDING_QUEUE_NAME}-${req.user.id}`,
-				parseResult.data,
+				{ userId: req.user.id, profile },
 			);
 
 			return res.status(202).json({
-				job_id: job.id,
-				status: "processing",
-				status_url: "<status_url>",
+				jobId: job.id,
+				statusUrl: `/onboarding/status/${job.id}/stream`,
 			});
 		} catch (error) {
 			console.error(error);
+
+			if (error.status) {
+				return res.status(error.status).json({
+					error: error.message,
+					invalidFields: error.invalidFields,
+				});
+			}
+
 			return res
 				.status(503)
-				.json({ error: "Onboarding validation could not be completed." });
+				.json({ error: "Onboarding validation could not be started." });
 		}
 	},
+);
+
+onboardingRouter.get(
+	"/status/:jobId/stream",
+	isAuthenticated,
+	hasActiveSubscription,
+	streamQueueJobStatus(
+		VALIDATE_ONBOARDING_QUEUE_NAME,
+		async ({ req, job, returnvalue, send }) => {
+			const user = await completeOnboardingFromValidationResult(
+				returnvalue,
+				job.data.profile,
+				req.user.id,
+				(event) => {
+					send({ type: "progress", ...event });
+				},
+			);
+
+			send({ type: "complete", user });
+		},
+	),
 );

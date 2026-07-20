@@ -23,6 +23,8 @@ const AI_VALIDATION_FIELD_NAMES = [
 	"mealFrequencyPreference",
 ];
 
+const ValidationResultSchema = z.array(z.enum(AI_VALIDATION_FIELD_NAMES));
+
 function buildValidationPrompt(profile) {
 	return [
 		"You validate onboarding details for a AI workout plan generator app.",
@@ -36,30 +38,53 @@ function buildValidationPrompt(profile) {
 	].join("\n");
 }
 
-async function verifyOnboarding(profile) {
+async function verifyOnboarding(profile, job) {
+	await job.updateProgress({
+		stage: "ai_validation",
+		message: "Validating...",
+	});
+
 	const content = await queryModelWithRetries(
 		"You validate onboarding details and return only valid JSON. The JSON must be an array of field names that are incorrect. The field names must be strings.",
 		buildValidationPrompt(profile),
 		(output) => {
-			const schema = z.array(z.enum(AI_VALIDATION_FIELD_NAMES));
-			output = JSON.parse(output);
-
-			const parsedResult = schema.safeDecode(output);
-			return !parsedResult.success;
+			try {
+				const parsedOutput = JSON.parse(output);
+				const parsedResult = ValidationResultSchema.safeDecode(parsedOutput);
+				return !parsedResult.success;
+			} catch {
+				return true;
+			}
 		},
-		1,
+		3,
+		{
+			response_format: {
+				type: "json_schema",
+				json_schema: {
+					name: "onboarding_validation",
+					schema: {
+						type: "array",
+						items: {
+							type: "string",
+							enum: AI_VALIDATION_FIELD_NAMES,
+						},
+					},
+				},
+			},
+		},
 	);
 
 	if (content) {
-		return content;
+		const invalidFields = ValidationResultSchema.parse(JSON.parse(content));
+		return { invalidFields };
 	} else {
-		throw Error("Model could not produce a valid output.");
+		throw Error("AI validation is temporarily unavailable. Please try again.");
 	}
 }
 
 new Worker(
 	VALIDATE_ONBOARDING_QUEUE_NAME,
-	async (job) => verifyOnboarding(job.data),
+	async (job) => verifyOnboarding(job.data.profile, job),
 	{
 		connection: {
 			host: REDIS_HOST,
