@@ -69,8 +69,10 @@ Backend:
 ```text
 adaptfit-api/app.js
 adaptfit-api/datasource.js
+adaptfit-api/models/index.js
 adaptfit-api/models/sessions.js
 adaptfit-api/models/users.js
+adaptfit-api/utils/models/users.js
 adaptfit-api/middleware/auth.js
 adaptfit-api/routers/auth_router.js
 ```
@@ -462,8 +464,9 @@ export const sequelize = new Sequelize(process.env.DATABASE_URL, {
 });
 ```
 
-Sequelize is used for the AdaptFit `users` table. It is not used for the
-Express session table.
+Sequelize is used for AdaptFit application tables such as `users`,
+`onboarding_profiles`, and `subscriptions`. It is not used for the Express
+session table.
 
 The backend startup calls:
 
@@ -476,9 +479,12 @@ if (process.env.NODE_ENV !== "production") {
 ```
 
 That follows the Lab6 Sequelize startup pattern for local development. In the
-current auth implementation, it creates or updates the `users` table outside
-production. In production, schema changes should be handled by migrations or
-deployment-time database management instead of `sequelize.sync(...)`.
+current implementation, it creates or updates the Sequelize-managed application
+tables outside production. Model definitions live in `adaptfit-api/models`,
+associations are registered in `adaptfit-api/models/index.js`, and model
+query/serialization helpers live in `adaptfit-api/utils/models`. In production,
+schema changes should be handled by migrations or deployment-time database
+management instead of `sequelize.sync(...)`.
 
 ## Step 7: Express Session Is Stored In PostgreSQL
 
@@ -589,7 +595,7 @@ Setup:
 import { OAuth2Client } from "google-auth-library";
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
-import { serializeUser, upsertGoogleUser } from "../models/users.js";
+import { serializeUser, upsertGoogleUser } from "../utils/models/users.js";
 
 export const authRouter = Router();
 
@@ -667,12 +673,12 @@ const user = await upsertGoogleUser({
 });
 ```
 
-`adaptfit-api/models/users.js` defines the Sequelize model for the `users` table
-and contains the upsert. Sequelize creates the table from this model during
-startup:
+`adaptfit-api/models/users.js` defines the Sequelize model for the `users`
+table. `adaptfit-api/utils/models/users.js` contains the upsert helper used by
+the auth route. Sequelize creates the table from this model during startup:
 
 ```js
-export const User = sequelize.define(
+const UserModel = sequelize.define(
   "User",
   {
     id: {
@@ -943,7 +949,7 @@ authRouter.get("/me", isAuthenticated, async (req, res) => {
 PostgreSQL session store:
 
 ```js
-import { findUserById } from "../models/users.js";
+import { findUserById } from "../utils/models/users.js";
 
 export async function isAuthenticated(req, res, next) {
   try {
@@ -1053,7 +1059,7 @@ To make login work locally:
 5. Set `VITE_OAUTH_CLIENT_ID` in `adaptfit-app/.env`.
 6. Set `VITE_API_BASE_URL=http://localhost:3000`.
 7. Set `CLIENT_ORIGIN=http://localhost:5173`.
-8. Start the backend so Sequelize can create the `users` table and
+8. Start the backend so Sequelize can create the application tables and
    `connect-pg-simple` can create the `session` table.
 9. Start the frontend.
 10. Confirm Google Cloud has `http://localhost:5173` as an authorized JavaScript

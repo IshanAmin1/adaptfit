@@ -5,7 +5,7 @@ These instructions run AdaptFit locally with:
 - React/Vite frontend in `adaptfit-app`
 - Express REST API backend in `adaptfit-api`
 - Local PostgreSQL database
-- Sequelize ORM for AdaptFit user records
+- Sequelize ORM for AdaptFit application records
 - `express-session` for app sessions
 - `connect-pg-simple` for storing Express sessions in PostgreSQL
 - Google OAuth login with backend-verified Google ID tokens
@@ -13,10 +13,13 @@ These instructions run AdaptFit locally with:
 - Stripe webhooks for syncing subscription state
 
 Sequelize is still the backend database access layer for application models. In
-the current implementation, Sequelize defines and syncs the `users` and
-`subscriptions` tables. Express session data is not represented by a Sequelize
-model anymore. `connect-pg-simple` creates and uses its own PostgreSQL
-`session` table.
+the current implementation, Sequelize defines and syncs the `users`,
+`onboarding_profiles`, and `subscriptions` tables. Model definitions live in
+`adaptfit-api/models`, associations are centralized in
+`adaptfit-api/models/index.js`, and model persistence helpers live in
+`adaptfit-api/utils/models`. Express session data is not represented by a
+Sequelize model anymore. `connect-pg-simple` creates and uses its own
+PostgreSQL `session` table.
 
 On backend startup:
 
@@ -24,7 +27,8 @@ On backend startup:
    store.
 2. `sequelize.authenticate()` verifies the database connection.
 3. In non-production environments, `sequelize.sync({ alter: { drop: false } })`
-   creates or updates the Sequelize-managed `users` and `subscriptions` tables.
+   creates or updates the Sequelize-managed `users`, `onboarding_profiles`, and
+   `subscriptions` tables.
 4. `connect-pg-simple` creates the `session` table if it is missing when the
    session store is used.
 
@@ -33,21 +37,56 @@ On backend startup:
 Install:
 
 - Node.js 18 or newer and npm
-- PostgreSQL
+- Docker Desktop, recommended for local PostgreSQL and Redis
+- PostgreSQL, only if you prefer installing/running it directly instead of
+  Docker
 - Git
 - Stripe CLI, for local webhook forwarding
 
-On Windows, install PostgreSQL from the official installer. During installation,
-remember:
+If you use Docker, you do not need to install PostgreSQL directly for local
+development. The repo includes a Compose file that starts PostgreSQL and Redis.
+
+If you prefer not to use Docker, install PostgreSQL from the official installer.
+On Windows, during installation, remember:
 
 - the password you set for the default `postgres` user
 - the port, usually `5432`
 
-Make sure PostgreSQL is running. On Windows, it normally runs as a service after
-installation. You can also open **Services** and look for a service named
-something like `postgresql-x64-*`.
+Make sure PostgreSQL is running if you installed it directly. On Windows, it
+normally runs as a service after installation. You can also open **Services**
+and look for a service named something like `postgresql-x64-*`.
 
 ### 2. Create the local PostgreSQL database
+
+#### Recommended Docker setup:
+
+```bash
+cd adaptfit-api
+npm run start:dev-docker
+```
+
+This starts:
+
+- PostgreSQL on host port `5433`
+- Redis on host port `6381`
+
+Use this database URL with the Docker setup:
+
+```env
+DATABASE_URL=postgres://adaptfit_user:adaptfit@localhost:5433/adaptfit
+```
+
+Redis defaults already match the Docker Compose file:
+
+```env
+REDIS_HOST=localhost
+REDIS_PORT=6381
+```
+
+The Docker PostgreSQL container creates the `adaptfit` database and
+`adaptfit_user` user automatically from `adaptfit-api/docker-compose.yml`.
+
+#### Manual PostgreSQL setup:
 
 Open **SQL Shell (psql)** from the Start Menu.
 
@@ -117,6 +156,14 @@ SESSION_SECRET=replace_with_a_long_random_secret
 STRIPE_SECRET_KEY=sk_test_replace_with_your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=whsec_replace_after_running_stripe_listen
 STRIPE_MONTHLY_PRICE_ID=price_replace_with_your_monthly_price_id
+```
+
+If you are using the Docker Compose setup from step 2, use this instead:
+
+```env
+DATABASE_URL=postgres://adaptfit_user:adaptfit@localhost:5433/adaptfit
+REDIS_HOST=localhost
+REDIS_PORT=6381
 ```
 
 If you created the optional `adaptfit_user`, use that account in `DATABASE_URL`
@@ -303,8 +350,8 @@ Expected response:
 
 When the backend starts locally, it connects to PostgreSQL and runs
 `sequelize.sync({ alter: { drop: false } })` because `NODE_ENV` is not
-`production`. That creates or updates the Sequelize-managed `users` and
-`subscriptions` tables.
+`production`. That creates or updates the Sequelize-managed `users`,
+`onboarding_profiles`, and `subscriptions` tables.
 
 In production, the backend skips `sequelize.sync(...)`; production schema
 changes should be handled by migrations or deployment-time database management.
@@ -332,12 +379,17 @@ Expected auth-related tables:
 
 ```text
 users
+onboarding_profiles
 subscriptions
 session
 ```
 
 The `users` table stores AdaptFit user records linked to Google by
 `google_sub`.
+
+The `onboarding_profiles` table stores completed onboarding details for a user,
+including goals, equipment, training preferences, dietary preferences, and the
+raw submitted profile JSON.
 
 The `session` table is owned by `connect-pg-simple`. It stores serialized
 Express session data, including the `userId` set during login. It is not the old
@@ -466,6 +518,13 @@ Backend:
 cd adaptfit-api
 npm install
 npm run start:dev
+```
+
+Docker services for local PostgreSQL and Redis:
+
+```bash
+cd adaptfit-api
+npm run start:dev-docker
 ```
 
 Frontend:

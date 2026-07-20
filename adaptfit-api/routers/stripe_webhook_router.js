@@ -1,6 +1,7 @@
 import express, { Router } from "express";
-import { upsertStripeSubscription } from "../models/subscriptions.js";
+import { upsertStripeSubscription } from "../utils/models/subscriptions.js";
 import { getStripeClient } from "../services/stripe.js";
+import { STRIPE_WEBHOOK_SECRET } from "../config/env/stripe.js";
 
 export const stripeWebhookRouter = Router();
 
@@ -20,10 +21,6 @@ stripeWebhookRouter.post(
 	express.raw({ type: "application/json" }),
 	async (req, res) => {
 		try {
-			if (!process.env.STRIPE_WEBHOOK_SECRET) {
-				throw new Error("STRIPE_WEBHOOK_SECRET is not configured.");
-			}
-
 			const stripe = getStripeClient();
 			const signatureHeader = req.headers["stripe-signature"];
 			const signature = Array.isArray(signatureHeader)
@@ -35,7 +32,7 @@ stripeWebhookRouter.post(
 			const event = stripe.webhooks.constructEvent(
 				req.body,
 				signature,
-				process.env.STRIPE_WEBHOOK_SECRET,
+				STRIPE_WEBHOOK_SECRET,
 			);
 
 			/*

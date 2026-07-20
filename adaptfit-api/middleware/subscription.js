@@ -1,4 +1,4 @@
-import { getBillingStatusForUser } from "../models/subscriptions.js";
+import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
 
 export async function hasActiveSubscription(req, res, next) {
 	try {

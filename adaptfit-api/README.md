@@ -24,9 +24,14 @@ Required values:
 
 On startup, the API calls `sequelize.sync({ alter: { drop: false } })`, matching
 the Lab6 Sequelize startup pattern while keeping PostgreSQL as the database.
-This creates the `users` table if it does not already exist and can apply
-non-dropping table changes during local development. Express session data is
-stored in PostgreSQL by `connect-pg-simple`.
+This creates the Sequelize-managed `users`, `onboarding_profiles`, and
+`subscriptions` tables if they do not already exist and can apply non-dropping
+table changes during local development. Express session data is stored in
+PostgreSQL by `connect-pg-simple`.
+
+Model definitions live in `models/*.js`. Associations are registered in
+`models/index.js`. Query/serialization helpers that operate on those models
+live in `utils/models/*.js`.
 
 ## Auth Routes
 

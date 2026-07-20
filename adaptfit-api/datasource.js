@@ -1,13 +1,8 @@
 import "dotenv/config";
 import { Sequelize } from "sequelize";
+import { DATABASE_URL } from "./config/env/storage.js";
 
-export const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-	throw new Error("DATABASE_URL is not configured.");
-}
-
-export const sequelize = new Sequelize(databaseUrl, {
+export const sequelize = new Sequelize(DATABASE_URL, {
 	dialect: "postgres",
 	logging: false,
 });

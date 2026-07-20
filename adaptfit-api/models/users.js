@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../datasource.js";
 
-export const User = sequelize.define(
+const UserModel = sequelize.define(
 	"User",
 	{
 		id: {
@@ -48,45 +48,4 @@ export const User = sequelize.define(
 	},
 );
 
-export function serializeUser(user, billingStatus = null) {
-	return {
-		id: user.id,
-		email: user.email,
-		firstName: user.first_name,
-		lastName: user.last_name,
-		fullName: user.full_name,
-		avatarUrl: user.avatar_url,
-		hasActiveSubscription: Boolean(billingStatus?.hasActiveSubscription),
-		subscription: billingStatus?.subscription || null,
-		hasCompletedOnboarding: Boolean(user.onboardingProfile?.completed_at),
-	};
-}
-
-export async function findUserById(id) {
-	const user = await User.findByPk(id, {
-		include: [{ association: "onboardingProfile" }],
-	});
-	return user?.toJSON() || null;
-}
-
-export async function upsertGoogleUser(profile) {
-	const [user] = await User.upsert(
-		{
-			google_sub: profile.googleSub,
-			email: profile.email,
-			email_verified: profile.emailVerified,
-			first_name: profile.firstName,
-			last_name: profile.lastName,
-			full_name: profile.fullName,
-			avatar_url: profile.avatarUrl,
-		},
-		{
-			// conflict targets the unique constraint on google_sub, so if a user with the same google_sub exists,
-			// it will update that user instead of creating a new one
-			conflictFields: ["google_sub"],
-			returning: true, // return the updated or created user instance
-		},
-	);
-
-	return user ? findUserById(user.id) : null;
-}
+export { UserModel, UserModel as User };

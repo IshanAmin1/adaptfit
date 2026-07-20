@@ -1,22 +1,17 @@
 import { OAuth2Client } from "google-auth-library";
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
-import { getBillingStatusForUser } from "../models/subscriptions.js";
-import { serializeUser, upsertGoogleUser } from "../models/users.js";
+import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
+import { serializeUser, upsertGoogleUser } from "../utils/models/users.js";
+import { GOOGLE_CLIENT_ID } from "../config/env/google.js";
+import { COOKIE_NAME } from "../config/env/session.js";
 
 export const authRouter = Router();
 
-const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "adaptfit_session";
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 authRouter.post("/google", async (req, res) => {
 	try {
-		if (!process.env.GOOGLE_CLIENT_ID) {
-			return res
-				.status(500)
-				.json({ error: "GOOGLE_CLIENT_ID is not configured." });
-		}
-
 		if (!req.body.credential) {
 			return res.status(400).json({ error: "Google credential is required." });
 		}
@@ -25,7 +20,7 @@ authRouter.post("/google", async (req, res) => {
 		try {
 			const ticket = await googleClient.verifyIdToken({
 				idToken: req.body.credential,
-				audience: process.env.GOOGLE_CLIENT_ID,
+				audience: GOOGLE_CLIENT_ID,
 			});
 			payload = ticket.getPayload();
 		} catch {

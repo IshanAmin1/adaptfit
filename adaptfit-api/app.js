@@ -8,9 +8,7 @@ import { billingRouter } from "./routers/billing_router.js";
 import { onboardingRouter } from "./routers/onboarding_router.js";
 import { stripeWebhookRouter } from "./routers/stripe_webhook_router.js";
 import { sessionMiddleware } from "./models/sessions.js";
-
-const PORT = process.env.PORT || 3000;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+import { PORT, CLIENT_ORIGIN } from "./config/env/server.js";
 
 export const app = express();
 
@@ -35,8 +33,7 @@ try {
 
 	console.log("Connection has been established successfully.");
 } catch (error) {
-	console.error("Unable to connect to the database:", error);
-	process.exit(1);
+	throw new Error("Unable to connect to the database:", error);
 }
 
 app.get("/api/health", (req, res) => {
