@@ -31,8 +31,8 @@ function buildValidationPrompt(profile) {
 		"Return only a JSON array of incorrect field names.",
 		"Do not include markdown, explanations, or any extra keys.",
 		`Field names to validate: ${AI_VALIDATION_FIELD_NAMES.join(", ")}.`,
-		"Mark a field as incorrect when it is invalid, impossible, or conflicts with another field.",
-		"Note that it is okay if the field is empty or not present.",
+		"A field is incorrect when it is invalid, impossible, or conflicts with another field.",
+		"A field can only be considered for validation when the user provides a value, DO NOT mark empty respones as invalid.",
 		"Use the app rules in the profile as context and return [] when everything looks correct.",
 		`Profile: ${JSON.stringify(profile)}`,
 	].join("\n");
@@ -74,12 +74,8 @@ async function verifyOnboarding(profile, job) {
 		},
 	);
 
-	if (content) {
-		const invalidFields = ValidationResultSchema.parse(JSON.parse(content));
-		return { invalidFields };
-	} else {
-		throw Error("AI validation is temporarily unavailable. Please try again.");
-	}
+	const invalidFields = ValidationResultSchema.parse(JSON.parse(content));
+	return { invalidFields };
 }
 
 new Worker(

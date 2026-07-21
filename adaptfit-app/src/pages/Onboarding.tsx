@@ -848,7 +848,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 																isError ? "text-red-700" : "text-[#17211f]"
 															}`}
 														>
-															{isError ? "Needs changes" : event.message}
+															{isError ? "There is an issue" : event.message}
 														</p>
 														{isError ? (
 															<p className="m-0 text-sm leading-5 text-red-700">
