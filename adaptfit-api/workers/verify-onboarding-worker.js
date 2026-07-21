@@ -32,7 +32,7 @@ function buildValidationPrompt(profile) {
 		"Do not include markdown, explanations, or any extra keys.",
 		`Field names to validate: ${AI_VALIDATION_FIELD_NAMES.join(", ")}.`,
 		"A field is incorrect when it is invalid, impossible, or conflicts with another field.",
-		"A field can only be considered for validation when the user provides a value, DO NOT mark empty respones as invalid.",
+		"A field can only be considered for validation when the user provides a value, DO NOT mark empty responses as invalid.",
 		"Use the app rules in the profile as context and return [] when everything looks correct.",
 		`Profile: ${JSON.stringify(profile)}`,
 	].join("\n");
