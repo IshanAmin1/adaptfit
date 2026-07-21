@@ -1,5 +1,6 @@
 import {
 	OPENROUTER_API_KEY,
+	OPENROUTER_FALLBACK_MODEL,
 	OPENROUTER_MODEL,
 } from "../config/env/openrouter.js";
 
@@ -25,7 +26,7 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				model: OPENROUTER_MODEL,
+				models: [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL],
 				messages: [
 					{
 						role: "system",
@@ -80,7 +81,11 @@ export async function queryModelWithRetries(
 	while (retries > 0) {
 		const content = await queryModel(systemPrompt, userPrompt, args);
 
-		if (content && !shouldRetry(content)) {
+		if (!content) {
+			throw Error(
+				"AI validation is temporarily unavailable. Please try again at a later time.",
+			);
+		} else if (!shouldRetry(content)) {
 			result = content;
 			break;
 		} else {
