@@ -91,7 +91,7 @@ export default function Plan({ authUser }: PlanProps) {
 			</DashboardCard>
 
 			<DashboardCard className="p-8 lg:col-span-5">
-				<SectionHeading eyebrow="Plan details" title="Training overview" />
+				<SectionHeading eyebrow="Plan details" title="Overview" />
 				<div className="mt-6 grid gap-4">
 					<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
 						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
@@ -127,7 +127,7 @@ export default function Plan({ authUser }: PlanProps) {
 			</DashboardCard>
 
 			<DashboardCard className="p-8 lg:col-span-7">
-				<SectionHeading eyebrow="Preferences" title="Onboarding summary" />
+				<SectionHeading eyebrow="Preferences" title="User Summary" />
 				{onboardingItems.length ? (
 					<div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
 						{onboardingItems.map(([label, value]) => (
@@ -152,7 +152,7 @@ export default function Plan({ authUser }: PlanProps) {
 			</DashboardCard>
 
 			<DashboardCard className="p-8 lg:col-span-12">
-				<SectionHeading eyebrow="Nutrition summary" title="Daily targets" />
+				<SectionHeading eyebrow="Nutrition summary" title="Daily Targets" />
 				<div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
 					{[
 						["Daily calories", `${plan.nutrients.daily_calories} kcal`],
@@ -175,7 +175,7 @@ export default function Plan({ authUser }: PlanProps) {
 			</DashboardCard>
 
 			<DashboardCard className="p-8 lg:col-span-12">
-				<SectionHeading eyebrow="Exercises" title="Weekly exercise schedule" />
+				<SectionHeading eyebrow="Exercises" title="Weekly Schedule" />
 				<div className="grid gap-3">
 					{plan.schedule.map((session) => (
 						<details
