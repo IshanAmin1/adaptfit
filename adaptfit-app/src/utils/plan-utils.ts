@@ -37,7 +37,7 @@ export function formatEquipment(equipment: string[]) {
 	}
 
 	return equipment
-		.map((item) => item.replaceAll("_", " "))
+		.map((item) => item.replace(/_/g, " "))
 		.map((item) => item.charAt(0).toUpperCase() + item.slice(1))
 		.join(", ");
 }

@@ -98,7 +98,7 @@ export default function Plan({ authUser }: PlanProps) {
 							Primary goal
 						</p>
 						<p className="mt-2 text-lg font-black capitalize text-[#17211f]">
-							{plan.metadata.user_goal.replaceAll("_", " ")}
+							{plan.metadata.user_goal.replace(/_/g, " ")}
 						</p>
 					</div>
 					<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
@@ -139,7 +139,7 @@ export default function Plan({ authUser }: PlanProps) {
 									{label}
 								</p>
 								<p className="mt-2 text-sm font-black capitalize leading-5 text-[#17211f]">
-									{value.replaceAll("_", " ")}
+									{value.replace(/_/g, " ")}
 								</p>
 							</div>
 						))}

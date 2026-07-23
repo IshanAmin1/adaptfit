@@ -69,6 +69,24 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 				/>
 				{data.map((item) => {
 					const angle = total ? (item.value / total) * Math.PI * 2 : 0;
+					if (angle <= 0) {
+						return null;
+					}
+
+					if (angle >= Math.PI * 2) {
+						return (
+							<circle
+								key={item.label}
+								cx="80"
+								cy="80"
+								r="56"
+								fill="none"
+								stroke={item.color}
+								strokeWidth="18"
+							/>
+						);
+					}
+
 					const path = getArcPath(80, 80, 56, cursor, cursor + angle);
 					cursor += angle;
 
