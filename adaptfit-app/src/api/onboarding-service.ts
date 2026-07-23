@@ -24,6 +24,24 @@ type OnboardingStreamMessage =
 	| {
 			type: "complete";
 			user: AuthUser;
+			planJobId?: string;
+			planStatusUrl?: string;
+	  };
+
+type PlanStreamMessage =
+	| {
+			type: "progress";
+			stage: string;
+			message: string;
+	  }
+	| {
+			type: "error";
+			error?: string;
+			message?: string;
+	  }
+	| {
+			type: "complete";
+			plan?: unknown;
 	  };
 
 type StartOnboardingJobResponse = {
@@ -44,12 +62,46 @@ function getStatusUrl(statusUrl: string) {
 	return `${API_BASE_URL}${statusUrl}`;
 }
 
+async function streamStatus(
+	statusUrl: string,
+	onMessage: (event: OnboardingStreamMessage | PlanStreamMessage) => void,
+) {
+	await fetchEventSource(getStatusUrl(statusUrl), {
+		method: "GET",
+		headers: {
+			Accept: "text/event-stream",
+		},
+		credentials: "include",
+		openWhenHidden: true,
+		onmessage(message) {
+			if (!message.data) {
+				return;
+			}
+
+			let event: OnboardingStreamMessage | PlanStreamMessage;
+
+			try {
+				event = JSON.parse(message.data) as
+					OnboardingStreamMessage | PlanStreamMessage;
+			} catch {
+				throw new Error("Status stream returned an invalid message.");
+			}
+
+			onMessage(event);
+		},
+		onerror(error) {
+			throw error;
+		},
+	});
+}
+
 export const onboardingService = {
 	async submitProfileWithProgress(
 		profile: OnboardingProfile,
 		onProgress: (event: OnboardingProgressEvent) => void,
 	): Promise<AuthUser> {
 		let completedUser: AuthUser | null = null;
+		let planStatusUrl: string | null = null;
 		onProgress({
 			stage: "start",
 			message: "Starting validation process.",
@@ -83,26 +135,40 @@ export const onboardingService = {
 			throw new Error("Onboarding request failed");
 		}
 
-		await fetchEventSource(getStatusUrl(body.statusUrl), {
-			method: "GET",
-			headers: {
-				Accept: "text/event-stream",
-			},
-			credentials: "include",
-			openWhenHidden: true,
-			onmessage(message) {
-				if (!message.data) {
-					return;
+		await streamStatus(body.statusUrl, (event) => {
+			if (event.type === "progress") {
+				onProgress({
+					stage: event.stage,
+					message: event.message,
+				});
+				return;
+			}
+
+			if (event.type === "error") {
+				const message =
+					event.error || event.message || "Onboarding request failed";
+
+				onProgress({
+					stage: "error",
+					message,
+				});
+				throw new Error(message);
+			}
+
+			if (event.type === "complete") {
+				if ("user" in event) {
+					completedUser = event.user;
+					planStatusUrl = event.planStatusUrl ?? null;
 				}
+			}
+		});
 
-				let event: OnboardingStreamMessage;
+		if (!completedUser) {
+			throw new Error("Onboarding request failed");
+		}
 
-				try {
-					event = JSON.parse(message.data) as OnboardingStreamMessage;
-				} catch {
-					throw new Error("Onboarding stream returned an invalid message.");
-				}
-
+		if (planStatusUrl) {
+			await streamStatus(planStatusUrl, (event) => {
 				if (event.type === "progress") {
 					onProgress({
 						stage: event.stage,
@@ -113,7 +179,7 @@ export const onboardingService = {
 
 				if (event.type === "error") {
 					const message =
-						event.error || event.message || "Onboarding request failed";
+						event.error || event.message || "Plan generation request failed";
 
 					onProgress({
 						stage: "error",
@@ -121,18 +187,7 @@ export const onboardingService = {
 					});
 					throw new Error(message);
 				}
-
-				if (event.type === "complete") {
-					completedUser = event.user;
-				}
-			},
-			onerror(error) {
-				throw error;
-			},
-		});
-
-		if (!completedUser) {
-			throw new Error("Onboarding request failed");
+			});
 		}
 
 		return completedUser;
