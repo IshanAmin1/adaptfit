@@ -272,7 +272,7 @@ async function generatePlan(profile, job) {
 				return true;
 			}
 		},
-		3,
+		1,
 		{
 			response_format: {
 				type: "json_schema",
