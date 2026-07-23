@@ -1,4 +1,4 @@
-import type { GeneratedPlan, PlanScheduleDay } from "../types/plan";
+import type { GeneratedPlan } from "../types/plan";
 
 const weekdays = [
 	"Sunday",
@@ -28,13 +28,6 @@ export function findTodaySession(plan: GeneratedPlan | null) {
 		todaySession ||
 		plan.schedule.find((session) => session.exercises.length) ||
 		plan.schedule[0]
-	);
-}
-
-export function getTotalExerciseCount(schedule: PlanScheduleDay[]) {
-	return schedule.reduce(
-		(total, session) => total + session.exercises.length,
-		0,
 	);
 }
 

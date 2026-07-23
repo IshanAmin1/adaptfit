@@ -196,7 +196,7 @@ export default function Plan({ authUser }: PlanProps) {
 										{session.duration_minutes} min
 									</span>
 									<span className="grid h-8 w-8 place-items-center rounded-full bg-white text-lg font-black text-[#0f8b6f] transition-transform group-open:rotate-180">
-										⌄
+										v
 									</span>
 								</div>
 							</summary>
