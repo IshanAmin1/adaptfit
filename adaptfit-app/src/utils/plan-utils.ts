@@ -36,7 +36,9 @@ export function formatEquipment(equipment: string[]) {
 		return "None";
 	}
 
-	return equipment
+	const uniqueEquipment = Array.from(new Set(equipment));
+
+	return uniqueEquipment
 		.map((item) => item.replace(/_/g, " "))
 		.map((item) => item.charAt(0).toUpperCase() + item.slice(1))
 		.join(", ");
