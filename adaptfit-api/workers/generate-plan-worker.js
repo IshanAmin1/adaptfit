@@ -254,8 +254,6 @@ function buildPlanPrompt(profile) {
 }
 
 async function generatePlan(profile, job) {
-	console.log(`[plan-worker] Started plan generation job ${job.id}.`);
-
 	await job.updateProgress({
 		stage: "plan_generation",
 		message: "Generating your workout and nutrition plan.",
@@ -283,13 +281,7 @@ async function generatePlan(profile, job) {
 		},
 	);
 
-	console.log(`[plan-worker] Raw AI plan output for job ${job.id}:`);
-	console.log(content);
-
 	const plan = PlanSchema.parse(JSON.parse(content));
-
-	console.log(`[plan-worker] Parsed AI plan for job ${job.id}:`);
-	console.log(JSON.stringify(plan, null, 2));
 
 	await job.updateProgress({
 		stage: "plan_saving",
@@ -301,10 +293,6 @@ async function generatePlan(profile, job) {
 		onboardingProfileId: job.data.onboardingProfileId,
 		plan,
 	});
-
-	console.log(
-		`[plan-worker] Saved plan ${savedPlan.id} for job ${job.id} and user ${job.data.userId}.`,
-	);
 
 	await job.updateProgress({
 		stage: "plan_complete",
