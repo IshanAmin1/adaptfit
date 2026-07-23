@@ -58,6 +58,10 @@ const submissionProgressStages = [
 	"ai_validation",
 	"saving",
 	"complete",
+	"plan_queued",
+	"plan_generation",
+	"plan_saving",
+	"plan_complete",
 ];
 
 const sexOptions: Option[] = [
@@ -374,7 +378,8 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 			setSubmissionState({
 				status: "success",
-				message: "Your onboarding details were saved successfully.",
+				message:
+					"Your onboarding details were saved and your first plan is ready.",
 				user,
 			});
 		} catch (error: unknown) {
@@ -798,18 +803,18 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 									</p>
 									<p className="m-0 text-lg font-bold text-[#17211f]">
 										{submissionState.message ??
-											"Hang tight while your onboarding details are checked."}
+											"Hang tight while your onboarding details are checked and your first plan is generated."}
 									</p>
 								</div>
 								{submissionState.status === "idle" ? (
 									<p className="m-0 text-sm leading-6 text-[#62706b]">
-										Validation updates will appear below as they stream in.
+										Realtime updates will appear below as they stream in.
 									</p>
 								) : null}
 								{submissionState.status === "success" ? (
 									<p className="m-0 text-sm leading-6 text-[#62706b]">
-										Your onboarding profile is ready. You can continue to your
-										dashboard now.
+										Your onboarding profile and first plan are ready. You can
+										continue to your dashboard now.
 									</p>
 								) : null}
 								{submissionState.status === "error" ? (
@@ -821,7 +826,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								{submissionProgress.length > 0 ? (
 									<div className="grid gap-2 border-t border-[#d9e5df] pt-4">
 										<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
-											Validation details
+											Realtime status
 										</p>
 										{submissionProgress.map((event, index) => {
 											const isError = event.stage === "error";

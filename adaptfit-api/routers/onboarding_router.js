@@ -7,6 +7,7 @@ import {
 	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
 import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
+import { enqueuePlanGeneration } from "./plans_router.js";
 import { saveOnboardingProfile } from "../utils/models/onboarding.js";
 import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
 import { serializeUser } from "../utils/models/users.js";
@@ -146,7 +147,18 @@ async function completeOnboardingFromValidationResult(
 		message: "Your onboarding profile is ready.",
 	});
 
-	return serializedUser;
+	const planJob = await enqueuePlanGeneration(userId, user.onboardingProfile);
+
+	sendProgress({
+		stage: "plan_queued",
+		message: "Starting your first plan generation.",
+	});
+
+	return {
+		user: serializedUser,
+		planJobId: planJob.jobId,
+		planStatusUrl: planJob.statusUrl,
+	};
 }
 
 onboardingRouter.post(
@@ -199,7 +211,7 @@ onboardingRouter.get(
 				},
 			);
 
-			send({ type: "complete", user });
+			send({ type: "complete", ...user });
 		},
 	),
 );
