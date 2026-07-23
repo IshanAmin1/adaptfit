@@ -7,12 +7,14 @@ import {
 } from "react-router-dom";
 import { authService } from "./api/auth-service";
 import Dashboard from "./components/Dashboard";
+import InsightsCard from "./components/InsightsCard";
 import RequireAuth from "./components/common/RequireAuth";
 import RequireSubscription from "./components/common/RequireSubscription";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
 import Onboarding from "./pages/Onboarding";
+import Plan from "./pages/Plan";
 import Subscribe from "./pages/Subscribe";
 import type { AuthUser } from "./types/auth";
 
@@ -127,6 +129,28 @@ function App() {
 									authUser={authUser}
 								>
 									<Dashboard />
+								</RequireSubscription>
+							}
+						/>
+						<Route
+							path="/insights"
+							element={
+								<RequireSubscription
+									authChecked={authChecked}
+									authUser={authUser}
+								>
+									<InsightsCard />
+								</RequireSubscription>
+							}
+						/>
+						<Route
+							path="/plan"
+							element={
+								<RequireSubscription
+									authChecked={authChecked}
+									authUser={authUser}
+								>
+									<Plan authUser={authUser} />
 								</RequireSubscription>
 							}
 						/>
