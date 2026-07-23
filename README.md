@@ -73,9 +73,9 @@ The backend exposes the queue-backed stream through reusable middleware in `adap
 
 **Required questions:** Which AI provider are you using? How are you planning on integrating the AI?
 
-**AI provider:** TODO: Example: OpenAI, Anthropic, Gemini, etc.
+**AI provider:** OpenRouter
 
-**Integration plan:** TODO: Explain how the app will call the AI provider and how MCP/tools will be used.
+**Integration plan:** We will use OpenRouter to query the model. We will be using NVIDIA models since they are free.
 
 ### Stripe Integration
 
