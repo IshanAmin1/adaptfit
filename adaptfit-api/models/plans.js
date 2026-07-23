@@ -68,4 +68,4 @@ const PlanModel = sequelize.define(
 	},
 );
 
-export { PlanModel, PlanModel as Plan };
+export { PlanModel };

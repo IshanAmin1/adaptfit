@@ -23,6 +23,7 @@ const PlanSchema = z.object({
 		disclaimer: z.string(),
 	}),
 	user_summary: z.object({
+		bmi: z.number(),
 		bmr: z.number(),
 		tdee: z.number(),
 		target_physique_description: z.string(),
@@ -96,8 +97,9 @@ const PLAN_JSON_SCHEMA = {
 		user_summary: {
 			type: "object",
 			additionalProperties: false,
-			required: ["bmr", "tdee", "target_physique_description"],
+			required: ["bmi", "bmr", "tdee", "target_physique_description"],
 			properties: {
+				bmi: { type: "number" },
 				bmr: { type: "number" },
 				tdee: { type: "number" },
 				target_physique_description: { type: "string" },
@@ -209,6 +211,7 @@ const SYSTEM_PROMPT = [
 	"If information is insufficient to safely recommend an exercise because of a stated injury or limitation, exclude it and choose a safer alternative.",
 	"Do not provide medical diagnoses or clinical nutrition advice. Include the required standard disclaimer.",
 	"Estimate calorie and macro targets using the Mifflin-St Jeor equation for BMR, adjusted by an activity multiplier based on training frequency and goal.",
+	"Calculate BMI from current weight in kilograms and height in centimeters, rounded to one decimal place.",
 	"Write target_physique_description as a neutral, general, text-only goal description. Do not reference the user's actual appearance or produce anything resembling a personal likeness.",
 	"Every exercise must include at least 2 alternative exercises targeting the same muscle group.",
 	"Respect equipment, machine, schedule, injury, and dietary constraints exactly as given.",
@@ -269,7 +272,7 @@ async function generatePlan(profile, job) {
 				return true;
 			}
 		},
-		3,
+		1,
 		{
 			response_format: {
 				type: "json_schema",
