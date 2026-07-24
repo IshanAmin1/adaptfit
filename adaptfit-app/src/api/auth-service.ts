@@ -12,21 +12,9 @@ function parseAuthResponse(response: Response): Promise<AuthUser> {
 }
 
 export const authService = {
-	loginWithGoogle(credential: string): Promise<AuthUser> {
-		return fetch(`${API_BASE_URL}/auth/google`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			credentials: "include",
-			body: JSON.stringify({ credential }),
-		}).then((response) => {
-			if (!response.ok) {
-				throw new Error("Google login failed");
-			}
-
-			return parseAuthResponse(response);
-		});
+	getGoogleLoginUrl(): string {
+		// navigates to the backend endpoint that initiates the Google OAuth flow
+		return `${API_BASE_URL}/auth/google/start`;
 	},
 
 	getCurrentUser(): Promise<AuthUser | null> {

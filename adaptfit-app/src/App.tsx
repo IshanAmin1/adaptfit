@@ -10,6 +10,7 @@ import Dashboard from "./components/Dashboard";
 import InsightsCard from "./components/InsightsCard";
 import RequireAuth from "./components/common/RequireAuth";
 import RequireSubscription from "./components/common/RequireSubscription";
+import AuthCallback from "./pages/AuthCallback";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
@@ -17,14 +18,7 @@ import Onboarding from "./pages/Onboarding";
 import Plan from "./pages/Plan";
 import Subscribe from "./pages/Subscribe";
 import type { AuthUser } from "./types/auth";
-
-function getAuthenticatedPath(user: AuthUser) {
-	if (!user.hasActiveSubscription) {
-		return "/subscribe";
-	}
-
-	return user.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
-}
+import { getAuthenticatedPath } from "./utils/auth-utils";
 
 function App() {
 	const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -93,9 +87,12 @@ function App() {
 								)
 							}
 						/>
+						<Route path="/login" element={<Login authUser={authUser} />} />
 						<Route
-							path="/login"
-							element={<Login authUser={authUser} onLogin={handleLogin} />}
+							path="/auth/callback"
+							element={
+								<AuthCallback authUser={authUser} onLogin={handleLogin} />
+							}
 						/>
 						<Route
 							path="/subscribe/*"

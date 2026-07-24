@@ -45,7 +45,13 @@ Unlike traditional fitness applications that provide generic workout templates, 
 
 **Required question:** Which OAuth provider are you using?
 
-**Answer:** Google OAuth
+**Answer:** Google OAuth using the authorization code flow with PKCE. The SPA
+starts login by navigating to the Express API, the API stores OAuth `state` and
+the PKCE verifier in the Express session, Google redirects back to the API, and
+the API exchanges the auth code with the server-only Google client secret. After
+the returned ID token is verified, AdaptFit stores only the internal `userId` in
+the Express session cookie. Google access tokens are not stored or used for
+external APIs, so no refresh token is requested.
 
 ### Look and Feel
 
@@ -94,6 +100,15 @@ The backend exposes the queue-backed stream through reusable middleware in `adap
 **Domain name:** `adaptfit.me`
 
 **Deployment platform:** TODO: Example: Render, Vercel, Railway, Fly.io, etc.
+
+**OAuth deployment tasks:** Register the deployed backend callback URL in Google
+Cloud Console, for example `https://api.adaptfit.me/auth/google/callback`. Add
+server env vars `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`GOOGLE_REDIRECT_URI`, `CLIENT_ORIGIN`, and `SESSION_SECRET`. Add frontend env
+var `VITE_API_BASE_URL` pointing to the deployed API. Keep the Google client
+secret out of Vite/frontend env vars, use HTTPS, and verify session cookie
+`sameSite`/domain settings if the frontend and API are hosted on different
+sites.
 
 ### Architecture
 
