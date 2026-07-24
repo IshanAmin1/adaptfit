@@ -215,6 +215,7 @@ const SYSTEM_PROMPT = [
 	"Write target_physique_description as a neutral, general, text-only goal description. Do not reference the user's actual appearance or produce anything resembling a personal likeness.",
 	"Every exercise must include at least 2 alternative exercises targeting the same muscle group.",
 	"Respect equipment, machine, schedule, injury, and dietary constraints exactly as given.",
+	"Treat selected equipment as available tools, not as an exclusive requirement for every exercise. Bodyweight exercises are allowed whenever they fit the goal, even if the user selected dumbbells, bands, machines, barbell, or full gym access.",
 ].join("\n");
 
 function optionalValue(value) {
@@ -244,8 +245,11 @@ function buildPlanPrompt(profile) {
 		`- Available equipment: ${JSON.stringify(profile.equipmentAvailable)}`,
 		`- Machine types: ${JSON.stringify(profile.machineTypes || [])}`,
 		`- Other machines: ${optionalValue(profile.customMachines)}`,
-		`- Days per week available: ${profile.daysPerWeek}`,
+		"- Equipment guidance: use the selected equipment where helpful, but you may mix in bodyweight exercises such as push-ups, planks, squats, lunges, or mobility work when appropriate.",
+		`- Available workout days: ${JSON.stringify(profile.availableDays || [])}`,
+		`- Number of available workout days: ${profile.availableDays?.length || 0}`,
 		`- Preferred session length: ${profile.preferredSessionLength}`,
+		"- Schedule workouts only on the selected available workout days. Days outside that list should not contain workouts.",
 		"",
 		"NUTRITION PREFERENCES:",
 		`- Diet type: ${profile.dietType}`,

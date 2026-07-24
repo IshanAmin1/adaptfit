@@ -6,6 +6,7 @@ import type { AuthUser } from "../types/auth";
 import type { Option } from "../components/common/Select";
 import ChoiceGrid from "../components/common/ChoiceGrid";
 import Field from "../components/common/Field";
+import MultiSelectDropdown from "../components/common/MultiSelectDropdown";
 import Select from "../components/common/Select";
 import TextArea from "../components/common/TextArea";
 import TextInput from "../components/common/TextInput";
@@ -36,7 +37,7 @@ const initialProfile: OnboardingProfile = {
 	equipmentAvailable: [],
 	machineTypes: [],
 	customMachines: "",
-	daysPerWeek: "",
+	availableDays: [],
 	preferredSessionLength: "",
 	dietType: "",
 	allergiesOrFoodsToAvoid: "",
@@ -124,7 +125,7 @@ const equipmentOptions: Option[] = [
 	{ label: "Barbell", value: "barbell" },
 	{ label: "Machines", value: "machines" },
 	{ label: "Bands", value: "bands" },
-	{ label: "Bodyweight only", value: "bodyweight_only" },
+	{ label: "Body weight", value: "bodyweight" },
 	{ label: "Full gym access", value: "full_gym_access" },
 ];
 
@@ -144,6 +145,16 @@ const sessionLengthOptions: Option[] = [
 	{ label: "60+ min", value: "60_plus" },
 ];
 
+const weekdayOptions: Option[] = [
+	{ label: "Sunday", value: "Sunday" },
+	{ label: "Monday", value: "Monday" },
+	{ label: "Tuesday", value: "Tuesday" },
+	{ label: "Wednesday", value: "Wednesday" },
+	{ label: "Thursday", value: "Thursday" },
+	{ label: "Friday", value: "Friday" },
+	{ label: "Saturday", value: "Saturday" },
+];
+
 const dietOptions: Option[] = [
 	{ label: "No restrictions", value: "no_restrictions" },
 	{ label: "Vegetarian", value: "vegetarian" },
@@ -158,8 +169,24 @@ function formatList(values: string[]) {
 	return values.join(", ");
 }
 
+function formatOptions(values: string[]) {
+	if (!values.length) {
+		return "None";
+	}
+
+	return values
+		.map((value) => value.replace(/_/g, " "))
+		.map((value) => (value === "bodyweight" ? "body weight" : value))
+		.map((value) => value.charAt(0).toUpperCase() + value.slice(1))
+		.join(", ");
+}
+
 function formatValue(value: string | undefined | null) {
 	return value ? value : "Not provided";
+}
+
+function formatDays(values: string[]) {
+	return values.length ? values.join(", ") : "Not provided";
 }
 
 function getAgeError(age: string) {
@@ -223,6 +250,10 @@ function getStepError(stepIndex: number, profile: OnboardingProfile) {
 
 		if (!profile.equipmentAvailable.length) {
 			return "Choose at least one equipment option to continue.";
+		}
+
+		if (!profile.availableDays.length) {
+			return "Choose at least one available workout day to continue.";
 		}
 	}
 
@@ -452,7 +483,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 				},
 				{
 					label: "Equipment available",
-					value: formatList(profile.equipmentAvailable),
+					value: formatOptions(profile.equipmentAvailable),
 				},
 				{
 					label: "Machines available",
@@ -463,8 +494,8 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 					value: formatValue(profile.customMachines),
 				},
 				{
-					label: "Days per week",
-					value: formatValue(profile.daysPerWeek),
+					label: "Available days",
+					value: formatDays(profile.availableDays),
 				},
 				{
 					label: "Session length",
@@ -674,16 +705,12 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								</div>
 							) : null}
 							<div className="grid gap-5 md:grid-cols-2">
-								<Field label="Days per week available">
-									<Select
-										required
-										value={profile.daysPerWeek}
+								<Field label="Available workout days">
+									<MultiSelectDropdown
+										options={weekdayOptions}
+										value={profile.availableDays}
 										placeholder="Select days"
-										options={[1, 2, 3, 4, 5, 6, 7].map((day) => ({
-											label: `${day} ${day === 1 ? "day" : "days"}`,
-											value: String(day),
-										}))}
-										onChange={(value) => updateProfile("daysPerWeek", value)}
+										onChange={(value) => updateProfile("availableDays", value)}
 									/>
 								</Field>
 								<Field label="Preferred session length">

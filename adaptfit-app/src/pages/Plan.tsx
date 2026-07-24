@@ -56,7 +56,12 @@ export default function Plan({ authUser }: PlanProps) {
 					"Equipment",
 					formatEquipment(plan.onboardingProfile.equipmentAvailable),
 				],
-				["Days/week", String(plan.onboardingProfile.daysPerWeek)],
+				[
+					"Available days",
+					plan.onboardingProfile.availableDays?.length
+						? plan.onboardingProfile.availableDays.join(", ")
+						: "Not provided",
+				],
 				["Session length", plan.onboardingProfile.preferredSessionLength],
 				[
 					"Limitations",

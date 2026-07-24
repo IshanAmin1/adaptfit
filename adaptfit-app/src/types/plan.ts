@@ -60,7 +60,7 @@ export type GeneratedPlan = {
 		equipmentAvailable: string[];
 		machineTypes: string[];
 		customMachines?: string;
-		daysPerWeek: number;
+		availableDays?: string[];
 		preferredSessionLength: string;
 		dietType: string;
 		allergiesOrFoodsToAvoid?: string;

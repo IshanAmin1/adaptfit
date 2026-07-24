@@ -20,14 +20,10 @@ export function findTodaySession(plan: GeneratedPlan | null) {
 	}
 
 	const todayName = getTodayName();
-	const todaySession = plan.schedule.find(
-		(session) => session.day.toLowerCase() === todayName.toLowerCase(),
-	);
-
 	return (
-		todaySession ||
-		plan.schedule.find((session) => session.exercises.length) ||
-		plan.schedule[0]
+		plan.schedule.find(
+			(session) => session.day.toLowerCase() === todayName.toLowerCase(),
+		) || null
 	);
 }
 
@@ -40,6 +36,7 @@ export function formatEquipment(equipment: string[]) {
 
 	return uniqueEquipment
 		.map((item) => item.replace(/_/g, " "))
+		.map((item) => (item === "bodyweight" ? "body weight" : item))
 		.map((item) => item.charAt(0).toUpperCase() + item.slice(1))
 		.join(", ");
 }

@@ -6,7 +6,11 @@ import DumbbellIcon from "./icons/DumbbellIcon";
 import { MacroDonut } from "./plan/PlanCharts";
 import PlanState from "./plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
-import { findTodaySession, formatEquipment } from "../utils/plan-utils";
+import {
+	findTodaySession,
+	formatEquipment,
+	getTodayName,
+} from "../utils/plan-utils";
 
 function macroWidth(value: number, total: number) {
 	if (!total) {
@@ -19,6 +23,8 @@ function macroWidth(value: number, total: number) {
 export default function Dashboard() {
 	const { plan, isLoading, errorMessage } = useLatestPlan();
 	const todaySession = findTodaySession(plan);
+	const isWorkoutDay = Boolean(todaySession?.exercises.length);
+	const todayName = getTodayName();
 
 	if (isLoading) {
 		return (
@@ -39,7 +45,7 @@ export default function Dashboard() {
 		);
 	}
 
-	if (!plan || !todaySession) {
+	if (!plan) {
 		return (
 			<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 lg:grid-cols-12">
 				<PlanState
@@ -54,9 +60,15 @@ export default function Dashboard() {
 		plan.nutrients.macros.protein_g +
 		plan.nutrients.macros.carbs_g +
 		plan.nutrients.macros.fat_g;
-	const primaryEquipment = formatEquipment(
-		todaySession.exercises.flatMap((exercise) => exercise.equipment_needed),
-	);
+	const primaryEquipment =
+		todaySession && isWorkoutDay
+			? formatEquipment(
+					todaySession.exercises.flatMap(
+						(exercise) => exercise.equipment_needed,
+					),
+				)
+			: "None";
+	const restDayMeal = plan.nutrients.sample_meals[0];
 
 	return (
 		<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 lg:grid-cols-12">
@@ -67,10 +79,10 @@ export default function Dashboard() {
 							Today&apos;s plan
 						</p>
 						<h1 className="m-0 text-[clamp(1.8rem,3vw,2.6rem)] font-black uppercase leading-[1.08]">
-							{todaySession.session_type}
+							{isWorkoutDay ? todaySession?.session_type : "Rest day"}
 						</h1>
 						<p className="mt-3 text-xl font-black uppercase tracking-[0.08em] text-[#62706b]">
-							{todaySession.day}
+							{todaySession?.day || todayName}
 						</p>
 					</div>
 
@@ -81,10 +93,10 @@ export default function Dashboard() {
 							</span>
 							<div>
 								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
-									Equipment
+									{isWorkoutDay ? "Equipment" : "Recovery focus"}
 								</p>
 								<p className="mt-1 text-lg font-black leading-5">
-									{primaryEquipment}
+									{isWorkoutDay ? primaryEquipment : "Rest, steps, mobility"}
 								</p>
 							</div>
 						</div>
@@ -94,48 +106,96 @@ export default function Dashboard() {
 							</span>
 							<div>
 								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
-									Time
+									{isWorkoutDay ? "Time" : "Meals"}
 								</p>
 								<p className="mt-1 text-lg font-black text-[#17211f]">
-									{todaySession.duration_minutes} min
+									{isWorkoutDay
+										? `${todaySession?.duration_minutes} min`
+										: `${plan.nutrients.meal_frequency} meals`}
 								</p>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				<div className="grid gap-3">
-					<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
-						Exercises
-					</p>
-					<div className="grid gap-3">
-						{todaySession.exercises.map((exercise, index) => (
-							<div
-								key={`${exercise.exercise_name}-${index}`}
-								className="flex items-center justify-between gap-4 rounded-lg bg-[#17322d] p-4 text-white"
-							>
-								<div className="min-w-0">
-									<strong className="block text-base font-black leading-5">
-										{exercise.exercise_name}
-									</strong>
-									<p className="mt-1 text-sm font-semibold text-[#c8f7e6]">
-										{exercise.target_muscle_group}
+				{isWorkoutDay && todaySession ? (
+					<>
+						<div className="grid gap-3">
+							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+								Exercises
+							</p>
+							<div className="grid gap-3">
+								{todaySession.exercises.map((exercise, index) => (
+									<div
+										key={`${exercise.exercise_name}-${index}`}
+										className="flex items-center justify-between gap-4 rounded-lg bg-[#17322d] p-4 text-white"
+									>
+										<div className="min-w-0">
+											<strong className="block text-base font-black leading-5">
+												{exercise.exercise_name}
+											</strong>
+											<p className="mt-1 text-sm font-semibold text-[#c8f7e6]">
+												{exercise.target_muscle_group}
+											</p>
+										</div>
+										<p className="m-0 flex-none text-sm font-black text-[#c8f7e6]">
+											{exercise.sets} sets x {exercise.reps}
+										</p>
+									</div>
+								))}
+							</div>
+						</div>
+
+						<button
+							type="button"
+							className="mt-auto self-start rounded-lg border-0 bg-[#0f8b6f] px-7.5 py-4.5 text-lg font-black uppercase text-white"
+						>
+							Log workout
+						</button>
+					</>
+				) : (
+					<div className="grid gap-4">
+						<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-5">
+							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+								Rest guidance
+							</p>
+							<p className="mt-2 text-base leading-6 text-[#17211f]">
+								No workout is scheduled today. Keep movement light, hydrate, and
+								use the nutrition targets to support recovery.
+							</p>
+						</div>
+						<div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+							{[
+								["Calories", `${plan.nutrients.daily_calories} kcal`],
+								["Protein", `${plan.nutrients.macros.protein_g}g`],
+								["Carbs", `${plan.nutrients.macros.carbs_g}g`],
+							].map(([label, value]) => (
+								<div
+									key={label}
+									className="rounded-lg bg-[#17322d] p-4 text-white"
+								>
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#c8f7e6]">
+										{label}
 									</p>
+									<p className="mt-2 text-lg font-black">{value}</p>
 								</div>
-								<p className="m-0 flex-none text-sm font-black text-[#c8f7e6]">
-									{exercise.sets} sets x {exercise.reps}
+							))}
+						</div>
+						{restDayMeal ? (
+							<div className="rounded-lg border border-[#d9e5df] bg-white p-5">
+								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+									Recovery meal
+								</p>
+								<p className="mt-2 text-base font-black text-[#17211f]">
+									{restDayMeal.meal_name}
+								</p>
+								<p className="mt-1 text-sm leading-5 text-[#62706b]">
+									{restDayMeal.description}
 								</p>
 							</div>
-						))}
+						) : null}
 					</div>
-				</div>
-
-				<button
-					type="button"
-					className="mt-auto self-start rounded-lg border-0 bg-[#0f8b6f] px-7.5 py-4.5 text-lg font-black uppercase text-white"
-				>
-					Log workout
-				</button>
+				)}
 			</DashboardCard>
 
 			<DashboardCard className="p-7.5 lg:col-span-4">

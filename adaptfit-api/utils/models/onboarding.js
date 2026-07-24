@@ -14,6 +14,8 @@ function toTextArray(value) {
 }
 
 function toOnboardingRecord(userId, profile) {
+	const availableDays = toTextArray(profile.availableDays);
+
 	return {
 		user_id: userId,
 		age: toInteger(profile.age),
@@ -28,7 +30,8 @@ function toOnboardingRecord(userId, profile) {
 		equipment_available: toTextArray(profile.equipmentAvailable),
 		machine_types: toTextArray(profile.machineTypes),
 		custom_machines: optionalText(profile.customMachines),
-		days_per_week: toInteger(profile.daysPerWeek),
+		available_days: availableDays,
+		days_per_week: availableDays.length,
 		preferred_session_length: profile.preferredSessionLength,
 		diet_type: profile.dietType,
 		allergies_or_foods_to_avoid: optionalText(profile.allergiesOrFoodsToAvoid),
