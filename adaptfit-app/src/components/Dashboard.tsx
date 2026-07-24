@@ -108,7 +108,7 @@ export default function Dashboard() {
 								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
 									{isWorkoutDay ? "Time" : "Meals"}
 								</p>
-								<p className="mt-1 text-lg font-black text-[#17211f]">
+								<p className="mt-1 text-lg font-black leading-5">
 									{isWorkoutDay
 										? `${todaySession?.duration_minutes} min`
 										: `${plan.nutrients.meal_frequency} meals`}
