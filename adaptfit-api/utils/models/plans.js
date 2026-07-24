@@ -15,6 +15,7 @@ export function serializePlan(plan) {
 		id: plan.id,
 		userId: plan.user_id,
 		onboardingProfileId: plan.onboarding_profile_id,
+		onboardingProfile: plan.onboardingProfile?.profile || null,
 		status: plan.status,
 		metadata: plan.metadata,
 		targets: plan.targets,
@@ -59,6 +60,7 @@ export async function saveGeneratedPlan({
 export async function findLatestPlanForUser(userId) {
 	const plan = await Plan.findOne({
 		where: { user_id: userId },
+		include: [{ association: "onboardingProfile" }],
 		order: [["generated_at", "DESC"]],
 	});
 

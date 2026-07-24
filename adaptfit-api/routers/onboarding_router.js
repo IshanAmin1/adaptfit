@@ -14,6 +14,16 @@ import { serializeUser } from "../utils/models/users.js";
 
 export const onboardingRouter = Router();
 
+const weekdaySchema = z.enum([
+	"Sunday",
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
+]);
+
 const OnboardingProfileSchema = z
 	.object({
 		age: z.coerce.number().int().min(13).max(100),
@@ -39,6 +49,7 @@ const OnboardingProfileSchema = z
 					"barbell",
 					"machines",
 					"bands",
+					"bodyweight",
 					"bodyweight_only",
 					"full_gym_access",
 				]),
@@ -57,7 +68,7 @@ const OnboardingProfileSchema = z
 			)
 			.default([]),
 		customMachines: z.string().optional(),
-		daysPerWeek: z.coerce.number().int().min(1).max(7),
+		availableDays: z.array(weekdaySchema).min(1).max(7),
 		preferredSessionLength: z.enum(["30", "45", "60", "60_plus"]),
 		dietType: z.enum(["no_restrictions", "vegetarian", "vegan"]),
 		allergiesOrFoodsToAvoid: z.string().optional(),
@@ -65,6 +76,14 @@ const OnboardingProfileSchema = z
 	})
 	.strict()
 	.superRefine((profile, ctx) => {
+		if (new Set(profile.availableDays).size !== profile.availableDays.length) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["availableDays"],
+				message: "availableDays must not contain duplicate days",
+			});
+		}
+
 		if (
 			!profile.equipmentAvailable.includes("machines") &&
 			profile.machineTypes.length > 0
@@ -108,7 +127,12 @@ function validateProfile(profile) {
 		throw error;
 	}
 
-	return parseResult.data;
+	return {
+		...parseResult.data,
+		equipmentAvailable: parseResult.data.equipmentAvailable.map((equipment) =>
+			equipment === "bodyweight_only" ? "bodyweight" : equipment,
+		),
+	};
 }
 
 async function completeOnboardingFromValidationResult(

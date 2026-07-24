@@ -11,7 +11,7 @@ export type OnboardingProfile = {
 	equipmentAvailable: string[];
 	machineTypes: string[];
 	customMachines?: string;
-	daysPerWeek: string;
+	availableDays: string[];
 	preferredSessionLength: string;
 	dietType: string;
 	allergiesOrFoodsToAvoid: string;

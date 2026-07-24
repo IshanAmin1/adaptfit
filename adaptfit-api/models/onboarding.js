@@ -68,6 +68,11 @@ const OnboardingProfileModel = sequelize.define(
 			type: DataTypes.TEXT,
 			allowNull: true,
 		},
+		available_days: {
+			type: DataTypes.ARRAY(DataTypes.TEXT),
+			allowNull: false,
+			defaultValue: [],
+		},
 		days_per_week: {
 			type: DataTypes.INTEGER,
 			allowNull: false,

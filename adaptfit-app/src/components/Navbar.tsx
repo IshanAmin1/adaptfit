@@ -37,9 +37,8 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 	const navigate = useNavigate();
 	const navItems: NavItem[] = [
 		{ label: "Today", href: "/dashboard" },
-		{ label: "AI Insights", href: "/dashboard#insights" },
-		{ label: "Nutrition", href: "/dashboard#nutrition" },
-		{ label: "Progress", href: "/dashboard#progress" },
+		{ label: "Insights", href: "/insights" },
+		{ label: "Plan", href: "/plan" },
 	];
 	const hasPaidAccess = Boolean(authUser?.hasActiveSubscription);
 
