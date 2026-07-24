@@ -1,6 +1,7 @@
 import DashboardCard from "../components/common/DashboardCard";
 import SectionHeading from "../components/common/SectionHeading";
 import ChevronDown from "../components/icons/ChevronDown.js";
+import ChevronUp from "../components/icons/ChevronUp.js";
 import { MuscleGroupChart } from "../components/plan/PlanCharts";
 import PlanState from "../components/plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
@@ -201,7 +202,12 @@ export default function Plan({ authUser }: PlanProps) {
 									<p className="m-0 text-lg leading-none font-black text-[#17211f] whitespace-nowrap">
 										{session.duration_minutes} min
 									</p>
-									<ChevronDown />
+									<span className="block group-open:hidden">
+										<ChevronDown />
+									</span>
+									<span className="hidden group-open:block">
+										<ChevronUp />
+									</span>
 								</div>
 							</summary>
 

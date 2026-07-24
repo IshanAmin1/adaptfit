@@ -1,3 +1,5 @@
+import ChevronDown from "../icons/ChevronDown.js";
+import ChevronUp from "../icons/ChevronUp.js";
 import type { Option } from "./Select";
 
 type MultiSelectDropdownProps = {
@@ -21,8 +23,13 @@ export default function MultiSelectDropdown({
 				<span className={value.length ? "" : "text-[#62706b]"}>
 					{selectedLabel}
 				</span>
-				<span className="text-xs font-black text-[#0f8b6f] group-open:rotate-180">
-					v
+				<span className="text-[#0f8b6f]">
+					<span className="block group-open:hidden">
+						<ChevronDown />
+					</span>
+					<span className="hidden group-open:block">
+						<ChevronUp />
+					</span>
 				</span>
 			</summary>
 			<div className="absolute z-20 mt-2 grid max-h-72 w-full overflow-auto rounded-lg border border-[#b7cbc2] bg-white p-2 shadow-[0_18px_45px_rgba(23,33,31,0.16)]">
