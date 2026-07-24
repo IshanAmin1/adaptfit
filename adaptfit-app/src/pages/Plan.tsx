@@ -1,5 +1,6 @@
 import DashboardCard from "../components/common/DashboardCard";
 import SectionHeading from "../components/common/SectionHeading";
+import ChevronDown from "../components/icons/ChevronDown.js";
 import { MuscleGroupChart } from "../components/plan/PlanCharts";
 import PlanState from "../components/plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
@@ -176,7 +177,7 @@ export default function Plan({ authUser }: PlanProps) {
 
 			<DashboardCard className="p-8 lg:col-span-12">
 				<SectionHeading eyebrow="Exercises" title="Weekly Schedule" />
-				<div className="grid gap-3">
+				<div className="grid gap-3 mt-6">
 					{plan.schedule.map((session) => (
 						<details
 							key={`${session.day}-${session.session_type}`}
@@ -191,13 +192,11 @@ export default function Plan({ authUser }: PlanProps) {
 										{session.session_type}
 									</p>
 								</div>
-								<div className="flex flex-none items-center gap-3">
-									<span className="rounded-full bg-white px-3 py-2 text-sm font-black text-[#62706b]">
+								<div className="flex items-center justify-center gap-3">
+									<p className="m-0 text-lg leading-none font-black text-[#17211f] whitespace-nowrap">
 										{session.duration_minutes} min
-									</span>
-									<span className="grid h-8 w-8 place-items-center rounded-full bg-white text-lg font-black text-[#0f8b6f] transition-transform group-open:rotate-180">
-										v
-									</span>
+									</p>
+									<ChevronDown />
 								</div>
 							</summary>
 

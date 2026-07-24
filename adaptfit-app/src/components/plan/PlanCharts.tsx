@@ -50,7 +50,7 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 		{ label: "Carbs", value: carbs, color: "#d99b22" },
 		{ label: "Fat", value: fat, color: "#f46f5e" },
 	];
-	const total = data.reduce((sum, item) => sum + item.value, 0);
+	const total = Math.round(data.reduce((sum, item) => sum + item.value, 0));
 	let cursor = -Math.PI / 2;
 
 	return (

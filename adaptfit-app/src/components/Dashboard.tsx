@@ -76,19 +76,19 @@ export default function Dashboard() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_12rem]">
 						<div className="flex items-start gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 text-[#17211f]">
-							<span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-md bg-white text-[#0f8b6f]">
+							<span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
 								<DumbbellIcon />
 							</span>
 							<div>
 								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
 									Equipment
 								</p>
-								<p className="mt-1 text-sm font-semibold leading-5">
+								<p className="mt-1 text-lg font-black leading-5">
 									{primaryEquipment}
 								</p>
 							</div>
 						</div>
-						<div className="flex items-center gap-3 rounded-lg border border-[#d9e5df] bg-white p-4">
+						<div className="flex items-center gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
 							<span className="grid h-10 w-10 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
 								<ClockIcon />
 							</span>
