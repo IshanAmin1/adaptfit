@@ -4,7 +4,7 @@ export type OnboardingProfile = {
 	height: string;
 	currentWeight: string;
 	primaryGoal: string;
-	targetWeightOrTimeline?: string;
+	goalTarget?: string;
 	experienceLevel: string;
 	injuriesOrLimitations: string;
 	trainingLocation: string;
