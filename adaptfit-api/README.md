@@ -21,6 +21,9 @@ Required values:
 - `CLIENT_ORIGIN`: frontend origin, usually `http://localhost:5173` in
   development.
 - `SESSION_SECRET`: secret used to sign the Express session cookie.
+- `EXERCISE_DB_RAPIDAPI_KEY`: RapidAPI key for Exercise DB video lookups.
+- `EXERCISE_DB_RAPIDAPI_HOST`: RapidAPI Exercise DB host. Defaults to
+  `edb-with-videos-and-images-by-ascendapi.p.rapidapi.com`.
 
 On startup, the API calls `sequelize.sync({ alter: { drop: false } })`, matching
 the Lab6 Sequelize startup pattern while keeping PostgreSQL as the database.

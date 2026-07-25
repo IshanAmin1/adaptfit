@@ -1,10 +1,14 @@
-import type { GeneratedPlan } from "../types/plan";
+import type { ExerciseVideo, GeneratedPlan } from "../types/plan";
 
 const API_BASE_URL =
 	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 type PlanResponse = {
 	plan: GeneratedPlan;
+};
+
+type ExerciseResponse = {
+	exercise: ExerciseVideo;
 };
 
 export const plansService = {
@@ -34,5 +38,26 @@ export const plansService = {
 		}
 
 		return body.plan;
+	},
+
+	async getExerciseVideo(exerciseDbId: string): Promise<ExerciseVideo> {
+		const response = await fetch(`${API_BASE_URL}/exercises/${exerciseDbId}`, {
+			method: "GET",
+			credentials: "include",
+		});
+
+		const body = (await response
+			.json()
+			.catch(() => null)) as ExerciseResponse | null;
+
+		if (!response.ok) {
+			throw new Error("Exercise could not be loaded.");
+		}
+
+		if (!body || !("exercise" in body)) {
+			throw new Error("Exercise could not be loaded.");
+		}
+
+		return body.exercise;
 	},
 };
