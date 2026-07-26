@@ -32,5 +32,8 @@
       "prettier --write",
       "eslint --fix"
     ]
+  },
+  "dependencies": {
+    "@react-oauth/google": "^0.13.5"
   }
 }
