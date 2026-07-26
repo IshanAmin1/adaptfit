@@ -23,7 +23,7 @@ function toOnboardingRecord(userId, profile) {
 		height_cm: toInteger(profile.height),
 		current_weight_kg: toInteger(profile.currentWeight),
 		primary_goal: profile.primaryGoal,
-		target_goal: optionalText(profile.targetWeightOrTimeline),
+		target_goal: optionalText(profile.goalTarget),
 		experience_level: profile.experienceLevel,
 		injuries_or_limitations: optionalText(profile.injuriesOrLimitations),
 		training_location: profile.trainingLocation,

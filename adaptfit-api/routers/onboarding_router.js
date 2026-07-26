@@ -29,7 +29,7 @@ const OnboardingProfileSchema = z
 		age: z.coerce.number().int().min(13).max(100),
 		biologicalSex: z.enum(["male", "female", "intersex", "prefer_not_to_say"]),
 		height: z.coerce.number().int().min(100).max(250),
-		currentWeight: z.coerce.number().int().min(30).max(300),
+		currentWeight: z.coerce.number().int().min(45).max(300),
 		primaryGoal: z.enum([
 			"lose_weight",
 			"build_muscle",
@@ -38,7 +38,7 @@ const OnboardingProfileSchema = z
 			"build_strength",
 			"improve_flexibility",
 		]),
-		targetWeightOrTimeline: z.string().optional(),
+		goalTarget: z.string().optional(),
 		experienceLevel: z.enum(["beginner", "intermediate", "advanced"]),
 		injuriesOrLimitations: z.string().optional(),
 		trainingLocation: z.enum(["home", "gym", "outdoors"]),

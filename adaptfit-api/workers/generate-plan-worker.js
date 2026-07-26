@@ -236,7 +236,7 @@ function buildPlanPrompt(profile) {
 		"",
 		"GOALS:",
 		`- Primary goal: ${profile.primaryGoal}`,
-		`- Target weight or timeline: ${optionalValue(profile.targetWeightOrTimeline)}`,
+		`- Goal target: ${optionalValue(profile.goalTarget)}`,
 		"",
 		"EXPERIENCE & HEALTH:",
 		`- Experience level: ${profile.experienceLevel}`,
