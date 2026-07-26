@@ -1,5 +1,5 @@
 import type { AuthUser } from "../types/auth";
-import { apiFetch } from "../utils/api.js";
+import { apiFetch, getApiUrl } from "../utils/api.js";
 
 type AuthResponse = {
 	user: AuthUser;
@@ -10,6 +10,11 @@ function parseAuthResponse(response: Response): Promise<AuthUser> {
 }
 
 export const authService = {
+	getGoogleLoginUrl(): string {
+		// navigates to the backend endpoint that initiates the Google OAuth flow
+		return getApiUrl("/auth/google/start");
+	},
+
 	getCurrentUser(): Promise<AuthUser | null> {
 		return apiFetch(`/auth/me`).then((response) => {
 			if (response.status === 401) {

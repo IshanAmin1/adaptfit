@@ -2,7 +2,9 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import csrf from '@dr.pogodin/csurf';
+import csrf from "@dr.pogodin/csurf";
+import helmet from "helmet";
+
 import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
 import { billingRouter } from "./routers/billing_router.js";
@@ -21,6 +23,7 @@ app.use(
 		credentials: true,
 	}),
 );
+app.use(helmet());
 // The webhook route uses express.raw({ type: "application/json" }) because signature verification needs
 // the raw request body bytes, so we cannot use express.json() or bodyParser.json() for the webhook route.
 app.use("/stripe", stripeWebhookRouter);
@@ -29,9 +32,9 @@ app.use(sessionMiddleware());
 app.use(csrf({ cookie: false }));
 
 app.get("/csrf-token", (req, res) => {
-  res.json({
-    csrfToken: req.csrfToken(),
-  });
+	res.json({
+		csrfToken: req.csrfToken(),
+	});
 });
 
 try {
