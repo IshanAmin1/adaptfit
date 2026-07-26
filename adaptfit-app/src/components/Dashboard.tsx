@@ -3,6 +3,7 @@ import ProgressBar from "./common/ProgressBar";
 import SectionHeading from "./common/SectionHeading";
 import ClockIcon from "./icons/ClockIcon";
 import DumbbellIcon from "./icons/DumbbellIcon";
+import ExerciseDemoTrigger from "./plan/ExerciseDemoTrigger";
 import { MacroDonut } from "./plan/PlanCharts";
 import PlanState from "./plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
@@ -126,9 +127,10 @@ export default function Dashboard() {
 							</p>
 							<div className="grid gap-3">
 								{todaySession.exercises.map((exercise, index) => (
-									<div
+									<ExerciseDemoTrigger
 										key={`${exercise.exercise_name}-${index}`}
-										className="flex items-center justify-between gap-4 rounded-lg bg-[#17322d] p-4 text-white"
+										exercise={exercise}
+										className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg bg-[#17322d] p-4 text-left text-white transition hover:bg-[#214840] focus:outline-none focus:ring-2 focus:ring-[#0f8b6f] focus:ring-offset-2"
 									>
 										<div className="min-w-0">
 											<strong className="block text-base font-black leading-5">
@@ -138,10 +140,17 @@ export default function Dashboard() {
 												{exercise.target_muscle_group}
 											</p>
 										</div>
-										<p className="m-0 flex-none text-sm font-black text-[#c8f7e6]">
-											{exercise.sets} sets x {exercise.reps}
-										</p>
-									</div>
+										<div className="flex flex-none flex-col items-end gap-1">
+											<p className="m-0 text-sm font-black text-[#c8f7e6]">
+												{exercise.sets} sets x {exercise.reps}
+											</p>
+											<p className="m-0 max-w-36 text-right text-[0.68rem] font-black uppercase tracking-widest text-[#c8f7e6]">
+												{exercise.exerciseDbId
+													? "View demo"
+													: "No demo, search"}
+											</p>
+										</div>
+									</ExerciseDemoTrigger>
 								))}
 							</div>
 						</div>

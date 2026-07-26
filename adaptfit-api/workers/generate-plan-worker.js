@@ -214,6 +214,8 @@ const SYSTEM_PROMPT = [
 	"Calculate BMI from current weight in kilograms and height in centimeters, rounded to one decimal place.",
 	"Write target_physique_description as a neutral, general, text-only goal description. Do not reference the user's actual appearance or produce anything resembling a personal likeness.",
 	"Every exercise must include at least 2 alternative exercises targeting the same muscle group.",
+	"Prefer popular, standard exercise names that are likely to appear in exercise databases, such as Bench Press, Squat, Push Up, Pull Up, Lat Pulldown, Shoulder Press, Plank, Deadlift, Row, Lunge, Leg Press, Bicep Curl, Tricep Pushdown, and Chest Press.",
+	"Use concise canonical exercise names instead of overly specific variations unless the user's available equipment, limitations, or goal requires the variation.",
 	"Respect equipment, machine, schedule, injury, and dietary constraints exactly as given.",
 	"Treat selected equipment as available tools, not as an exclusive requirement for every exercise. Bodyweight exercises are allowed whenever they fit the goal, even if the user selected dumbbells, bands, machines, barbell, or full gym access.",
 ].join("\n");

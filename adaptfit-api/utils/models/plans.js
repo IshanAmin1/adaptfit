@@ -1,4 +1,5 @@
 import { Plan } from "../../models/index.js";
+import { planWithExerciseReferencesFromAPI } from "../../services/exercise-db.js";
 
 function flattenExercises(schedule) {
 	return schedule.flatMap((session) =>
@@ -41,16 +42,18 @@ export async function saveGeneratedPlan({
 	onboardingProfileId = null,
 	plan,
 }) {
+	const updatedPlan = await planWithExerciseReferencesFromAPI(plan);
+
 	const createdPlan = await Plan.create({
 		user_id: userId,
 		onboarding_profile_id: onboardingProfileId,
 		status: "generated",
-		metadata: plan.plan_metadata,
-		targets: plan.user_summary,
-		nutrients: plan.nutrition_plan,
-		schedule: plan.weekly_schedule,
-		exercises: flattenExercises(plan.weekly_schedule),
-		adaptive_notes: plan.adaptive_notes,
+		metadata: updatedPlan.plan_metadata,
+		targets: updatedPlan.user_summary,
+		nutrients: updatedPlan.nutrition_plan,
+		schedule: updatedPlan.weekly_schedule,
+		exercises: flattenExercises(updatedPlan.weekly_schedule),
+		adaptive_notes: updatedPlan.adaptive_notes,
 		generated_at: new Date(),
 	});
 

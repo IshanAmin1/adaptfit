@@ -11,8 +11,16 @@ export type PlanExercise = {
 	rest_seconds: number;
 	equipment_needed: string[];
 	alternatives: PlanExerciseAlternative[];
+	exerciseDbId?: string;
+	exerciseDbName?: string;
 	day?: string;
 	session_type?: string;
+};
+
+export type ExerciseVideo = {
+	id: string;
+	name?: string;
+	videoUrl?: string | null;
 };
 
 export type PlanScheduleDay = {
