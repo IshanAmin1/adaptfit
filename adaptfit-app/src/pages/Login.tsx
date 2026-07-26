@@ -47,8 +47,31 @@ export default function Login({ authUser }: LoginProps) {
 							<button
 								type="button"
 								onClick={handleGoogleLogin}
-								className="flex min-h-11 w-full items-center justify-center rounded-lg border border-[#b7cbc2] bg-white px-4 py-3 text-sm font-black text-[#17211f] shadow-[0_10px_30px_rgba(15,139,111,0.08)] transition hover:-translate-y-0.5 hover:border-[#0f8b6f] hover:text-[#0f8b6f] focus:outline-none focus:ring-3 focus:ring-[#0f8b6f]/25"
+								className="flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-[#b7cbc2] bg-white px-4 py-3 text-sm font-black text-[#17211f] shadow-[0_10px_30px_rgba(15,139,111,0.08)] transition hover:-translate-y-0.5 hover:border-[#0f8b6f] hover:text-[#0f8b6f] focus:outline-none focus:ring-3 focus:ring-[#0f8b6f]/25"
 							>
+								<svg
+									aria-hidden="true"
+									viewBox="0 0 24 24"
+									className="h-5 w-5 shrink-0"
+									focusable="false"
+								>
+									<path
+										fill="#4285F4"
+										d="M21.35 11.1H12v2.96h5.36c-.23 1.39-1 2.57-2.18 3.37v2.8h3.52c2.06-1.9 3.25-4.7 3.25-8.05 0-.77-.07-1.52-.21-2.28z"
+									/>
+									<path
+										fill="#34A853"
+										d="M12 22c2.94 0 5.41-.97 7.21-2.64l-3.52-2.8c-.98.66-2.23 1.05-3.69 1.05-2.83 0-5.23-1.91-6.09-4.48H2.28v2.88A10 10 0 0 0 12 22z"
+									/>
+									<path
+										fill="#FBBC05"
+										d="M5.91 13.13A6 6 0 0 1 5.6 11c0-.74.13-1.46.31-2.13V6H2.28A10 10 0 0 0 2 11c0 1.62.39 3.15 1.08 4.5l2.83-2.37z"
+									/>
+									<path
+										fill="#EA4335"
+										d="M12 4.47c1.6 0 3.04.55 4.18 1.63l3.13-3.13C17.4 1.15 14.94 0 12 0 7.69 0 3.96 2.48 2.28 6l3.63 2.87C6.77 6.38 9.17 4.47 12 4.47z"
+									/>
+								</svg>
 								Continue with Google
 							</button>
 							{errorMessage ? (
