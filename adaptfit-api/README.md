@@ -9,6 +9,19 @@ Requires Node.js 18 or newer.
 
 Fill in `.env` before starting the server.
 
+Example `.env` values:
+
+```bash
+DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/adaptfit
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+CLIENT_ORIGIN=http://localhost:5173
+SESSION_SECRET=replace-with-a-long-random-secret
+
+EXERCISE_DB_RAPIDAPI_KEY=your-rapidapi-key
+EXERCISE_DB_RAPIDAPI_HOST=edb-with-videos-and-images-by-ascendapi.p.rapidapi.com
+EXERCISE_DB_BASE_URL=https://edb-with-videos-and-images-by-ascendapi.p.rapidapi.com/api/v1
+```
+
 ```bash
 npm install
 npm run start:dev
@@ -22,8 +35,13 @@ Required values:
   development.
 - `SESSION_SECRET`: secret used to sign the Express session cookie.
 - `EXERCISE_DB_RAPIDAPI_KEY`: RapidAPI key for Exercise DB video lookups.
+  Get this from the RapidAPI playground for
+  [EDB with Videos and Images by AscendAPI](https://rapidapi.com/ascendapi/api/edb-with-videos-and-images-by-ascendapi/playground/apiendpoint_d83635c2-6c9f-4db5-9d3d-338f13cca0dd)
+  after subscribing/signing in.
 - `EXERCISE_DB_RAPIDAPI_HOST`: RapidAPI Exercise DB host. Defaults to
   `edb-with-videos-and-images-by-ascendapi.p.rapidapi.com`.
+- `EXERCISE_DB_BASE_URL`: Exercise DB API base URL. Defaults to
+  `https://edb-with-videos-and-images-by-ascendapi.p.rapidapi.com/api/v1`.
 
 On startup, the API calls `sequelize.sync({ alter: { drop: false } })`, matching
 the Lab6 Sequelize startup pattern while keeping PostgreSQL as the database.

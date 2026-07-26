@@ -617,3 +617,217 @@ Added in:
 Checks passed:
 - `npm run build`
 - `npm run lint`
+
+> I recently worked on the implenentatioin to include videos using an ExewrcideDB api, can you check over my code. I made some refactors and tried to update the scoring functionality provided before.
+
+<details><summary>14 previous messages</summary>
+
+> I’ll take a review pass with an eye toward regressions around the ExerciseDB video integration, the refactors, and scoring behavior. I’ll first map the touched files and recent diffs so I can ground findings in the actual changes.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `git status --short`
+> - Ran `git diff --stat`
+> - Ran `rg -n "ExerciseDB|exercisedb|exerciseDb|video|score|scoring" -S .`
+>
+> </details>
+>
+> I found the video work spread across the API service/router, plan enrichment, frontend types/service, Plan page, and Dashboard. Next I’m reading those diffs and the surrounding code paths, especially anything that changes persisted plan shape or calculation logic.
+>
+> <details><summary>Ran 6 commands</summary>
+>
+> - Ran `git diff -- adaptfit-api/utils/models/plans.js`
+> - Ran `Get-Content adaptfit-api\config\env\exercisedb.js`
+> - Ran `Get-Content adaptfit-api\routers\exercises_router.js`
+> - Ran `git diff -- adaptfit-app/src/api/plans-service.ts adaptfit-app/src/types/plan.ts`
+> - Ran `git diff -- adaptfit-api/workers/generate-plan-worker.js`
+> - Ran `Get-Content adaptfit-api\services\exercise-db.js`
+>
+> </details>
+>
+> One notable review thread already: the plan save path now awaits external video enrichment before writing the generated plan. I’m checking how job status and UI loading are handled so I can tell whether that can strand generation or just slow it down.
+>
+> <details><summary>Ran 6 commands</summary>
+>
+> - Ran `git diff -- adaptfit-api/app.js adaptfit-api/README.md`
+> - Ran `git diff -- adaptfit-app/src/pages/Plan.tsx`
+> - Ran `Get-Content adaptfit-app\package.json`
+> - Ran `Get-Content adaptfit-app\src\components\plan\ExerciseDemoTrigger.tsx`
+> - Ran `Get-Content adaptfit-api\package.json`
+> - Ran `git diff -- adaptfit-app/src/components/Dashboard.tsx`
+>
+> </details>
+>
+> I’m also checking the generated-plan schema and API conventions now. That should catch the subtler problems: mismatched URLs, auth middleware assumptions, and whether the enrichment preserves the plan JSON shape the frontend expects.
+>
+> <details><summary>Ran 6 commands</summary>
+>
+> - Ran `Get-Content adaptfit-api\utils\models\plans.js`
+> - Ran `Get-Content adaptfit-app\src\hooks\useLatestPlan.ts`
+> - Ran `Get-Content adaptfit-api\middleware\auth.js`
+> - Ran `Get-Content adaptfit-api\middleware\subscription.js`
+> - Ran `Get-Content adaptfit-api\routers\plans_router.js`
+> - Ran `rg -n "completion|score|adherence|progress|calculate|points|streak" adaptfit-api adaptfit-app/src -S`
+>
+> </details>
+>
+> The shared trigger component is doing most of the UI work, which is good for reuse, but it means any semantic issue repeats on both pages. I’m going to run the project checks too, then I’ll give you findings ordered by impact instead of a vague “looks good.”
+>
+> <details><summary>Ran 4 commands</summary>
+>
+> - Ran `node --check services\exercise-db.js`
+> - Ran `node --check routers\exercises_router.js`
+> - Ran `npm run build`
+> - Ran `node --check utils\models\plans.js`
+>
+> </details>
+>
+> Build and Node syntax checks pass, so there aren’t basic TypeScript or ESM parse failures. I’m doing one more targeted read around the worker lifecycle and the dashboard render so the review doesn’t miss runtime behavior that build can’t see.
+>
+> <details><summary>Ran 4 commands</summary>
+>
+> - Ran `$p='adaptfit-api\workers\generate-plan-worker.js'; $c=Get-Content $p; for($i=250;$i -le 325;$i++){ if($i -le $c.Length){ '{0,4}: {1}' -f $i, $c[$i-1] } }`
+> - Ran `$p='adaptfit-api\services\exercise-db.js'; $c=Get-Content $p; for($i=1;$i -le $c.Length;$i++){ '{0,4}: {1}' -f $i, $c[$i-1] }`
+> - Ran `$p='adaptfit-app\src\components\plan\ExerciseDemoTrigger.tsx'; $c=Get-Content $p; for($i=1;$i -le $c.Length;$i++){ '{0,4}: {1}' -f $i, $c[$i-1] }`
+> - Ran `$p='adaptfit-app\src\components\Dashboard.tsx'; $c=Get-Content $p; for($i=1;$i -le 280;$i++){ if($i -le $c.Length){ '{0,4}: {1}' -f $i, $c[$i-1] } }`
+>
+> </details>
+>
+> The core risk is less “does it compile” and more “does the provider response shape and scoring gate match reality.” I’m going to run lint as the last automated check, then I’ll summarize the concrete issues I’d fix.
+>
+> <details><summary>Ran a command, searched the web</summary>
+>
+> - Ran `npm run lint`
+>
+> Searched the web for `edb-with-videos-and-images-by-ascendapi RapidAPI exercise videoUrl exerciseId`
+>
+> </details>
+</details>
+
+**Findings**
+
+1. **Medium: plan generation can hang or slow badly on ExerciseDB calls**
+   [exercise-db.js](./adaptfit-api/services/exercise-db.js:49), [plans.js](./adaptfit-api/utils/models/plans.js:42)
+   `saveGeneratedPlan()` now waits for `enrichPlanExerciseReferences()`, and every provider `fetch()` has no timeout. If ExerciseDB/RapidAPI stalls, the BullMQ job can sit in `plan_saving` indefinitely. Add an `AbortController` timeout around `fetch`, and treat timeout as a best-effort miss.
+
+2. **Medium: enrichment doubles provider calls per matched exercise and runs them all concurrently**
+   [exercise-db.js](./adaptfit-api/services/exercise-db.js:142), [exercise-db.js](./adaptfit-api/services/exercise-db.js:178)
+   For each unique exercise, you call search, then detail by ID just to confirm `videoUrl`. That means 20 unique exercises can become up to 40 external calls before the plan saves, all launched at once via `Promise.all`. This works, but it may hit rate limits and makes generation slower. AscendAPI’s docs show search gives `exerciseId/name/imageUrl`, while detail includes `videoUrl`, and their V2 docs describe video as available on detail records, so a better tradeoff may be: save confident IDs after search, fetch detail only when the user clicks, and fall back if no `videoUrl`.
+
+3. **Medium: the “80% match” gate accepts broad substring matches as exactly 80**
+   [exercise-db.js](./adaptfit-api/services/exercise-db.js:90)
+   `normalizedName.includes(normalizedQuery)` gives an automatic passing score. A query like `"press"` can match `"Bench Press"` at the threshold even though it is not exercise-specific enough. Since this decides whether to show a video as “available,” I’d require token overlap plus at least one distinctive term, or only allow substring matches when the query has 2+ non-modifier tokens.
+
+4. **Low/Medium: Dashboard trigger renders block layout inside a `<button>`**
+   [Dashboard.tsx](./adaptfit-app/src/components/Dashboard.tsx:130), [ExerciseDemoTrigger.tsx](./adaptfit-app/src/components/plan/ExerciseDemoTrigger.tsx:85)
+   The dashboard passes `<div>` children into `ExerciseDemoTrigger`, which renders them inside a native button for video-enabled exercises. Browsers tolerate it, but it is invalid button content and can be awkward for accessibility tooling. Use spans inside the button, or let `ExerciseDemoTrigger` render a wrapper element with a button/action area internally.
+
+**Checks Run**
+
+`npm run build` passed in `adaptfit-app`.
+`npm run lint` passed in `adaptfit-app`.
+`node --check` passed for the new/changed backend modules I checked.
+
+Sources used for ExerciseDB response shape: AscendAPI Quickstart and ExerciseDB V2 docs:
+https://docs.ascendapi.com/quickstart/overview
+https://docs.ascendapi.com/products/edb-v2/overview
+
+> Medium: enrichment doubles provider calls per matched exercise and runs them all concurrently
+> [exercise-db.js (line 142)](./adaptfit-api/services/exercise-db.js:142), [exercise-db.js (line 178)](./adaptfit-api/services/exercise-db.js:178)
+> For each unique exercise, you call search, then detail by ID just to confirm videoUrl. That means 20 unique exercises can become up to 40 external calls before the plan saves, all launched at once via Promise.all. This works, but it may hit rate limits and makes generation slower. AscendAPI’s docs show search gives exerciseId/name/imageUrl, while detail includes videoUrl, and their V2 docs describe video as available on detail records, so a better tradeoff may be: save confident IDs after search, fetch detail only when the user clicks, and fall back if no videoUrl.
+>
+> Doesnt it call the getExercisebySerach first and then when users click video then it calls getExercis ebyID
+
+Almost, but your current backend does one extra detail lookup during plan generation.
+
+Current flow:
+
+1. During plan generation, `enrichPlanExerciseReferences()` calls `findExerciseReference()` for each unique exercise.
+2. `findExerciseReference()` calls `searchExercises(search)`.
+3. If it finds a strong name match, it immediately calls:
+
+```js
+const exercise = await getExerciseById(match.exerciseId);
+```
+
+That is at [exercise-db.js](./adaptfit-api/services/exercise-db.js:142).
+
+4. It only saves `exerciseDbId` if that detail response has `exercise.videoUrl`.
+5. Later, when the user clicks “Watch demo,” the frontend calls `GET /exercises/:exerciseDbId`, which calls `getExerciseById()` again.
+
+So yes, click-time video loading exists, but generation is currently:
+
+```text
+Search by name
+-> Get by ID to verify videoUrl
+-> Save exerciseDbId only if videoUrl exists
+```
+
+Then click-time is:
+
+```text
+Get by ID again
+-> Return videoUrl
+```
+
+If you want to minimize calls, change `findExerciseReference()` to trust the matched search result and save the ID without checking `videoUrl` there. Then the only `getExerciseById()` call happens when the user clicks. The tradeoff is that a few “Demo available” buttons might open and then say “No available video” if that specific detail record lacks a video.
+
+> i updated it to not call API twice, can you go over and check if it looks good
+
+<details><summary>6 previous messages</summary>
+
+> Absolutely, I’ll re-review the updated flow and compare it against the earlier issue so we can see whether the generation path now only searches and the click path handles detail/video.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `git diff -- adaptfit-api/services/exercise-db.js`
+> - Ran `$p='adaptfit-api\services\exercise-db.js'; $c=Get-Content $p; for($i=120;$i -le 165;$i++){ if($i -le $c.Length){ '{0,4}: {1}' -f $i, $c[$i-1] } }`
+> - Ran `git diff --stat`
+>
+> </details>
+>
+> I’m seeing no unstaged diff for that file, so your update may already be staged/committed or the working tree view is clean for it. The relevant function does now skip `getExerciseById()` during enrichment; I’m reading the full surrounding file and references to make sure the renamed enrichment function is wired correctly.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `Get-Content adaptfit-api\services\exercise-db.js`
+> - Ran `git status --short`
+> - Ran `rg -n "enrichPlanExerciseReferences|planWithExerciseReferencesFromAPI|findExerciseReference|getExerciseById" adaptfit-api adaptfit-app/src -S`
+>
+> </details>
+>
+> The rename is wired through `plans.js`, so there’s no dangling import from the old helper name. I’m running quick checks now; after that I’ll call out what’s fixed and what risks still remain.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `node --check utils\models\plans.js`
+> - Ran `node --check services\exercise-db.js`
+> - Ran `$p='adaptfit-api\utils\models\plans.js'; $c=Get-Content $p; for($i=1;$i -le 65;$i++){ if($i -le $c.Length){ '{0,4}: {1}' -f $i, $c[$i-1] } }`
+>
+> </details>
+</details>
+
+Yes, this fix addresses the duplicate detail-call issue.
+
+Generation now does:
+
+```text
+one search call per unique exercise name
+-> save exerciseDbId / exerciseDbName from the search result
+```
+
+Then click-time still does:
+
+```text
+GET /exercises/:exerciseDbId
+-> getExerciseById()
+-> return videoUrl
+```
+
+The key change is good here: [findExerciseReference](./adaptfit-api/services/exercise-db.js:136) no longer calls `getExerciseById()`. It only uses the search result and stores the ID/name. The router remains the only normal path that calls `getExerciseById()` for videos: [exercises_router.js](./adaptfit-api/routers/exercises_router.js:14).
+
+I also checked the renamed helper wiring: [plans.js](./adaptfit-api/utils/models/plans.js:2) imports `planWithExerciseReferencesFromAPI`, and [plans.js](./adaptfit-api/utils/models/plans.js:45) uses it correctly.
+
+Remaining notes: it still runs all search calls concurrently with `Promise.all`, so rate-limit risk is reduced but not gone. Also, since you no longer verify `videoUrl` during generation, “Demo available” really means “ExerciseDB match found”; if the detail record has no video, the modal will show “No available video.” That tradeoff is reasonable for minimizing API calls.
+
+Checks passed: `node --check services\exercise-db.js` and `node --check utils\models\plans.js`.
