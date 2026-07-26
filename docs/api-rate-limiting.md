@@ -71,7 +71,7 @@ route handler
         BullMQ queue (Redis)
             │
             ▼
-        Worker (concurrency: 5)
+        Worker (concurrency: 50)
             │
             ▼
         OpenRouter / ExerciseDB / DB
@@ -225,9 +225,9 @@ parallel. It is **not** per-user:
 
 | Setting | Effect |
 |---------|--------|
-| `concurrency: 5` on one process | Up to 5 jobs from different users run at once |
-| Two worker processes on same queue | Up to 10 jobs in parallel (5 each) |
-| Separate onboarding vs plan workers | Up to 5 onboarding + 5 plan jobs can run simultaneously |
+| `concurrency: 50` on one process | Up to 50 jobs from different users run at once |
+| Two worker processes on same queue | Up to 100 jobs in parallel (50 each) |
+| Separate onboarding vs plan workers | Up to 50 onboarding + 50 plan jobs can run simultaneously |
 
 If more jobs arrive than concurrency allows, they wait in the Redis queue. They
 are not rejected.

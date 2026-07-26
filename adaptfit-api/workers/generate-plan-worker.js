@@ -319,6 +319,6 @@ new Worker(
 			host: REDIS_HOST,
 			port: REDIS_PORT,
 		},
-		concurrency: 5,
+		concurrency: 50,
 	},
 );
