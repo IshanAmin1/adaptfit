@@ -1,4 +1,3 @@
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
@@ -12,8 +11,6 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
 	<StrictMode>
-		<GoogleOAuthProvider clientId={import.meta.env.VITE_OAUTH_CLIENT_ID}>
-			<App />
-		</GoogleOAuthProvider>
+		<App />
 	</StrictMode>,
 );

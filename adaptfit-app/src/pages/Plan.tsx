@@ -2,6 +2,7 @@ import DashboardCard from "../components/common/DashboardCard";
 import SectionHeading from "../components/common/SectionHeading";
 import ChevronDown from "../components/icons/ChevronDown.js";
 import ChevronUp from "../components/icons/ChevronUp.js";
+import ExerciseDemoTrigger from "../components/plan/ExerciseDemoTrigger";
 import { MuscleGroupChart } from "../components/plan/PlanCharts";
 import PlanState from "../components/plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
@@ -226,9 +227,16 @@ export default function Plan({ authUser }: PlanProps) {
 													{exercise.target_muscle_group}
 												</p>
 											</div>
-											<p className="m-0 text-sm font-black text-[#0f8b6f]">
-												{exercise.sets} sets x {exercise.reps}
-											</p>
+											<div className="flex flex-col items-start gap-2 sm:items-end">
+												<p className="m-0 text-sm font-black text-[#0f8b6f]">
+													{exercise.sets} sets x {exercise.reps}
+												</p>
+												<ExerciseDemoTrigger
+													exercise={exercise}
+													className="h-9 rounded-lg border border-[#0f8b6f] bg-white px-3 text-xs font-black uppercase text-[#0f8b6f] disabled:cursor-not-allowed disabled:opacity-60"
+													fallbackClassName="text-xs font-black uppercase text-[#0f8b6f] underline underline-offset-3"
+												/>
+											</div>
 										</div>
 										<p className="mt-3 text-sm leading-5 text-[#62706b]">
 											Equipment: {formatEquipment(exercise.equipment_needed)}

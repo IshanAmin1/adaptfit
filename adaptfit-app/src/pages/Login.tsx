@@ -1,52 +1,29 @@
-import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { authService } from "../api/auth-service";
 import loginImage from "../assets/login-image.jpg";
 import type { AuthUser } from "../types/auth";
+import { getAuthenticatedPath } from "../utils/auth-utils";
 
 type LoginProps = {
 	authUser?: AuthUser | null;
-	onLogin: (user: AuthUser) => void;
 };
 
-function getPostLoginPath(user: AuthUser) {
-	if (!user.hasActiveSubscription) {
-		return "/subscribe";
-	}
-
-	return user.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
-}
-
-export default function Login({ authUser, onLogin }: LoginProps) {
-	const navigate = useNavigate();
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+export default function Login({ authUser }: LoginProps) {
+	const [searchParams] = useSearchParams();
+	const [errorMessage, setErrorMessage] = useState<string | null>(
+		searchParams.has("oauth_error")
+			? "Google login failed. Please try again."
+			: null,
+	);
 
 	if (authUser) {
-		return <Navigate to={getPostLoginPath(authUser)} replace />;
+		return <Navigate to={getAuthenticatedPath(authUser)} replace />;
 	}
 
-	const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
-		if (!credentialResponse.credential) {
-			handleGoogleError();
-			return;
-		}
-
-		authService
-			.loginWithGoogle(credentialResponse.credential)
-			.then((user) => {
-				onLogin(user);
-				navigate(getPostLoginPath(user), {
-					replace: true,
-				});
-			})
-			.catch(() => {
-				handleGoogleError();
-			});
-	};
-
-	const handleGoogleError = () => {
-		setErrorMessage("Google login failed. Please try again.");
+	const handleGoogleLogin = () => {
+		setErrorMessage(null);
+		window.location.assign(authService.getGoogleLoginUrl());
 	};
 
 	return (
@@ -67,13 +44,13 @@ export default function Login({ authUser, onLogin }: LoginProps) {
 						</div>
 
 						<div className="flex flex-col gap-4">
-							<div className="flex min-h-11 w-full items-center justify-center rounded-lg border border-[#b7cbc2] bg-white p-2 shadow-[0_10px_30px_rgba(15,139,111,0.08)]">
-								<GoogleLogin
-									onSuccess={handleGoogleSuccess}
-									onError={handleGoogleError}
-									width="320"
-								/>
-							</div>
+							<button
+								type="button"
+								onClick={handleGoogleLogin}
+								className="flex min-h-11 w-full items-center justify-center rounded-lg border border-[#b7cbc2] bg-white px-4 py-3 text-sm font-black text-[#17211f] shadow-[0_10px_30px_rgba(15,139,111,0.08)] transition hover:-translate-y-0.5 hover:border-[#0f8b6f] hover:text-[#0f8b6f] focus:outline-none focus:ring-3 focus:ring-[#0f8b6f]/25"
+							>
+								Continue with Google
+							</button>
 							{errorMessage ? (
 								<p
 									className="m-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"

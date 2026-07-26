@@ -7,6 +7,7 @@ import { authRouter } from "./routers/auth_router.js";
 import { billingRouter } from "./routers/billing_router.js";
 import { onboardingRouter } from "./routers/onboarding_router.js";
 import { plansRouter } from "./routers/plans_router.js";
+import { exercisesRouter } from "./routers/exercises_router.js";
 import { stripeWebhookRouter } from "./routers/stripe_webhook_router.js";
 import { sessionMiddleware } from "./models/sessions.js";
 import { PORT, CLIENT_ORIGIN } from "./config/env/server.js";
@@ -45,6 +46,7 @@ app.use("/auth", authRouter);
 app.use("/billing", billingRouter);
 app.use("/onboarding", onboardingRouter);
 app.use("/plans", plansRouter);
+app.use("/exercises", exercisesRouter);
 
 app.listen(PORT, (err) => {
 	if (err) console.log(err);
