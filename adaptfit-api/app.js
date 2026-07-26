@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import csrf from '@dr.pogodin/csurf';
 import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
 import { billingRouter } from "./routers/billing_router.js";
@@ -25,6 +26,13 @@ app.use(
 app.use("/stripe", stripeWebhookRouter);
 app.use(bodyParser.json());
 app.use(sessionMiddleware());
+app.use(csrf({ cookie: false }));
+
+app.get("/csrf-token", (req, res) => {
+  res.json({
+    csrfToken: req.csrfToken(),
+  });
+});
 
 try {
 	await sequelize.authenticate();

@@ -1,5 +1,4 @@
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import { apiFetch } from "../utils/api.js";
 
 type BillingRedirectResponse = {
 	url?: string;
@@ -19,9 +18,8 @@ function parseRedirectResponse(
 
 export const billingService = {
 	syncSubscription(): Promise<void> {
-		return fetch(`${API_BASE_URL}/billing/sync`, {
+		return apiFetch(`/billing/sync`, {
 			method: "POST",
-			credentials: "include",
 		}).then((response) => {
 			if (!response.ok) {
 				throw new Error("Billing sync request failed");
@@ -30,18 +28,16 @@ export const billingService = {
 	},
 
 	createCheckoutSession(): Promise<BillingRedirectResponse> {
-		return fetch(`${API_BASE_URL}/billing/checkout-session`, {
+		return apiFetch(`/billing/checkout-session`, {
 			method: "POST",
-			credentials: "include",
 		}).then((response) =>
 			parseRedirectResponse(response, "Checkout session request failed"),
 		);
 	},
 
 	createPortalSession(): Promise<BillingRedirectResponse> {
-		return fetch(`${API_BASE_URL}/billing/portal-session`, {
+		return apiFetch(`/billing/portal-session`, {
 			method: "POST",
-			credentials: "include",
 		}).then((response) =>
 			parseRedirectResponse(response, "Portal session request failed"),
 		);

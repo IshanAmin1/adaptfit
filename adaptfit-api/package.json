@@ -15,6 +15,7 @@
 		"start:dev-server": "nodemon --inspect app.js"
 	},
 	"dependencies": {
+		"@dr.pogodin/csurf": "^1.17.1",
 		"@socket.io/redis-adapter": "^8.3.0",
 		"body-parser": "^1.20.3",
 		"bullmq": "^5.80.8",

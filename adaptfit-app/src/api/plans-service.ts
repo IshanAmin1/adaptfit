@@ -1,7 +1,5 @@
 import type { ExerciseVideo, GeneratedPlan } from "../types/plan";
-
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import { apiFetch } from "../utils/api.js";
 
 type PlanResponse = {
 	plan: GeneratedPlan;
@@ -13,9 +11,8 @@ type ExerciseResponse = {
 
 export const plansService = {
 	async getLatestPlan(): Promise<GeneratedPlan | null> {
-		const response = await fetch(`${API_BASE_URL}/plans`, {
+		const response = await apiFetch(`/plans`, {
 			method: "GET",
-			credentials: "include",
 		});
 
 		if (response.status === 404) {
@@ -41,9 +38,8 @@ export const plansService = {
 	},
 
 	async getExerciseVideo(exerciseDbId: string): Promise<ExerciseVideo> {
-		const response = await fetch(`${API_BASE_URL}/exercises/${exerciseDbId}`, {
+		const response = await apiFetch(`/exercises/${exerciseDbId}`, {
 			method: "GET",
-			credentials: "include",
 		});
 
 		const body = (await response
