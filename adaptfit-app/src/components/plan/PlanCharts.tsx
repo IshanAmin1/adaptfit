@@ -54,13 +54,8 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 	let cursor = -Math.PI / 2;
 
 	return (
-		<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 md:grid-cols-[10rem_1fr] md:items-center">
-			<svg
-				viewBox="0 0 160 160"
-				role="img"
-				aria-label="Macro distribution"
-				className="h-40 w-40"
-			>
+		<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 md:grid-cols-[1fr_1fr] md:items-center">
+			<svg viewBox="0 0 160 160" role="img" aria-label="Macro distribution">
 				<circle
 					cx="80"
 					cy="80"

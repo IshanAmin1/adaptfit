@@ -21,8 +21,8 @@ const MIN_REASONABLE_AGE = 13;
 const MAX_REASONABLE_AGE = 100;
 const MIN_REASONABLE_HEIGHT_CM = 100;
 const MAX_REASONABLE_HEIGHT_CM = 250;
-const MIN_REASONABLE_WEIGHT_KG = 30;
-const MAX_REASONABLE_WEIGHT_KG = 300;
+const MIN_REASONABLE_WEIGHT_KG = 45;
+const MAX_REASONABLE_WEIGHT_KG = 91;
 
 const initialProfile: OnboardingProfile = {
 	age: "",
@@ -30,7 +30,7 @@ const initialProfile: OnboardingProfile = {
 	height: "",
 	currentWeight: "",
 	primaryGoal: "",
-	targetWeightOrTimeline: "",
+	goalTarget: "",
 	experienceLevel: "",
 	injuriesOrLimitations: "",
 	trainingLocation: "",
@@ -81,31 +81,13 @@ const goalOptions: Option[] = [
 	{ label: "Improve mobility / flexibility", value: "improve_flexibility" },
 ];
 
-const goalTargetCopy: Record<string, { label: string; placeholder: string }> = {
-	lose_weight: {
-		label: "Target weight and timeline",
-		placeholder: "Example: 75 kg by September",
-	},
-	build_muscle: {
-		label: "Muscle gain target",
-		placeholder: "Example: gain 4 kg over 6 months",
-	},
-	improve_endurance: {
-		label: "Endurance target",
-		placeholder: "Example: run 5K in 8 weeks",
-	},
-	general_fitness: {
-		label: "Fitness target",
-		placeholder: "Example: train 4 days/week consistently",
-	},
-	build_strength: {
-		label: "Strength target",
-		placeholder: "Example: squat 100 kg or improve push-ups",
-	},
-	improve_flexibility: {
-		label: "Mobility or flexibility target",
-		placeholder: "Example: touch toes or reduce back tightness",
-	},
+const goalTargetPlaceholder: Record<string, string> = {
+	lose_weight: "Example: 75 kg by September",
+	build_muscle: "Example: gain 4 kg over 6 months",
+	improve_endurance: "Example: run 5K in 8 weeks",
+	general_fitness: "Example: train 4 days/week consistently",
+	build_strength: "Example: squat 100 kg or improve push-ups",
+	improve_flexibility: "Example: touch toes or reduce back tightness",
 };
 
 const experienceOptions: Option[] = [
@@ -306,9 +288,9 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const progressPercent = isResultStep
 		? submissionProgressPercent
 		: Math.round((stepIndex / Math.max(steps.length - 1, 1)) * 100);
-	const goalTarget = goalTargetCopy[profile.primaryGoal] || {
-		label: "Target or timeline",
-		placeholder: "Optional",
+	const goalTarget = {
+		label: "Goal target",
+		placeholder: goalTargetPlaceholder[profile.primaryGoal],
 	};
 	const hasMachines = profile.equipmentAvailable.includes("machines");
 
@@ -457,7 +439,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 				{ label: "Primary goal", value: formatValue(profile.primaryGoal) },
 				{
 					label: goalTarget.label,
-					value: formatValue(profile.targetWeightOrTimeline),
+					value: formatValue(profile.goalTarget),
 				},
 			],
 		},
@@ -626,11 +608,9 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 							{profile.primaryGoal ? (
 								<Field label={goalTarget.label}>
 									<TextInput
-										value={profile.targetWeightOrTimeline || ""}
+										value={profile.goalTarget || ""}
 										placeholder={goalTarget.placeholder}
-										onChange={(value) =>
-											updateProfile("targetWeightOrTimeline", value)
-										}
+										onChange={(value) => updateProfile("goalTarget", value)}
 									/>
 								</Field>
 							) : null}

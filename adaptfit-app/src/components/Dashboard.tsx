@@ -72,8 +72,8 @@ export default function Dashboard() {
 	const restDayMeal = plan.nutrients.sample_meals[0];
 
 	return (
-		<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 lg:grid-cols-12">
-			<DashboardCard className="flex min-h-125 flex-col gap-7 p-8 lg:col-span-8">
+		<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 xl:grid-cols-12">
+			<DashboardCard className="flex min-h-125 flex-col gap-7 p-8 xl:col-span-8">
 				<div className="grid gap-5">
 					<div>
 						<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
@@ -207,7 +207,7 @@ export default function Dashboard() {
 				)}
 			</DashboardCard>
 
-			<DashboardCard className="p-7.5 lg:col-span-4">
+			<DashboardCard className="p-7.5 xl:col-span-4">
 				<SectionHeading
 					eyebrow="Nutrition goals"
 					title={`${plan.nutrients.daily_calories} kcal`}
