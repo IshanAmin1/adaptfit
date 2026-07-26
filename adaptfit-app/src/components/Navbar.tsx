@@ -1,4 +1,3 @@
-import { googleLogout } from "@react-oauth/google";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { AuthUser } from "../types/auth";
@@ -54,7 +53,6 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 
 	const handleLogout = () => {
 		setIsMenuOpen(false);
-		googleLogout();
 		onLogout().finally(() => {
 			navigate("/", { replace: true });
 		});
