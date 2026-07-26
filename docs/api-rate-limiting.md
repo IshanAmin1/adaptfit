@@ -218,7 +218,7 @@ removed so the user can retry.
 - `adaptfit-api/workers/verify-onboarding-worker.js`
 - `adaptfit-api/workers/generate-plan-worker.js`
 
-Both workers run with `concurrency: 5`.
+Both workers run with `concurrency: 50`.
 
 BullMQ `concurrency` controls how many jobs **one worker process** handles in
 parallel. It is **not** per-user:
