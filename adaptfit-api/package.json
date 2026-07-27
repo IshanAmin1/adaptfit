@@ -15,6 +15,7 @@
 		"start:dev-server": "nodemon --inspect app.js"
 	},
 	"dependencies": {
+		"@dr.pogodin/csurf": "^1.17.1",
 		"@socket.io/redis-adapter": "^8.3.0",
 		"body-parser": "^1.20.3",
 		"bullmq": "^5.80.8",
@@ -24,6 +25,7 @@
 		"express": "^4.21.2",
 		"express-session": "^1.19.0",
 		"google-auth-library": "^10.9.0",
+		"helmet": "^8.3.0",
 		"ioredis": "^5.11.1",
 		"pg": "^8.13.1",
 		"sequelize": "^6.37.8",

@@ -1,9 +1,7 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import type { AuthUser } from "../types/auth";
 import { OnboardingProfile } from "../types/onboarding";
-
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import { apiFetch, getApiUrl } from "../utils/api.js";
 
 export type OnboardingProgressEvent = {
 	stage: string;
@@ -59,7 +57,7 @@ function getStatusUrl(statusUrl: string) {
 		return statusUrl;
 	}
 
-	return `${API_BASE_URL}${statusUrl}`;
+	return getApiUrl(statusUrl);
 }
 
 async function streamStatus(
@@ -107,12 +105,11 @@ export const onboardingService = {
 			message: "Starting validation process.",
 		});
 
-		const response = await fetch(`${API_BASE_URL}/onboarding`, {
+		const response = await apiFetch(`/onboarding`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
-			credentials: "include",
 			body: JSON.stringify({ profile }),
 		});
 
