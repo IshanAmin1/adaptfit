@@ -9,9 +9,10 @@
 	},
 	"scripts": {
 		"start": "node app.js",
+		"start:worker": "node workers/dev-workers.js",
 		"start:dev-stripe": "stripe listen --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed --forward-to localhost:3000/stripe/webhook",
-		"start:dev-docker": "docker-compose up -d",
-		"start:dev-worker": "nodemon --inspect=9231 --env-file=.env workers/dev-workers.js",
+		"start:dev-docker": "docker compose -f ../docker-compose-dev.yml up -d",
+		"start:dev-worker": "nodemon --inspect=9231 workers/dev-workers.js",
 		"start:dev-server": "nodemon --inspect app.js"
 	},
 	"dependencies": {
