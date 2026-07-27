@@ -11,6 +11,12 @@ import { findRecentWorkoutLogsForUser } from "../utils/models/workout_logs.js";
 
 export const plansRouter = Router();
 
+const WEEKLY_PLAN_ADAPTATION_JOB_ID = "weekly-plan-adaptation";
+const WEEKLY_PLAN_ADAPTATION_REPEAT = {
+	pattern: "0 23 * * 0",
+	tz: "America/Toronto",
+};
+
 export async function enqueuePlanGeneration(
 	userId,
 	onboardingProfile,
@@ -41,15 +47,42 @@ export async function enqueuePlanGeneration(
 export async function scheduleWeeklyPlanAdaptations() {
 	const { queue } = getQueueWithListener(GENERATE_PLAN_QUEUE_NAME);
 
+	const existingScheduler =
+		typeof queue.getJobScheduler === "function"
+			? await queue.getJobScheduler(WEEKLY_PLAN_ADAPTATION_JOB_ID)
+			: null;
+
+	if (existingScheduler) {
+		return;
+	}
+
+	if (typeof queue.upsertJobScheduler === "function") {
+		await queue.upsertJobScheduler(
+			WEEKLY_PLAN_ADAPTATION_JOB_ID,
+			WEEKLY_PLAN_ADAPTATION_REPEAT,
+			{
+				name: WEEKLY_PLAN_ADAPTATION_JOB_ID,
+				data: { refreshAllUsers: true },
+			},
+		);
+		return;
+	}
+
+	const existingRepeatableJobs = await queue.getRepeatableJobs();
+	const existingRepeatableJob = existingRepeatableJobs.find(
+		(job) => job.id === WEEKLY_PLAN_ADAPTATION_JOB_ID,
+	);
+
+	if (existingRepeatableJob) {
+		return;
+	}
+
 	await queue.add(
-		"weekly-plan-adaptation",
+		WEEKLY_PLAN_ADAPTATION_JOB_ID,
 		{ refreshAllUsers: true },
 		{
-			jobId: "weekly-plan-adaptation",
-			repeat: {
-				pattern: "0 23 * * 0",
-				tz: "America/Toronto",
-			},
+			jobId: WEEKLY_PLAN_ADAPTATION_JOB_ID,
+			repeat: WEEKLY_PLAN_ADAPTATION_REPEAT,
 		},
 	);
 }
@@ -119,11 +152,9 @@ plansRouter.post(
 			const workoutLogs = await findRecentWorkoutLogsForUser(req.user.id, 7);
 
 			if (!workoutLogs.length) {
-				return res
-					.status(409)
-					.json({
-						error: "Log at least one workout before testing adaptation.",
-					});
+				return res.status(409).json({
+					error: "Log at least one workout before testing adaptation.",
+				});
 			}
 
 			const planJob = await enqueuePlanGeneration(
