@@ -89,12 +89,6 @@ export default function Plan({ authUser }: PlanProps) {
 						eyebrow="Weekly plan"
 						title={getPlanTitle(authUser)}
 					/>
-					<button
-						type="button"
-						className="h-11 rounded-lg border border-[#0f8b6f] bg-white px-5 font-black uppercase text-[#0f8b6f]"
-					>
-						Edit plan
-					</button>
 				</div>
 			</DashboardCard>
 
