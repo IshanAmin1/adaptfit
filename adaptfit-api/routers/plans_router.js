@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
+import { planGenerationRateLimit } from "../middleware/rate_limit.js";
 import { hasActiveSubscription } from "../middleware/subscription.js";
 import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
 import {
+	enqueueUserJob,
 	GENERATE_PLAN_QUEUE_NAME,
-	getQueueWithListener,
 } from "../services/tasks.js";
 import { findLatestPlanForUser } from "../utils/models/plans.js";
 import { findRecentWorkoutLogsForUser } from "../utils/models/workout_logs.js";
@@ -30,8 +31,7 @@ export async function enqueuePlanGeneration(
 		throw error;
 	}
 
-	const { queue } = getQueueWithListener(GENERATE_PLAN_QUEUE_NAME);
-	const job = await queue.add(`${GENERATE_PLAN_QUEUE_NAME}-${userId}`, {
+	const job = await enqueueUserJob(GENERATE_PLAN_QUEUE_NAME, userId, {
 		userId,
 		onboardingProfileId: onboardingProfile.id,
 		profile: onboardingProfile.profile,
@@ -113,6 +113,7 @@ plansRouter.post(
 	"/",
 	isAuthenticated,
 	hasActiveSubscription,
+	planGenerationRateLimit,
 	async (req, res) => {
 		try {
 			const planJob = await enqueuePlanGeneration(
@@ -125,7 +126,11 @@ plansRouter.post(
 			console.error(error);
 
 			if (error.status) {
-				return res.status(error.status).json({ error: error.message });
+				return res.status(error.status).json({
+					error: error.message,
+					jobId: error.jobId,
+					statusUrl: error.statusUrl,
+				});
 			}
 
 			return res

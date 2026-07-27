@@ -21,6 +21,10 @@ import { PORT, CLIENT_ORIGIN } from "./config/env/server.js";
 
 export const app = express();
 
+if (process.env.NODE_ENV === "production") {
+	app.set("trust proxy", 1);
+}
+
 app.use(
 	cors({
 		origin: CLIENT_ORIGIN,

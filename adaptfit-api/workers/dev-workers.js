@@ -1,3 +1,4 @@
+import "dotenv/config";
 import "./verify-onboarding-worker.js";
 import "./generate-plan-worker.js";
 

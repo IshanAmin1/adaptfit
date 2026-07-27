@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
+import { billingRateLimit } from "../middleware/rate_limit.js";
 import {
 	deleteCheckoutSession,
 	findPendingCheckoutSessionForUser,
@@ -98,7 +99,7 @@ async function getReusableCheckoutUrl({
 	return null;
 }
 
-billingRouter.post("/sync", isAuthenticated, async (req, res) => {
+billingRouter.post("/sync", isAuthenticated, billingRateLimit, async (req, res) => {
 	try {
 		const stripe = getStripeClient();
 		const stripeCustomerId = await findStripeCustomerIdForUser(req.user.id);
@@ -114,7 +115,11 @@ billingRouter.post("/sync", isAuthenticated, async (req, res) => {
 	}
 });
 
-billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
+billingRouter.post(
+	"/checkout-session",
+	isAuthenticated,
+	billingRateLimit,
+	async (req, res) => {
 	try {
 		const stripe = getStripeClient();
 		const stripeCustomerId = await getOrCreateStripeCustomer(stripe, req.user);
@@ -175,9 +180,14 @@ billingRouter.post("/checkout-session", isAuthenticated, async (req, res) => {
 		console.error(error);
 		return res.status(500).json({ error: "Checkout session creation failed." });
 	}
-});
+},
+);
 
-billingRouter.post("/portal-session", isAuthenticated, async (req, res) => {
+billingRouter.post(
+	"/portal-session",
+	isAuthenticated,
+	billingRateLimit,
+	async (req, res) => {
 	try {
 		const stripeCustomerId = await findStripeCustomerIdForUser(req.user.id);
 
@@ -198,4 +208,5 @@ billingRouter.post("/portal-session", isAuthenticated, async (req, res) => {
 		console.error(error);
 		return res.status(500).json({ error: "Portal session creation failed." });
 	}
-});
+},
+);

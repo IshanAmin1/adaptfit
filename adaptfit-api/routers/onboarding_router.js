@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { isAuthenticated } from "../middleware/auth.js";
+import { onboardingRateLimit } from "../middleware/rate_limit.js";
 import { hasActiveSubscription } from "../middleware/subscription.js";
 import * as z from "zod";
 import {
-	getQueueWithListener,
+	enqueueUserJob,
 	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
 import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
@@ -189,12 +190,13 @@ onboardingRouter.post(
 	"/",
 	isAuthenticated,
 	hasActiveSubscription,
+	onboardingRateLimit,
 	async (req, res) => {
 		try {
 			const profile = validateProfile(req.body?.profile);
-			const { queue } = getQueueWithListener(VALIDATE_ONBOARDING_QUEUE_NAME);
-			const job = await queue.add(
-				`${VALIDATE_ONBOARDING_QUEUE_NAME}-${req.user.id}`,
+			const job = await enqueueUserJob(
+				VALIDATE_ONBOARDING_QUEUE_NAME,
+				req.user.id,
 				{ userId: req.user.id, profile },
 			);
 
@@ -209,6 +211,8 @@ onboardingRouter.post(
 				return res.status(error.status).json({
 					error: error.message,
 					invalidFields: error.invalidFields,
+					jobId: error.jobId,
+					statusUrl: error.statusUrl,
 				});
 			}
 

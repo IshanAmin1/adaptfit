@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { Worker } from "bullmq";
 import { sequelize } from "../datasource.js";
 import { queryModelWithRetries } from "../services/openrouter.js";
@@ -102,5 +101,6 @@ new Worker(
 			host: REDIS_HOST,
 			port: REDIS_PORT,
 		},
+		concurrency: 50,
 	},
 );
