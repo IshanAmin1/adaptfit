@@ -44,6 +44,8 @@ jobs:
           context: .
           file: ./adaptfit-app/Dockerfile
           push: true
+          build-args: |
+            VITE_API_BASE_URL=https://api.${{ secrets.DOMAIN }}
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/adaptfit-app:latest
             ghcr.io/${{ env.OWNER_LC }}/adaptfit-app:${{ github.sha }}
