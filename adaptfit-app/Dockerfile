@@ -4,7 +4,9 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci
+COPY adaptfit-app/package.json adaptfit-app/package.json
+
+RUN npm ci --workspace adaptfit-app
 
 COPY . .
 
