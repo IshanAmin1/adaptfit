@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - frontend/**
-      - backend/**
+      - adaptfit-app/**
+      - adaptfit-api/**
   workflow_dispatch:
   
 permissions:

@@ -99,7 +99,7 @@ services:
     container_name: redis
     restart: always
     volumes:
-      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./adaptfit-api/config/redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
 
 volumes:
