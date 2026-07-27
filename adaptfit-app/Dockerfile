@@ -6,7 +6,7 @@ COPY package*.json ./
 
 COPY adaptfit-app/package.json adaptfit-app/package.json
 
-RUN npm ci --workspace=adaptfit-app
+RUN npm ci --workspace=adaptfit-app --include-workspace-root
 
 COPY . .
 
