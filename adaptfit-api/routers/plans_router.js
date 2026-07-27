@@ -7,10 +7,15 @@ import {
 	getQueueWithListener,
 } from "../services/tasks.js";
 import { findLatestPlanForUser } from "../utils/models/plans.js";
+import { findRecentWorkoutLogsForUser } from "../utils/models/workout_logs.js";
 
 export const plansRouter = Router();
 
-export async function enqueuePlanGeneration(userId, onboardingProfile) {
+export async function enqueuePlanGeneration(
+	userId,
+	onboardingProfile,
+	adaptationContext = null,
+) {
 	if (!onboardingProfile?.profile) {
 		const error = new Error(
 			"Onboarding profile is required before generating a plan.",
@@ -24,12 +29,29 @@ export async function enqueuePlanGeneration(userId, onboardingProfile) {
 		userId,
 		onboardingProfileId: onboardingProfile.id,
 		profile: onboardingProfile.profile,
+		adaptationContext,
 	});
 
 	return {
 		jobId: job.id,
 		statusUrl: `/plans/status/${job.id}/stream`,
 	};
+}
+
+export async function scheduleWeeklyPlanAdaptations() {
+	const { queue } = getQueueWithListener(GENERATE_PLAN_QUEUE_NAME);
+
+	await queue.add(
+		"weekly-plan-adaptation",
+		{ refreshAllUsers: true },
+		{
+			jobId: "weekly-plan-adaptation",
+			repeat: {
+				pattern: "0 23 * * 0",
+				tz: "America/Toronto",
+			},
+		},
+	);
 }
 
 plansRouter.get(
@@ -76,6 +98,51 @@ plansRouter.post(
 			return res
 				.status(503)
 				.json({ error: "Plan generation could not be started." });
+		}
+	},
+);
+
+plansRouter.post(
+	"/adapt",
+	isAuthenticated,
+	hasActiveSubscription,
+	async (req, res) => {
+		try {
+			const previousPlan = await findLatestPlanForUser(req.user.id);
+
+			if (!previousPlan) {
+				return res
+					.status(409)
+					.json({ error: "Generate a plan before testing adaptation." });
+			}
+
+			const workoutLogs = await findRecentWorkoutLogsForUser(req.user.id, 7);
+
+			if (!workoutLogs.length) {
+				return res
+					.status(409)
+					.json({
+						error: "Log at least one workout before testing adaptation.",
+					});
+			}
+
+			const planJob = await enqueuePlanGeneration(
+				req.user.id,
+				req.user.onboardingProfile,
+				{ previousPlan, workoutLogs },
+			);
+
+			return res.status(202).json(planJob);
+		} catch (error) {
+			console.error(error);
+
+			if (error.status) {
+				return res.status(error.status).json({ error: error.message });
+			}
+
+			return res
+				.status(503)
+				.json({ error: "Adaptive plan generation could not be started." });
 		}
 	},
 );

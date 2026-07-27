@@ -6,7 +6,13 @@ import * as z from "zod";
 
 import { GENERATE_PLAN_QUEUE_NAME } from "../services/tasks.js";
 import { REDIS_HOST, REDIS_PORT } from "../config/env/storage.js";
-import { saveGeneratedPlan } from "../utils/models/plans.js";
+import {
+	findLatestPlanForUser,
+	saveGeneratedPlan,
+} from "../utils/models/plans.js";
+import { findRecentWorkoutLogsForUser } from "../utils/models/workout_logs.js";
+import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
+import { findUsersWithCompletedOnboarding } from "../utils/models/users.js";
 
 try {
 	await sequelize.authenticate();
@@ -224,10 +230,34 @@ function optionalValue(value) {
 	return value && String(value).trim() ? value : "not provided";
 }
 
-function buildPlanPrompt(profile) {
+function formatWorkoutLogsForPrompt(workoutLogs) {
+	if (!workoutLogs?.length) {
+		return "No workout completion logs were recorded this week.";
+	}
+
+	return JSON.stringify(
+		workoutLogs.map((log) => ({
+			day: log.day,
+			session_type: log.sessionType,
+			logged_for: log.loggedFor,
+			exercises: log.exercises.map((exercise) => ({
+				exercise_name: exercise.exerciseName,
+				target_sets: exercise.targetSets,
+				target_reps: exercise.targetReps,
+				completion_status: exercise.completionStatus,
+				sets_completed: exercise.setsCompleted,
+				reps_completed: exercise.repsCompleted || "not provided",
+				notes: exercise.notes || "not provided",
+			})),
+			notes: log.notes || "not provided",
+		})),
+		null,
+		2,
+	);
+}
+
+function buildProfilePromptSection(profile) {
 	return [
-		"Generate a personalized weekly workout and nutrition plan for this validated AdaptFit onboarding profile.",
-		"",
 		"USER PROFILE:",
 		`- Age: ${profile.age}`,
 		`- Biological sex: ${profile.biologicalSex}`,
@@ -257,20 +287,65 @@ function buildPlanPrompt(profile) {
 		`- Diet type: ${profile.dietType}`,
 		`- Allergies or foods to avoid: ${optionalValue(profile.allergiesOrFoodsToAvoid)}`,
 		`- Meal frequency preference: ${optionalValue(profile.mealFrequencyPreference)}`,
+	].join("\n");
+}
+
+function buildInitialPlanPrompt(profile) {
+	return [
+		"Generate a personalized weekly workout and nutrition plan for this validated AdaptFit onboarding profile.",
+		"",
+		buildProfilePromptSection(profile),
 		"",
 		"Return only the JSON object.",
 	].join("\n");
 }
 
+function buildAdaptivePlanPrompt(profile, adaptationContext) {
+	return [
+		"Adapt the user's existing AdaptFit weekly workout and nutrition plan for next week.",
+		"",
+		"ADAPTATION RULES:",
+		"- Use the previous plan as the baseline. Do not redesign from scratch.",
+		"- Keep the same workout days, session types, and exercises when adherence was good.",
+		"- If a workout or exercise was partial, adjust conservatively by reducing sets, simplifying the exercise, adding recovery, or choosing a safer alternative.",
+		"- If workouts were completed consistently, progress gradually with modest changes to volume, intensity, or exercise complexity.",
+		"- Avoid changing nutrition targets unless adherence data or the user's goal clearly supports a modest adjustment.",
+		"- Respect onboarding constraints exactly.",
+		"- Use adaptive_notes.adjustment_triggers to summarize the most important reasons for the changes.",
+		"",
+		buildProfilePromptSection(profile),
+		"",
+		"PREVIOUS PLAN BASELINE:",
+		JSON.stringify(
+			adaptationContext.previousPlan?.plan || adaptationContext.previousPlan,
+			null,
+			2,
+		),
+		"",
+		"THIS WEEK'S WORKOUT COMPLETION LOGS:",
+		formatWorkoutLogsForPrompt(adaptationContext.workoutLogs),
+		"",
+		"Return only the JSON object.",
+	].join("\n");
+}
+
+function buildPlanPrompt(profile, adaptationContext = null) {
+	return adaptationContext
+		? buildAdaptivePlanPrompt(profile, adaptationContext)
+		: buildInitialPlanPrompt(profile);
+}
+
 async function generatePlan(profile, job) {
 	await job.updateProgress({
 		stage: "plan_generation",
-		message: "Generating your workout and nutrition plan.",
+		message: job.data.adaptationContext
+			? "Adapting your workout and nutrition plan."
+			: "Generating your workout and nutrition plan.",
 	});
 
 	const content = await queryModelWithRetries(
 		SYSTEM_PROMPT,
-		buildPlanPrompt(profile),
+		buildPlanPrompt(profile, job.data.adaptationContext),
 		(output) => {
 			try {
 				return !PlanSchema.safeParse(JSON.parse(output)).success;
@@ -305,15 +380,72 @@ async function generatePlan(profile, job) {
 
 	await job.updateProgress({
 		stage: "plan_complete",
-		message: "Your first plan is ready.",
+		message: job.data.adaptationContext
+			? "Your adapted plan is ready."
+			: "Your first plan is ready.",
 	});
 
 	return { plan: savedPlan };
 }
 
+async function generateAdaptivePlansForEligibleUsers(job) {
+	await job.updateProgress({
+		stage: "weekly_refresh_started",
+		message: "Preparing weekly plan adaptations.",
+	});
+
+	const users = await findUsersWithCompletedOnboarding();
+	const results = [];
+
+	for (const user of users) {
+		const billingStatus = await getBillingStatusForUser(user.id);
+
+		if (!billingStatus.hasActiveSubscription) {
+			continue;
+		}
+
+		const workoutLogs = await findRecentWorkoutLogsForUser(user.id, 7);
+
+		if (!workoutLogs.length) {
+			results.push({ userId: user.id, status: "skipped_no_logs" });
+			continue;
+		}
+
+		const previousPlan = await findLatestPlanForUser(user.id);
+
+		if (!previousPlan) {
+			results.push({ userId: user.id, status: "skipped_no_previous_plan" });
+			continue;
+		}
+
+		const childJob = {
+			data: {
+				userId: user.id,
+				onboardingProfileId: user.onboardingProfile.id,
+				profile: user.onboardingProfile.profile,
+				adaptationContext: { previousPlan, workoutLogs },
+			},
+			updateProgress: (progress) => job.updateProgress(progress),
+		};
+
+		await generatePlan(user.onboardingProfile.profile, childJob);
+		results.push({ userId: user.id, status: "generated" });
+	}
+
+	await job.updateProgress({
+		stage: "weekly_refresh_complete",
+		message: "Weekly plan adaptations complete.",
+	});
+
+	return { results };
+}
+
 new Worker(
 	GENERATE_PLAN_QUEUE_NAME,
-	async (job) => generatePlan(job.data.profile, job),
+	async (job) =>
+		job.data.refreshAllUsers
+			? generateAdaptivePlansForEligibleUsers(job)
+			: generatePlan(job.data.profile, job),
 	{
 		connection: {
 			host: REDIS_HOST,

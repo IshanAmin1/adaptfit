@@ -69,3 +69,12 @@ export async function findLatestPlanForUser(userId) {
 
 	return plan ? serializePlan(plan.toJSON()) : null;
 }
+
+export async function findPlanForUser(planId, userId) {
+	const plan = await Plan.findOne({
+		where: { id: planId, user_id: userId },
+		include: [{ association: "onboardingProfile" }],
+	});
+
+	return plan ? serializePlan(plan.toJSON()) : null;
+}

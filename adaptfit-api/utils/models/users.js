@@ -21,6 +21,21 @@ export async function findUserById(id) {
 	return user?.toJSON() || null;
 }
 
+export async function findUsersWithCompletedOnboarding() {
+	const users = await User.findAll({
+		include: [
+			{
+				association: "onboardingProfile",
+				required: true,
+			},
+		],
+	});
+
+	return users
+		.map((user) => user.toJSON())
+		.filter((user) => user.onboardingProfile?.completed_at);
+}
+
 export async function upsertGoogleUser(profile) {
 	const [user] = await User.upsert(
 		{

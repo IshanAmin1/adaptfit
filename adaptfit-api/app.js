@@ -8,8 +8,12 @@ import helmet from "helmet";
 import { sequelize } from "./datasource.js";
 import { authRouter } from "./routers/auth_router.js";
 import { billingRouter } from "./routers/billing_router.js";
+import { loggingRouter } from "./routers/logging_router.js";
 import { onboardingRouter } from "./routers/onboarding_router.js";
-import { plansRouter } from "./routers/plans_router.js";
+import {
+	plansRouter,
+	scheduleWeeklyPlanAdaptations,
+} from "./routers/plans_router.js";
 import { exercisesRouter } from "./routers/exercises_router.js";
 import { stripeWebhookRouter } from "./routers/stripe_webhook_router.js";
 import { sessionMiddleware } from "./models/sessions.js";
@@ -44,6 +48,8 @@ try {
 		await sequelize.sync({ alter: { drop: false } });
 	}
 
+	await scheduleWeeklyPlanAdaptations();
+
 	console.log("Connection has been established successfully.");
 } catch (error) {
 	throw new Error("Unable to connect to the database:", error);
@@ -55,6 +61,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/auth", authRouter);
 app.use("/billing", billingRouter);
+app.use("/logging", loggingRouter);
 app.use("/onboarding", onboardingRouter);
 app.use("/plans", plansRouter);
 app.use("/exercises", exercisesRouter);
