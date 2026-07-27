@@ -2,6 +2,7 @@ import { OAuth2Client } from "google-auth-library";
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
 import { isAuthenticated } from "../middleware/auth.js";
+import { authRateLimit } from "../middleware/rate_limit.js";
 import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
 import { serializeUser, upsertGoogleUser } from "../utils/models/users.js";
 import {
@@ -56,7 +57,7 @@ async function upsertUserFromGooglePayload(payload) {
 	});
 }
 
-authRouter.get("/google/start", async (req, res) => {
+authRouter.get("/google/start", authRateLimit, async (req, res) => {
 	try {
 		const { codeVerifier, codeChallenge } =
 			await googleClient.generateCodeVerifierAsync();
@@ -91,7 +92,7 @@ authRouter.get("/google/start", async (req, res) => {
 	}
 });
 
-authRouter.get("/google/callback", async (req, res) => {
+authRouter.get("/google/callback", authRateLimit, async (req, res) => {
 	try {
 		const { code, error, state } = req.query;
 		const googleOAuth = req.session.googleOAuth;

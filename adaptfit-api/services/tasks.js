@@ -28,3 +28,44 @@ export function getQueueWithListener(queueName) {
 
 export const VALIDATE_ONBOARDING_QUEUE_NAME = "validate-onboarding";
 export const GENERATE_PLAN_QUEUE_NAME = "generate-plan";
+
+const ACTIVE_JOB_STATES = new Set(["waiting", "active", "delayed", "paused"]);
+
+const QUEUE_STATUS_PATHS = {
+	[VALIDATE_ONBOARDING_QUEUE_NAME]: "/onboarding/status",
+	[GENERATE_PLAN_QUEUE_NAME]: "/plans/status",
+};
+
+/**
+ * Enqueues a BullMQ job once per user while an equivalent job is still pending.
+ * @param {string} queueName
+ * @param {string} userId
+ * @param {object} data
+ * @returns {Promise<import("bullmq").Job>}
+ */
+export async function enqueueUserJob(queueName, userId, data) {
+	const { queue } = getQueueWithListener(queueName);
+	const jobId = `${queueName}-${userId}`;
+	const existingJob = await queue.getJob(jobId);
+
+	if (existingJob) {
+		const state = await existingJob.getState();
+
+		if (ACTIVE_JOB_STATES.has(state)) {
+			const statusPath = QUEUE_STATUS_PATHS[queueName];
+			const error = new Error(
+				"A request is already in progress. Please wait for it to finish.",
+			);
+			error.status = 409;
+			error.jobId = existingJob.id;
+			error.statusUrl = `${statusPath}/${existingJob.id}/stream`;
+			throw error;
+		}
+	}
+
+	return queue.add(`${queueName}-${userId}`, data, {
+		jobId,
+		removeOnComplete: true,
+		removeOnFail: { age: 3600 },
+	});
+}
