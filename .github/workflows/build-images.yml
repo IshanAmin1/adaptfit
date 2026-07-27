@@ -41,7 +41,8 @@ jobs:
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
-          context: ./adaptfit-app
+          context: .
+          file: ./adaptfit-app/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/adaptfit-app:latest
@@ -50,7 +51,8 @@ jobs:
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
-          context: ./adaptfit-api
+          context: .
+          file: ./adaptfit-api/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/adaptfit-api:latest
