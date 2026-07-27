@@ -16,7 +16,7 @@ RUN npm run build
 
 FROM nginx:1.30.4-alpine
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/adaptfit-app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
