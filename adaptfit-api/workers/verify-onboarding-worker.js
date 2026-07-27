@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { Worker } from "bullmq";
 import { sequelize } from "../datasource.js";
 import { queryModelWithRetries } from "../services/openrouter.js";

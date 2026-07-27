@@ -44,19 +44,40 @@ services:
     expose:
       - "3000"
     environment:
-      NODE_ENV: ${NODE_ENV}
+      NODE_ENV: production
 
-      VIRTUAL_HOST: ${API_DOMAIN}
-      LETSENCRYPT_HOST: ${API_DOMAIN}
+      VIRTUAL_HOST: api.${DOMAIN}
+      LETSENCRYPT_HOST: api.${DOMAIN}
 
       DATABASE_HOST: postgres
-      DATABASE_PORT: ${POSTGRES_PORT}
+      DATABASE_PORT: 5432
       DATABASE_USER: ${POSTGRES_USER}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       DATABASE_NAME: ${POSTGRES_DB}
 
       REDIS_HOST: redis
-      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PORT: 6379
+
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    image: ${BACKEND_IMAGE}
+    container_name: worker
+    restart: always
+    command: npm run start:worker
+    environment:
+      NODE_ENV: production
+
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_NAME: ${POSTGRES_DB}
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
 
     depends_on:
       - postgres
@@ -66,8 +87,6 @@ services:
     image: postgres:16
     container_name: postgres
     restart: always
-    expose:
-      - "${POSTGRES_PORT}"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -79,11 +98,9 @@ services:
     image: redis:7.2.5-alpine
     container_name: redis
     restart: always
-    expose:
-      - "${REDIS_PORT}"
-    command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
 
 volumes:
   postgres-volume:
