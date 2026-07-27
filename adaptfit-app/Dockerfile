@@ -8,6 +8,8 @@ RUN npm ci
 
 COPY . .
 
+WORKDIR /app/adaptfit-app
+
 RUN npm run build
 
 FROM nginx:1.30.4-alpine
