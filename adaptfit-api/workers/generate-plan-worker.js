@@ -441,10 +441,23 @@ async function generateAdaptivePlansForEligibleUsers(job) {
 
 new Worker(
 	GENERATE_PLAN_QUEUE_NAME,
-	async (job) =>
-		job.data.refreshAllUsers
-			? generateAdaptivePlansForEligibleUsers(job)
-			: generatePlan(job.data.profile, job),
+	async (job) => {
+		const startedAt = Date.now();
+
+		try {
+			return job.data.refreshAllUsers
+				? await generateAdaptivePlansForEligibleUsers(job)
+				: await generatePlan(job.data.profile, job);
+		} catch (error) {
+			console.error(
+				`Plan generation job failed after ${Date.now() - startedAt}ms job=${
+					job.id
+				} user=${job.data.userId}:`,
+				error,
+			);
+			throw error;
+		}
+	},
 	{
 		connection: {
 			host: REDIS_HOST,

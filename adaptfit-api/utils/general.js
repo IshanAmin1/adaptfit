@@ -9,3 +9,13 @@ export function getEnvVariable(name, fallback) {
 
 	return envVar;
 }
+
+export function getPositiveIntegerEnv(name, fallback) {
+	const value = Number(getEnvVariable(name, fallback));
+
+	if (!Number.isInteger(value) || value <= 0) {
+		throw new Error(`${name} must be a positive integer.`);
+	}
+
+	return value;
+}

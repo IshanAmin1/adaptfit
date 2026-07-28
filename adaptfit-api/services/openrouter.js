@@ -17,9 +17,11 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 		return null;
 	}
 
-	const response = await fetch(
-		"https://openrouter.ai/api/v1/chat/completions",
-		{
+	const startedAt = Date.now();
+	let response;
+
+	try {
+		response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${OPENROUTER_API_KEY}`,
@@ -40,19 +42,35 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 				temperature: 0,
 				...args,
 			}),
-		},
-	);
+		});
+	} catch (error) {
+		console.error(
+			`OpenRouter fetch failed after ${Date.now() - startedAt}ms:`,
+			error,
+		);
+		return null;
+	}
 
 	if (!response.ok) {
-		// Query failed
+		const errorText = await response.text().catch(() => "");
 		console.error(
-			`OpenRouter query request failed with status ${response.status}.`,
+			`OpenRouter query failed with status ${response.status} after ${
+				Date.now() - startedAt
+			}ms: ${errorText.slice(0, 500)}`,
 		);
 		return null;
 	}
 
 	const body = await response.json();
 	const content = body?.choices?.[0]?.message?.content;
+
+	if (!content) {
+		console.error(
+			`OpenRouter returned no message content after ${
+				Date.now() - startedAt
+			}ms.`,
+		);
+	}
 
 	return content;
 }

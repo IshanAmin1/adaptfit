@@ -1,4 +1,4 @@
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
 import { getRedisClient } from "../services/redis.js";
 
@@ -27,11 +27,11 @@ function createRedisRateLimiter({ windowMs, max, keyGenerator, prefix }) {
 }
 
 function userKeyGenerator(req) {
-	return req.user?.id ?? req.ip;
+	return req.user?.id ?? ipKeyGenerator(req.ip);
 }
 
-function ipKeyGenerator(req) {
-	return req.ip;
+function unauthenticatedIpKeyGenerator(req) {
+	return ipKeyGenerator(req.ip);
 }
 
 // Generous for users retrying onboarding form fixes.
@@ -59,7 +59,7 @@ export const exerciseLookupRateLimit = createRedisRateLimiter({
 export const authRateLimit = createRedisRateLimiter({
 	windowMs: THIRTY_MINUTES_MS,
 	max: 60,
-	keyGenerator: ipKeyGenerator,
+	keyGenerator: unauthenticatedIpKeyGenerator,
 	prefix: "auth",
 });
 
