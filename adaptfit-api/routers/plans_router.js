@@ -6,6 +6,7 @@ import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
 import {
 	enqueueUserJob,
 	GENERATE_PLAN_QUEUE_NAME,
+	getQueueWithListener,
 } from "../services/tasks.js";
 import { findLatestPlanForUser } from "../utils/models/plans.js";
 import { findRecentWorkoutLogsForUser } from "../utils/models/workout_logs.js";
