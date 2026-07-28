@@ -1,7 +1,15 @@
 import { getQueueWithListener } from "../services/tasks.js";
+import {
+	STATUS_STREAM_HEARTBEAT_MS,
+	STATUS_STREAM_TIMEOUT_MS,
+} from "../config/env/server.js";
 
 function sendSseMessage(res, event) {
 	res.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function sendSseComment(res, comment) {
+	res.write(`: ${comment}\n\n`);
 }
 
 export function streamQueueJobStatus(queueName, onCompleted) {
@@ -16,11 +24,32 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 		res.setHeader("Content-Type", "text/event-stream");
 		res.setHeader("Connection", "keep-alive");
 		res.setHeader("Cache-Control", "no-cache");
+		res.setHeader("X-Accel-Buffering", "no");
 		res.flushHeaders?.();
 
 		let closed = false;
+		sendSseComment(res, "connected");
+
+		const heartbeat = setInterval(() => {
+			sendSseComment(res, "keep-alive");
+		}, STATUS_STREAM_HEARTBEAT_MS);
+		heartbeat.unref?.();
+
+		const streamTimeout = setTimeout(() => {
+			send({
+				type: "error",
+				error:
+					"Request is still running after the maximum wait time. Please try again shortly.",
+			});
+			cleanup();
+		}, STATUS_STREAM_TIMEOUT_MS);
+		streamTimeout.unref?.();
 
 		const send = (event) => {
+			if (closed) {
+				return;
+			}
+
 			sendSseMessage(res, event);
 		};
 
@@ -30,6 +59,8 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 			}
 
 			closed = true;
+			clearInterval(heartbeat);
+			clearTimeout(streamTimeout);
 			listener.off("progress", onProgress);
 			listener.off("completed", onCompletedEvent);
 			listener.off("failed", onFailed);
