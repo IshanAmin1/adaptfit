@@ -1,14 +1,4 @@
-import { getEnvVariable } from "../../utils/general.js";
-
-function getPositiveIntegerEnv(name, fallback) {
-	const value = Number(getEnvVariable(name, fallback));
-
-	if (!Number.isInteger(value) || value <= 0) {
-		throw new Error(`${name} must be a positive integer.`);
-	}
-
-	return value;
-}
+import { getEnvVariable, getPositiveIntegerEnv } from "../../utils/general.js";
 
 export const PORT = getEnvVariable("PORT", 3000);
 export const CLIENT_ORIGIN = getEnvVariable("CLIENT_ORIGIN");
