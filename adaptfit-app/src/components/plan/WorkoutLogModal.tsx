@@ -42,8 +42,8 @@ function buildInitialExercises(
 
 function getStatusClasses(isActive: boolean) {
 	return isActive
-		? "border-[#2563eb] bg-[#2563eb] text-white"
-		: "border-[#9db4d8] bg-white text-[#111827] hover:border-[#2563eb]";
+		? "border-primary bg-primary text-white"
+		: "border-control bg-white text-secondary hover:border-primary";
 }
 
 export default function WorkoutLogModal({
@@ -107,24 +107,24 @@ export default function WorkoutLogModal({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#111827]/45 px-4 py-8">
+		<div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-secondary/45 px-4 py-8">
 			<form
 				onSubmit={handleSubmit}
-				className="w-full max-w-3xl rounded-xl border border-[#d6e2f5] bg-white p-6 shadow-[0_18px_60px_rgba(23,33,31,0.22)]"
+				className="w-full max-w-3xl rounded-xl border border-border bg-white p-6 shadow-[0_18px_60px_rgba(23,33,31,0.22)]"
 			>
 				<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
 					<div>
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#2563eb]">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-primary">
 							Log workout
 						</p>
-						<h2 className="mt-1 text-2xl font-black text-[#111827]">
+						<h2 className="mt-1 text-2xl font-black text-secondary">
 							{session.day} - {session.session_type}
 						</h2>
 					</div>
 					<button
 						type="button"
 						onClick={onClose}
-						className="h-10 rounded-xl border border-[#9db4d8] bg-white px-4 text-sm font-black uppercase text-[#111827]"
+						className="h-10 rounded-xl border border-control bg-white px-4 text-sm font-black uppercase text-secondary"
 					>
 						Close
 					</button>
@@ -135,14 +135,14 @@ export default function WorkoutLogModal({
 						{exercises.map((exercise, index) => (
 							<div
 								key={`${exercise.exerciseName}-${index}`}
-								className="rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4"
+								className="rounded-xl border border-border bg-surface-soft p-4"
 							>
 								<div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
 									<div>
-										<p className="m-0 text-base font-black text-[#111827]">
+										<p className="m-0 text-base font-black text-secondary">
 											{exercise.exerciseName}
 										</p>
-										<p className="mt-1 text-sm font-semibold text-[#5b6b86]">
+										<p className="mt-1 text-sm font-semibold text-muted">
 											Target: {exercise.targetSets} sets x {exercise.targetReps}
 										</p>
 									</div>
@@ -164,7 +164,7 @@ export default function WorkoutLogModal({
 
 								{exercise.completionStatus !== "completed" ? (
 									<div className="mt-4 grid gap-3 sm:grid-cols-2">
-										<label className="grid gap-2 text-sm font-black text-[#111827]">
+										<label className="grid gap-2 text-sm font-black text-secondary">
 											Sets completed
 											<input
 												type="number"
@@ -176,10 +176,10 @@ export default function WorkoutLogModal({
 														setsCompleted: Number(event.target.value),
 													})
 												}
-												className="min-h-11 rounded-xl border border-[#9db4d8] bg-white px-3 text-base font-semibold outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/15 disabled:bg-[#eef4ff]"
+												className="min-h-11 rounded-xl border border-control bg-white px-3 text-base font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:bg-surface-disabled"
 											/>
 										</label>
-										<label className="grid gap-2 text-sm font-black text-[#111827]">
+										<label className="grid gap-2 text-sm font-black text-secondary">
 											Reps completed
 											<input
 												type="number"
@@ -194,10 +194,10 @@ export default function WorkoutLogModal({
 																: Number(event.target.value),
 													})
 												}
-												className="min-h-11 rounded-xl border border-[#9db4d8] bg-white px-3 text-base font-semibold outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/15 disabled:bg-[#eef4ff]"
+												className="min-h-11 rounded-xl border border-control bg-white px-3 text-base font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:bg-surface-disabled"
 											/>
 										</label>
-										<label className="grid gap-2 text-sm font-black text-[#111827] sm:col-span-2">
+										<label className="grid gap-2 text-sm font-black text-secondary sm:col-span-2">
 											Exercise notes
 											<textarea
 												value={exercise.notes || ""}
@@ -205,7 +205,7 @@ export default function WorkoutLogModal({
 												onChange={(event) =>
 													updateExercise(index, { notes: event.target.value })
 												}
-												className="rounded-xl border border-[#9db4d8] bg-white px-3 py-2 text-base font-semibold outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/15"
+												className="rounded-xl border border-control bg-white px-3 py-2 text-base font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
 											/>
 										</label>
 									</div>
@@ -214,18 +214,18 @@ export default function WorkoutLogModal({
 						))}
 					</div>
 
-					<label className="grid gap-2 text-sm font-black text-[#111827]">
+					<label className="grid gap-2 text-sm font-black text-secondary">
 						Workout notes
 						<textarea
 							value={notes}
 							rows={3}
 							onChange={(event) => setNotes(event.target.value)}
-							className="rounded-xl border border-[#9db4d8] bg-white px-3 py-2 text-base font-semibold outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/15"
+							className="rounded-xl border border-control bg-white px-3 py-2 text-base font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
 						/>
 					</label>
 
 					{errorMessage ? (
-						<p className="rounded-xl border border-[#f0b8b8] bg-[#fff5f5] p-3 text-sm font-bold text-[#9b1c1c]">
+						<p className="rounded-xl border border-danger-border bg-danger-surface p-3 text-sm font-bold text-danger-text">
 							{errorMessage}
 						</p>
 					) : null}
@@ -235,14 +235,14 @@ export default function WorkoutLogModal({
 					<button
 						type="button"
 						onClick={onClose}
-						className="h-11 rounded-xl border border-[#9db4d8] bg-white px-5 font-black uppercase text-[#111827]"
+						className="h-11 rounded-xl border border-control bg-white px-5 font-black uppercase text-secondary"
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
 						disabled={isSaving}
-						className="h-11 rounded-xl bg-[#2563eb] px-5 font-black uppercase text-white disabled:cursor-not-allowed disabled:opacity-60"
+						className="h-11 rounded-xl bg-primary px-5 font-black uppercase text-white disabled:cursor-not-allowed disabled:opacity-60"
 					>
 						{isSaving ? "Saving" : "Save log"}
 					</button>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { billingService } from "../api/billing-service";
+import { Button } from "../components/common/Button";
 import type { AuthUser } from "../types/auth";
 
 type SubscribeProps = {
@@ -99,7 +100,7 @@ export default function Subscribe({
 
 	if (!authChecked) {
 		return (
-			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-[#5b6b86]">
+			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-muted">
 				Loading
 			</div>
 		);
@@ -161,16 +162,16 @@ export default function Subscribe({
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-center px-4 py-8 md:px-12">
-			<section className="mx-auto grid w-full max-w-256 gap-8 rounded-xl border border-[#d6e2f5] bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[1fr_0.85fr] md:p-10">
+			<section className="mx-auto grid w-full max-w-256 gap-8 rounded-xl border border-border bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[1fr_0.85fr] md:p-10">
 				<div className="flex flex-col justify-center gap-6">
 					<div>
-						<p className="mb-3 text-xs font-black uppercase tracking-[0.1em] text-[#2563eb]">
+						<p className="mb-3 text-xs font-black uppercase tracking-[0.1em] text-primary">
 							AdaptFit membership
 						</p>
-						<h1 className="m-0 text-[clamp(2rem,6vw,3.5rem)] font-black leading-none text-[#111827]">
+						<h1 className="m-0 text-[clamp(2rem,6vw,3.5rem)] font-black leading-none text-secondary">
 							Monthly access
 						</h1>
-						<p className="mt-4 max-w-142 text-base leading-7 text-[#5b6b86]">
+						<p className="mt-4 max-w-142 text-base leading-7 text-muted">
 							Subscribe to unlock your dashboard, workout plan, nutrition
 							summary, progress tracking, and AI insights.
 						</p>
@@ -179,35 +180,36 @@ export default function Subscribe({
 					<div className="flex flex-wrap gap-3">
 						{authUser.hasActiveSubscription ? (
 							<>
-								<button
+								<Button
 									type="button"
-									className="rounded-xl bg-[#2563eb] px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+									className="px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
 									disabled={isLoading}
 									onClick={() => navigate(getSubscribedPath(authUser))}
 								>
 									{authUser.hasCompletedOnboarding
 										? "Open dashboard"
 										: "Start onboarding"}
-								</button>
-								<button
+								</Button>
+								<Button
 									type="button"
-									className="rounded-xl border border-[#9db4d8] bg-white px-5 py-3 font-black text-[#111827] disabled:cursor-not-allowed disabled:opacity-60"
+									variant="outline"
+									className="px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
 									disabled={isLoading}
 									onClick={handleManageBilling}
 								>
 									Open billing portal
-								</button>
+								</Button>
 							</>
 						) : (
 							<>
-								<button
+								<Button
 									type="button"
-									className="rounded-xl bg-[#2563eb] px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+									className="px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
 									disabled={isLoading}
 									onClick={handleCheckout}
 								>
 									Subscribe monthly
-								</button>
+								</Button>
 							</>
 						)}
 					</div>
@@ -222,30 +224,30 @@ export default function Subscribe({
 					) : null}
 				</div>
 
-				<div className="grid content-center gap-4 rounded-xl bg-[#eef5ff] p-6">
+				<div className="grid content-center gap-4 rounded-xl bg-primary-subtle p-6">
 					<div>
-						<p className="m-0 text-xs font-black uppercase tracking-[0.1em] text-[#5b6b86]">
+						<p className="m-0 text-xs font-black uppercase tracking-[0.1em] text-muted">
 							Signed in as
 						</p>
-						<p className="mt-2 break-words text-lg font-black text-[#111827]">
+						<p className="mt-2 break-words text-lg font-black text-secondary">
 							{authUser.email}
 						</p>
 					</div>
-					<div className="h-px bg-[#d6e2f5]" />
+					<div className="h-px bg-border" />
 					<div>
-						<p className="m-0 text-xs font-black uppercase tracking-[0.1em] text-[#5b6b86]">
+						<p className="m-0 text-xs font-black uppercase tracking-[0.1em] text-muted">
 							Status
 						</p>
-						<p className="mt-2 text-2xl font-black text-[#111827]">
+						<p className="mt-2 text-2xl font-black text-secondary">
 							{authUser.hasActiveSubscription ? "Active" : "Payment required"}
 						</p>
 						{subscriptionDateText ? (
-							<p className="mt-2 text-sm font-semibold leading-6 text-[#5b6b86]">
+							<p className="mt-2 text-sm font-semibold leading-6 text-muted">
 								{subscriptionDateText}
 							</p>
 						) : null}
 						{isSuccessReturn && !authUser.hasActiveSubscription ? (
-							<p className="mt-2 text-sm font-semibold leading-6 text-[#5b6b86]">
+							<p className="mt-2 text-sm font-semibold leading-6 text-muted">
 								Payment is being confirmed. This usually updates after Stripe
 								finishes processing.
 							</p>

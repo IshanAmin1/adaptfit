@@ -8,7 +8,7 @@ export default function Field({
 	children: ReactNode;
 }) {
 	return (
-		<label className="grid text-lg font-black text-[#111827]">
+		<label className="grid text-lg font-black text-secondary">
 			<span>{label}</span>
 			{children}
 		</label>

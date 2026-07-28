@@ -13,11 +13,11 @@ export default function ProgressBar({
 }: ProgressBarProps) {
 	return (
 		<div>
-			<div className="flex items-center justify-between gap-4 text-sm text-[#5b6b86]">
+			<div className="flex items-center justify-between gap-4 text-sm text-muted">
 				<span>{label}</span>
-				<strong className="text-[#111827]">{value}</strong>
+				<strong className="text-secondary">{value}</strong>
 			</div>
-			<div className="mt-3 h-2.25 overflow-hidden rounded-full bg-[#dde8fb]">
+			<div className="mt-3 h-2.25 overflow-hidden rounded-full bg-border-soft">
 				<span
 					className={`block h-full rounded-[inherit] ${barClassName}`}
 					style={

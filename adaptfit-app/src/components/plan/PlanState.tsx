@@ -8,10 +8,10 @@ type PlanStateProps = {
 export default function PlanState({ title, message }: PlanStateProps) {
 	return (
 		<DashboardCard className="p-8 lg:col-span-12">
-			<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#2563eb]">
+			<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
 				{title}
 			</p>
-			<p className="m-0 max-w-180 text-lg font-semibold leading-7 text-[#5b6b86]">
+			<p className="m-0 max-w-180 text-lg font-semibold leading-7 text-muted">
 				{message}
 			</p>
 		</DashboardCard>

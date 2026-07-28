@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { authService } from "../api/auth-service";
+import { Button } from "../components/common/Button";
 import type { AuthUser } from "../types/auth";
 import { getAuthenticatedPath } from "../utils/auth-utils";
 
@@ -44,11 +45,11 @@ export default function AuthCallback({ authUser, onLogin }: AuthCallbackProps) {
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 place-items-center px-4 py-8 md:px-12">
-			<section className="w-full max-w-md rounded-xl border border-[#d6e2f5] bg-white p-8 text-center shadow-[0_24px_70px_rgba(23,33,31,0.10)]">
-				<h2 className="m-0 text-2xl font-black text-[#111827]">
+			<section className="w-full max-w-md rounded-xl border border-border bg-white p-8 text-center shadow-[0_24px_70px_rgba(23,33,31,0.10)]">
+				<h2 className="m-0 text-2xl font-black text-secondary">
 					Signing you in
 				</h2>
-				<p className="mt-3 text-sm leading-6 text-[#5b6b86]">
+				<p className="mt-3 text-sm leading-6 text-muted">
 					Finishing your Google sign-in.
 				</p>
 				{errorMessage ? (
@@ -59,13 +60,13 @@ export default function AuthCallback({ authUser, onLogin }: AuthCallbackProps) {
 						>
 							{errorMessage}
 						</p>
-						<button
+						<Button
 							type="button"
 							onClick={() => navigate("/login", { replace: true })}
-							className="min-h-11 rounded-xl bg-[#2563eb] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[#1d4ed8] focus:outline-none focus:ring-3 focus:ring-[#2563eb]/25"
+							className="min-h-11 px-4 py-3 text-sm hover:-translate-y-0.5 focus:outline-none focus:ring-3 focus:ring-primary/25"
 						>
 							Back to sign in
-						</button>
+						</Button>
 					</div>
 				) : null}
 			</section>

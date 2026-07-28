@@ -14,7 +14,7 @@ export default function SectionHeading({
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div>
-				<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#2563eb]">
+				<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
 					{eyebrow}
 				</p>
 				<h2 className="m-0 text-[28px] font-semibold leading-[1.15]">

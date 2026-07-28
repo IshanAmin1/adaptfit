@@ -18,7 +18,7 @@ export default function Select({
 }) {
 	return (
 		<select
-			className="min-h-12 rounded-xl border border-[#9db4d8] bg-white px-4 text-base font-semibold text-[#111827] outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/15"
+			className="min-h-12 rounded-xl border border-control bg-white px-4 text-base font-semibold text-secondary outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
 			value={value}
 			required={required}
 			onChange={(event) => onChange(event.target.value)}

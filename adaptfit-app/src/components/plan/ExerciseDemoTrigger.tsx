@@ -94,20 +94,20 @@ export default function ExerciseDemoTrigger({
 
 			{isModalOpen ? (
 				<div
-					className="fixed inset-0 z-50 grid place-items-center bg-[#111827]/60 px-4"
+					className="fixed inset-0 z-50 grid place-items-center bg-secondary/60 px-4"
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="exercise-video-title"
 				>
 					<div className="w-full max-w-180 overflow-hidden rounded-xl bg-white shadow-2xl">
-						<div className="flex items-start justify-between gap-4 border-b border-[#d6e2f5] p-5">
+						<div className="flex items-start justify-between gap-4 border-b border-border p-5">
 							<div>
-								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#2563eb]">
+								<p className="m-0 text-xs font-black uppercase tracking-widest text-primary">
 									Exercise demo
 								</p>
 								<h2
 									id="exercise-video-title"
-									className="mt-1 text-xl font-black text-[#111827]"
+									className="mt-1 text-xl font-black text-secondary"
 								>
 									{exercise.exercise_name}
 								</h2>
@@ -115,13 +115,13 @@ export default function ExerciseDemoTrigger({
 							<button
 								type="button"
 								onClick={() => setIsModalOpen(false)}
-								className="grid h-9 w-9 place-items-center rounded-xl border border-[#d6e2f5] bg-white text-lg font-black text-[#111827]"
+								className="grid h-9 w-9 place-items-center rounded-xl border border-border bg-white text-lg font-black text-secondary"
 								aria-label="Close video"
 							>
 								X
 							</button>
 						</div>
-						<div className="bg-[#111827]">
+						<div className="bg-secondary">
 							{isLoading ? (
 								<p className="m-0 p-8 text-center text-sm font-black uppercase tracking-widest text-white">
 									Loading demo
@@ -149,7 +149,7 @@ export default function ExerciseDemoTrigger({
 												event.preventDefault();
 											}
 										}}
-										className="mx-auto rounded-xl bg-white px-4 py-3 text-xs font-black uppercase text-[#2563eb]"
+										className="mx-auto rounded-xl bg-white px-4 py-3 text-xs font-black uppercase text-primary"
 									>
 										No demo, search
 									</a>
