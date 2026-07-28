@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+@layer base {
+	:root {
+		font-family:
+			"Trebuchet MS",
+			"Segoe UI",
+			system-ui,
+			sans-serif;
+	}
+
+	button,
+	input,
+	select,
+	textarea {
+		font: inherit;
+	}
+}

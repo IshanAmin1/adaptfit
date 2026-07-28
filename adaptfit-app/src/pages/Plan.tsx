@@ -95,32 +95,32 @@ export default function Plan({ authUser }: PlanProps) {
 			<DashboardCard className="p-8 lg:col-span-5">
 				<SectionHeading eyebrow="Plan details" title="Overview" />
 				<div className="mt-6 grid gap-4">
-					<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+					<div className="rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 							Primary goal
 						</p>
-						<p className="mt-2 text-lg font-black capitalize text-[#17211f]">
+						<p className="mt-2 text-lg font-black capitalize text-[#111827]">
 							{plan.metadata.user_goal.replace(/_/g, " ")}
 						</p>
 					</div>
-					<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+					<div className="rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 							Target description
 						</p>
-						<p className="mt-2 text-sm leading-6 text-[#17211f]">
+						<p className="mt-2 text-sm leading-6 text-[#111827]">
 							{plan.targets.target_physique_description}
 						</p>
 					</div>
-					<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+					<div className="rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 							Generated
 						</p>
-						<p className="mt-2 text-sm font-black text-[#17211f]">
+						<p className="mt-2 text-sm font-black text-[#111827]">
 							{formatGeneratedDate(plan.generatedAt)}
 						</p>
 					</div>
 					<div>
-						<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#62706b]">
+						<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 							Training focus
 						</p>
 						<MuscleGroupChart exercises={plan.exercises} />
@@ -135,19 +135,19 @@ export default function Plan({ authUser }: PlanProps) {
 						{onboardingItems.map(([label, value]) => (
 							<div
 								key={label}
-								className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4"
+								className="rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4"
 							>
-								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 									{label}
 								</p>
-								<p className="mt-2 text-sm font-black capitalize leading-5 text-[#17211f]">
+								<p className="mt-2 text-sm font-black capitalize leading-5 text-[#111827]">
 									{value.replace(/_/g, " ")}
 								</p>
 							</div>
 						))}
 					</div>
 				) : (
-					<p className="mt-6 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 text-sm font-semibold text-[#62706b]">
+					<p className="mt-6 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4 text-sm font-semibold text-[#5b6b86]">
 						Onboarding details are not available for this saved plan.
 					</p>
 				)}
@@ -163,12 +163,12 @@ export default function Plan({ authUser }: PlanProps) {
 					].map(([label, value]) => (
 						<div
 							key={label}
-							className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4"
+							className="rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4"
 						>
-							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 								{label}
 							</p>
-							<p className="mt-2 text-sm font-black leading-5 text-[#17211f]">
+							<p className="mt-2 text-sm font-black leading-5 text-[#111827]">
 								{value}
 							</p>
 						</div>
@@ -182,19 +182,19 @@ export default function Plan({ authUser }: PlanProps) {
 					{plan.schedule.map((session) => (
 						<details
 							key={`${session.day}-${session.session_type}`}
-							className="group rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-0"
+							className="group rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-0"
 						>
 							<summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 marker:hidden">
 								<div className="min-w-0">
-									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#2563eb]">
 										{session.day}
 									</p>
-									<p className="mt-1 truncate text-lg font-black text-[#17211f]">
+									<p className="mt-1 truncate text-lg font-black text-[#111827]">
 										{session.session_type}
 									</p>
 								</div>
 								<div className="flex items-center justify-center gap-3">
-									<p className="m-0 text-lg leading-none font-black text-[#17211f] whitespace-nowrap">
+									<p className="m-0 text-lg leading-none font-black text-[#111827] whitespace-nowrap">
 										{session.duration_minutes} min
 									</p>
 									<span className="block group-open:hidden">
@@ -206,37 +206,37 @@ export default function Plan({ authUser }: PlanProps) {
 								</div>
 							</summary>
 
-							<div className="grid gap-3 border-t border-[#d9e5df] p-4">
+							<div className="grid gap-3 border-t border-[#d6e2f5] p-4">
 								{session.exercises.map((exercise, index) => (
 									<div
 										key={`${exercise.exercise_name}-${index}`}
-										className="rounded-lg border border-[#d9e5df] bg-white p-4"
+										className="rounded-xl border border-[#d6e2f5] bg-white p-4"
 									>
 										<div className="flex flex-col justify-between gap-2 sm:flex-row">
 											<div>
-												<p className="m-0 text-base font-black text-[#17211f]">
+												<p className="m-0 text-base font-black text-[#111827]">
 													{exercise.exercise_name}
 												</p>
-												<p className="mt-1 text-sm font-semibold text-[#62706b]">
+												<p className="mt-1 text-sm font-semibold text-[#5b6b86]">
 													{exercise.target_muscle_group}
 												</p>
 											</div>
 											<div className="flex flex-col items-start gap-2 sm:items-end">
-												<p className="m-0 text-sm font-black text-[#0f8b6f]">
+												<p className="m-0 text-sm font-black text-[#2563eb]">
 													{exercise.sets} sets x {exercise.reps}
 												</p>
 												<ExerciseDemoTrigger
 													exercise={exercise}
-													className="h-9 rounded-lg border border-[#0f8b6f] bg-white px-3 text-xs font-black uppercase text-[#0f8b6f] disabled:cursor-not-allowed disabled:opacity-60"
-													fallbackClassName="text-xs font-black uppercase text-[#0f8b6f] underline underline-offset-3"
+													className="h-9 rounded-xl border border-[#2563eb] bg-white px-3 text-xs font-black uppercase text-[#2563eb] disabled:cursor-not-allowed disabled:opacity-60"
+													fallbackClassName="text-xs font-black uppercase text-[#2563eb] underline underline-offset-3"
 												/>
 											</div>
 										</div>
-										<p className="mt-3 text-sm leading-5 text-[#62706b]">
+										<p className="mt-3 text-sm leading-5 text-[#5b6b86]">
 											Equipment: {formatEquipment(exercise.equipment_needed)}
 										</p>
 										{exercise.alternatives.length ? (
-											<p className="mt-2 text-sm leading-5 text-[#62706b]">
+											<p className="mt-2 text-sm leading-5 text-[#5b6b86]">
 												Alternatives:{" "}
 												{exercise.alternatives
 													.map((alternative) => alternative.exercise_name)

@@ -73,7 +73,7 @@ function App() {
 
 	return (
 		<Router>
-			<div className="min-h-screen scroll-smooth bg-[linear-gradient(90deg,rgba(15,139,111,0.08),transparent_40%),linear-gradient(180deg,#ffffff_0%,#f6faf7_55%,#edf6f1_100%)] font-[Arial,Helvetica,sans-serif] text-[#17211f] antialiased">
+			<div className="min-h-screen scroll-smooth bg-[linear-gradient(90deg,rgba(37,99,235,0.10),transparent_40%),linear-gradient(180deg,#ffffff_0%,#f7faff_55%,#edf4ff_100%)] font-['Trebuchet_MS','Segoe_UI',system-ui,sans-serif] text-[#111827] antialiased">
 				<Navbar authUser={authUser} onLogout={handleLogout} />
 				<main className="pt-19.5">
 					<Routes>

@@ -24,10 +24,10 @@ export default function ChoiceGrid({
 					<button
 						key={option.value}
 						type="button"
-						className={`min-h-12 rounded-lg border px-4 py-3 text-left text-sm font-semibold transition ${
+						className={`min-h-12 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
 							isSelected
-								? "border-[#0f8b6f] bg-[#e7f6ef] text-[#0f8b6f]"
-								: "border-[#d9e5df] bg-white text-[#17211f] hover:border-[#8db7a7]"
+								? "border-[#2563eb] bg-[#eaf2ff] text-[#2563eb]"
+								: "border-[#d6e2f5] bg-white text-[#111827] hover:border-[#6b93d6]"
 						}`}
 						onClick={() => {
 							if (!multi) {

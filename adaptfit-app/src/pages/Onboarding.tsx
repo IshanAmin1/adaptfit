@@ -503,24 +503,24 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-start px-4 py-8 md:px-12">
-			<section className="mx-auto grid w-full max-w-264 content-start gap-8 rounded-lg border border-[#d9e5df] bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:p-10">
+			<section className="mx-auto grid w-full max-w-264 content-start gap-8 rounded-xl border border-[#d6e2f5] bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:p-10">
 				<div className="grid gap-4">
 					<div className="flex flex-wrap items-end justify-between gap-4">
 						<div>
-							<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+							<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#2563eb]">
 								Step {stepIndex + 1} of {steps.length}
 							</p>
-							<h1 className="m-0 text-[clamp(2rem,5vw,3.25rem)] font-black leading-none text-[#17211f]">
+							<h1 className="m-0 text-[clamp(2rem,5vw,3.25rem)] font-black leading-none text-[#111827]">
 								{steps[stepIndex]}
 							</h1>
 						</div>
-						<p className="m-0 text-sm font-black uppercase tracking-[0.08em] text-[#62706b]">
+						<p className="m-0 text-sm font-black uppercase tracking-[0.08em] text-[#5b6b86]">
 							{progressPercent}% complete
 						</p>
 					</div>
-					<div className="h-2 overflow-hidden rounded-full bg-[#d9e5df]">
+					<div className="h-2 overflow-hidden rounded-full bg-[#d6e2f5]">
 						<div
-							className="h-full rounded-full bg-[#0f8b6f] transition-all"
+							className="h-full rounded-full bg-[#2563eb] transition-all"
 							style={{ width: `${progressPercent}%` }}
 						/>
 					</div>
@@ -662,7 +662,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								/>
 							</Field>
 							{hasMachines ? (
-								<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
+								<div className="grid gap-4 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4">
 									<Field label="Machines available">
 										<ChoiceGrid
 											multi
@@ -743,7 +743,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 					{!isConfirmationStep && errorMessage ? (
 						<p
-							className="m-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+							className="m-0 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
 							role="alert"
 						>
 							{errorMessage}
@@ -752,12 +752,12 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 					{isConfirmationStep ? (
 						<div className="grid gap-5">
-							<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-5">
+							<div className="grid gap-4 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-5">
 								<div className="grid gap-2">
-									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#2563eb]">
 										Review answers
 									</p>
-									<p className="m-0 text-lg font-bold text-[#17211f]">
+									<p className="m-0 text-lg font-bold text-[#111827]">
 										Please confirm the details below before we save your
 										profile.
 									</p>
@@ -765,9 +765,9 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								{summarySections.map((section) => (
 									<div
 										key={section.title}
-										className="grid gap-2 rounded-lg border border-[#d9e5df] bg-white p-4"
+										className="grid gap-2 rounded-xl border border-[#d6e2f5] bg-white p-4"
 									>
-										<p className="m-0 text-sm font-black uppercase tracking-widest text-[#62706b]">
+										<p className="m-0 text-sm font-black uppercase tracking-widest text-[#5b6b86]">
 											{section.title}
 										</p>
 										<div className="grid gap-2">
@@ -779,7 +779,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 													<p className="m-0 text-xs font-bold uppercase tracking-widest text-[#8a9a95]">
 														{item.label}
 													</p>
-													<p className="m-0 text-sm font-semibold text-[#17211f]">
+													<p className="m-0 text-sm font-semibold text-[#111827]">
 														{item.value}
 													</p>
 												</div>
@@ -793,13 +793,13 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 					{isResultStep ? (
 						<div className="grid gap-5">
-							<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-5">
+							<div className="grid gap-4 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-5">
 								<div className="grid gap-2">
 									<p
 										className={`m-0 text-xs font-black uppercase tracking-widest ${
 											submissionState.status === "error"
 												? "text-red-600"
-												: "text-[#0f8b6f]"
+												: "text-[#2563eb]"
 										}`}
 									>
 										{submissionState.status === "error"
@@ -808,18 +808,18 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 												? "Submission complete"
 												: "Submission in progress"}
 									</p>
-									<p className="m-0 text-lg font-bold text-[#17211f]">
+									<p className="m-0 text-lg font-bold text-[#111827]">
 										{submissionState.message ??
 											"Hang tight while your onboarding details are checked and your first plan is generated."}
 									</p>
 								</div>
 								{submissionState.status === "idle" ? (
-									<p className="m-0 text-sm leading-6 text-[#62706b]">
+									<p className="m-0 text-sm leading-6 text-[#5b6b86]">
 										Realtime updates will appear below as they stream in.
 									</p>
 								) : null}
 								{submissionState.status === "success" ? (
-									<p className="m-0 text-sm leading-6 text-[#62706b]">
+									<p className="m-0 text-sm leading-6 text-[#5b6b86]">
 										Your onboarding profile and first plan are ready. You can
 										continue to your dashboard now.
 									</p>
@@ -831,8 +831,8 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 									</p>
 								) : null}
 								{submissionProgress.length > 0 ? (
-									<div className="grid gap-2 border-t border-[#d9e5df] pt-4">
-										<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+									<div className="grid gap-2 border-t border-[#d6e2f5] pt-4">
+										<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 											Realtime status
 										</p>
 										{submissionProgress.map((event, index) => {
@@ -851,13 +851,13 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 																? "border-red-500 bg-red-500"
 																: isCurrent
 																	? "border-[#f59e0b] bg-[#f59e0b]"
-																	: "border-[#0f8b6f] bg-[#0f8b6f]"
+																	: "border-[#2563eb] bg-[#2563eb]"
 														}`}
 													/>
 													<div className="grid gap-0.5">
 														<p
 															className={`m-0 text-sm font-black ${
-																isError ? "text-red-700" : "text-[#17211f]"
+																isError ? "text-red-700" : "text-[#111827]"
 															}`}
 														>
 															{isError ? "There is an issue" : event.message}
@@ -877,12 +877,12 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 						</div>
 					) : null}
 
-					<div className="flex flex-wrap justify-between gap-3 border-t border-[#d9e5df] pt-5">
+					<div className="flex flex-wrap justify-between gap-3 border-t border-[#d6e2f5] pt-5">
 						{isConfirmationStep ? (
 							<>
 								<button
 									type="button"
-									className="h-10 min-w-40 rounded-md border border-[#b7cbc2] bg-white px-10 font-black text-[#17211f] disabled:cursor-not-allowed disabled:opacity-50"
+									className="h-10 min-w-40 rounded-lg border border-[#9db4d8] bg-white px-10 font-black text-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
 									disabled={isSubmitting}
 									onClick={handleEditSubmission}
 								>
@@ -890,7 +890,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								</button>
 								<button
 									type="submit"
-									className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+									className="h-10 min-w-40 rounded-lg bg-[#2563eb] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
 									disabled={isSubmitting}
 								>
 									{isSubmitting ? "Working" : "Submit answers"}
@@ -901,7 +901,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								{submissionState.status === "error" ? (
 									<button
 										type="button"
-										className="h-10 min-w-40 rounded-md border border-[#b7cbc2] bg-white px-10 font-black text-[#17211f] disabled:cursor-not-allowed disabled:opacity-50"
+										className="h-10 min-w-40 rounded-lg border border-[#9db4d8] bg-white px-10 font-black text-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
 										disabled={isSubmitting}
 										onClick={handleEditSubmission}
 									>
@@ -911,7 +911,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								{submissionState.status === "success" ? (
 									<button
 										type="button"
-										className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+										className="h-10 min-w-40 rounded-lg bg-[#2563eb] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
 										disabled={isSubmitting || !submissionState.user}
 										onClick={() => {
 											if (submissionState.user) {
@@ -928,7 +928,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 							<>
 								<button
 									type="button"
-									className="h-10 min-w-40 rounded-md border border-[#b7cbc2] bg-white px-10 font-black text-[#17211f] disabled:cursor-not-allowed disabled:opacity-50"
+									className="h-10 min-w-40 rounded-lg border border-[#9db4d8] bg-white px-10 font-black text-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
 									disabled={stepIndex === 0 || isSubmitting}
 									onClick={goToPreviousStep}
 								>
@@ -936,7 +936,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 								</button>
 								<button
 									type="submit"
-									className="h-10 min-w-40 rounded-md bg-[#0f8b6f] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+									className="h-10 min-w-40 rounded-lg bg-[#2563eb] px-10 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
 									disabled={isSubmitting}
 								>
 									{stepIndex === steps.length - 3 ? "Review answers" : "Next"}

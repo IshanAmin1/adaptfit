@@ -46,8 +46,8 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 	const getNavItemClassName = (item: NavItem) => {
 		return `border-b-2 py-2 text-xs font-black uppercase tracking-[0.08em] no-underline ${
 			isActiveLink(item, location)
-				? "border-[#0f8b6f] text-[#0f8b6f]"
-				: "border-transparent text-[#62706b]"
+				? "border-[#2563eb] text-[#2563eb]"
+				: "border-transparent text-[#5b6b86]"
 		}`;
 	};
 
@@ -63,13 +63,14 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 		: { label: "Subscribe", href: "/subscribe" };
 
 	return (
-		<header className="fixed left-0 top-0 z-10 grid h-19.5 w-full grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-[#d9e5df] bg-white/90 px-4 backdrop-blur-sm md:px-12">
+		<header className="fixed left-0 top-0 z-10 grid h-19.5 w-full grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-[#d6e2f5] bg-white/90 px-4 backdrop-blur-sm md:px-12">
 			<Link
 				to={getHomePath(authUser)}
 				className="flex items-center gap-2.5 text-[22px] font-black text-inherit no-underline"
 			>
-				<div className="grid h-10 w-10 place-items-center rounded-lg bg-[#0f8b6f] font-black text-white">
-					A
+				<div className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-[#2563eb] font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)]">
+					<span className="relative z-10 text-[23px] leading-none">A</span>
+					<span className="absolute bottom-1.5 h-1 w-5 bg-white/80" />
 				</div>
 				<div>AdaptFit</div>
 			</Link>
@@ -93,13 +94,13 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				<div className="hidden items-center gap-3.5 md:flex">
 					<Link
 						to={membershipLink.href}
-						className="rounded-lg bg-[#0f8b6f] px-4.25 py-2.75 font-black text-white no-underline"
+						className="rounded-xl bg-[#2563eb] px-4.25 py-2.75 font-black text-white no-underline"
 					>
 						{membershipLink.label}
 					</Link>
 					<button
 						type="button"
-						className="rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white"
+						className="rounded-xl bg-[#111827] px-4.25 py-2.75 font-black text-white"
 						onClick={handleLogout}
 					>
 						Log out
@@ -108,7 +109,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 			) : (
 				<Link
 					to={location.pathname === "/login" ? "/" : "/login"}
-					className="hidden rounded-lg bg-[#17211f] px-4.25 py-2.75 font-black text-white no-underline md:inline-block"
+					className="hidden rounded-xl bg-[#111827] px-4.25 py-2.75 font-black text-white no-underline md:inline-block"
 				>
 					{location.pathname === "/login" ? "Home" : "Log in"}
 				</Link>
@@ -118,7 +119,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 					type="button"
 					aria-label={isMenuOpen ? "Close menu" : "Open menu"}
 					aria-expanded={isMenuOpen}
-					className="grid h-11 w-11 place-items-center rounded-lg border border-[#d9e5df] bg-white text-[#17211f]"
+					className="grid h-11 w-11 place-items-center rounded-xl border border-[#d6e2f5] bg-white text-[#111827]"
 					onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
 				>
 					<span className="grid gap-1.5">
@@ -129,17 +130,17 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				</button>
 
 				{isMenuOpen ? (
-					<div className="absolute right-0 top-13 grid min-w-58 gap-2 rounded-lg border border-[#d9e5df] bg-white p-3 shadow-[0_18px_45px_rgba(23,33,31,0.14)]">
+					<div className="absolute right-0 top-13 grid min-w-58 gap-2 rounded-xl border border-[#d6e2f5] bg-white p-3 shadow-[0_18px_45px_rgba(23,33,31,0.14)]">
 						{hasPaidAccess && authUser?.hasCompletedOnboarding
 							? navItems.map((item) => (
 									<Link
 										key={item.href}
 										to={item.href}
 										onClick={() => setIsMenuOpen(false)}
-										className={`rounded-md px-3.5 py-3 text-sm font-black uppercase tracking-[0.08em] no-underline ${
+										className={`rounded-lg px-3.5 py-3 text-sm font-black uppercase tracking-[0.08em] no-underline ${
 											isActiveLink(item, location)
-												? "bg-[#e0f5ee] text-[#0f8b6f]"
-												: "text-[#17211f]"
+												? "bg-[#e8f0ff] text-[#2563eb]"
+												: "text-[#111827]"
 										}`}
 									>
 										{item.label}
@@ -152,13 +153,13 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 								<Link
 									to={membershipLink.href}
 									onClick={() => setIsMenuOpen(false)}
-									className="rounded-md bg-[#0f8b6f] px-3.5 py-3 text-sm font-black text-white no-underline"
+									className="rounded-lg bg-[#2563eb] px-3.5 py-3 text-sm font-black text-white no-underline"
 								>
 									{membershipLink.label}
 								</Link>
 								<button
 									type="button"
-									className="rounded-md bg-[#17211f] px-3.5 py-3 text-left text-sm font-black text-white"
+									className="rounded-lg bg-[#111827] px-3.5 py-3 text-left text-sm font-black text-white"
 									onClick={handleLogout}
 								>
 									Log out
@@ -168,7 +169,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 							<Link
 								to={location.pathname === "/login" ? "/" : "/login"}
 								onClick={() => setIsMenuOpen(false)}
-								className="rounded-md bg-[#17211f] px-3.5 py-3 text-sm font-black text-white no-underline"
+								className="rounded-lg bg-[#111827] px-3.5 py-3 text-sm font-black text-white no-underline"
 							>
 								{location.pathname === "/login" ? "Home" : "Log in"}
 							</Link>

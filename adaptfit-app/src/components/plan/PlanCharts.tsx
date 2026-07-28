@@ -54,13 +54,13 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 	let cursor = -Math.PI / 2;
 
 	return (
-		<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 md:grid-cols-[1fr_1fr] md:items-center">
+		<div className="grid gap-4 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4 md:grid-cols-[1fr_1fr] md:items-center">
 			<svg viewBox="0 0 160 160" role="img" aria-label="Macro distribution">
 				<circle
 					cx="80"
 					cy="80"
 					r="56"
-					className="fill-none stroke-[#d9e5df] stroke-[18]"
+					className="fill-none stroke-[#d6e2f5] stroke-[18]"
 				/>
 				{data.map((item) => {
 					const angle = total ? (item.value / total) * Math.PI * 2 : 0;
@@ -100,7 +100,7 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 					x="80"
 					y="75"
 					textAnchor="middle"
-					className="fill-[#17211f] text-[24px] font-black"
+					className="fill-[#111827] text-[24px] font-black"
 				>
 					{total}g
 				</text>
@@ -108,7 +108,7 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 					x="80"
 					y="95"
 					textAnchor="middle"
-					className="fill-[#62706b] text-[11px] font-black uppercase"
+					className="fill-[#5b6b86] text-[11px] font-black uppercase"
 				>
 					macros
 				</text>
@@ -117,18 +117,18 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 				{data.map((item) => (
 					<div key={item.label} className="grid gap-1">
 						<div className="flex items-center justify-between gap-3 text-sm">
-							<span className="flex items-center gap-2 font-black text-[#17211f]">
+							<span className="flex items-center gap-2 font-black text-[#111827]">
 								<span
 									className="h-3 w-3 rounded-full"
 									style={{ backgroundColor: item.color }}
 								/>
 								{item.label}
 							</span>
-							<span className="font-semibold text-[#62706b]">
+							<span className="font-semibold text-[#5b6b86]">
 								{item.value}g - {getPercent(item.value, total)}%
 							</span>
 						</div>
-						<div className="h-2 overflow-hidden rounded-full bg-[#e3ece7]">
+						<div className="h-2 overflow-hidden rounded-full bg-[#dde8fb]">
 							<span
 								className="block h-full rounded-[inherit]"
 								style={{
@@ -147,7 +147,7 @@ export function MacroDonut({ protein, carbs, fat }: MacroDonutProps) {
 export function EnergyTargetsChart({ plan }: { plan: GeneratedPlan }) {
 	const values = [
 		{ label: "BMI", value: plan.targets.bmi ?? 0, color: "#2567b8" },
-		{ label: "BMR", value: Math.round(plan.targets.bmr), color: "#0f8b6f" },
+		{ label: "BMR", value: Math.round(plan.targets.bmr), color: "#2563eb" },
 		{ label: "TDEE", value: Math.round(plan.targets.tdee), color: "#d99b22" },
 		{
 			label: "Calories",
@@ -158,16 +158,16 @@ export function EnergyTargetsChart({ plan }: { plan: GeneratedPlan }) {
 	const maxValue = Math.max(...values.map((item) => item.value), 1);
 
 	return (
-		<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
+		<div className="grid gap-4 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4">
 			{values.map((item) => (
 				<div
 					key={item.label}
 					className="grid grid-cols-[5rem_1fr_4.5rem] items-center gap-3"
 				>
-					<span className="text-xs font-black uppercase tracking-[0.08em] text-[#62706b]">
+					<span className="text-xs font-black uppercase tracking-[0.08em] text-[#5b6b86]">
 						{item.label}
 					</span>
-					<div className="h-4 overflow-hidden rounded-full bg-[#e3ece7]">
+					<div className="h-4 overflow-hidden rounded-full bg-[#dde8fb]">
 						<span
 							className="block h-full rounded-[inherit]"
 							style={{
@@ -178,7 +178,7 @@ export function EnergyTargetsChart({ plan }: { plan: GeneratedPlan }) {
 							}}
 						/>
 					</div>
-					<strong className="text-right text-sm text-[#17211f]">
+					<strong className="text-right text-sm text-[#111827]">
 						{item.label === "BMI" && item.value
 							? item.value.toFixed(1)
 							: item.value || "Pending"}
@@ -227,7 +227,7 @@ export function WeeklyScheduleChart({
 	const areaPoints = `${points} 274,136 24,136`;
 
 	return (
-		<div className="grid gap-5 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 lg:grid-cols-[1.3fr_0.7fr]">
+		<div className="grid gap-5 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4 lg:grid-cols-[1.3fr_0.7fr]">
 			<div>
 				<svg
 					viewBox="0 0 300 150"
@@ -235,22 +235,22 @@ export function WeeklyScheduleChart({
 					aria-label="Projected adaptation trend over six weeks"
 					className="h-56 w-full"
 				>
-					<line x1="24" y1="32" x2="274" y2="32" className="stroke-[#d9e5df]" />
-					<line x1="24" y1="84" x2="274" y2="84" className="stroke-[#d9e5df]" />
+					<line x1="24" y1="32" x2="274" y2="32" className="stroke-[#d6e2f5]" />
+					<line x1="24" y1="84" x2="274" y2="84" className="stroke-[#d6e2f5]" />
 					<line
 						x1="24"
 						y1="136"
 						x2="274"
 						y2="136"
-						className="stroke-[#d9e5df]"
+						className="stroke-[#d6e2f5]"
 					/>
 					<polyline
 						points={areaPoints}
-						className="fill-[rgba(15,139,111,0.14)]"
+						className="fill-[rgba(37,99,235,0.14)]"
 					/>
 					<polyline
 						points={points}
-						className="fill-none stroke-[#0f8b6f] stroke-[5] [stroke-linecap:round] [stroke-linejoin:round]"
+						className="fill-none stroke-[#2563eb] stroke-[5] [stroke-linecap:round] [stroke-linejoin:round]"
 					/>
 					{projection.map((item, index) => {
 						const x = 24 + index * 50;
@@ -263,7 +263,7 @@ export function WeeklyScheduleChart({
 									x={x}
 									y="148"
 									textAnchor="middle"
-									className="fill-[#62706b] text-[10px] font-black"
+									className="fill-[#5b6b86] text-[10px] font-black"
 								>
 									W{item.week}
 								</text>
@@ -271,43 +271,43 @@ export function WeeklyScheduleChart({
 						);
 					})}
 				</svg>
-				<div className="mt-2 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.08em] text-[#62706b]">
+				<div className="mt-2 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.08em] text-[#5b6b86]">
 					<span>Projected from current plan</span>
 					<span>Updates with workout logs later</span>
 				</div>
 			</div>
 			<div className="grid content-center gap-3">
-				<div className="rounded-lg bg-white p-4">
-					<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+				<div className="rounded-xl bg-white p-4">
+					<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 						Current week
 					</p>
-					<p className="mt-2 text-2xl font-black text-[#17211f]">
+					<p className="mt-2 text-2xl font-black text-[#111827]">
 						{weeklySets} sets
 					</p>
 				</div>
 				<div className="grid grid-cols-2 gap-3">
-					<div className="rounded-lg bg-white p-4">
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+					<div className="rounded-xl bg-white p-4">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 							Minutes
 						</p>
-						<p className="mt-2 text-lg font-black text-[#17211f]">
+						<p className="mt-2 text-lg font-black text-[#111827]">
 							{weeklyMinutes}
 						</p>
 					</div>
-					<div className="rounded-lg bg-white p-4">
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+					<div className="rounded-xl bg-white p-4">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 							Exercises
 						</p>
-						<p className="mt-2 text-lg font-black text-[#17211f]">
+						<p className="mt-2 text-lg font-black text-[#111827]">
 							{weeklyExercises}
 						</p>
 					</div>
 				</div>
-				<div className="rounded-lg bg-white p-4">
-					<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+				<div className="rounded-xl bg-white p-4">
+					<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 						Week 6 projection
 					</p>
-					<p className="mt-2 text-lg font-black text-[#0f8b6f]">
+					<p className="mt-2 text-lg font-black text-[#2563eb]">
 						{projection[projection.length - 1].workload} sets
 					</p>
 				</div>
@@ -330,7 +330,7 @@ function getMuscleGroupData(exercises: PlanExercise[]) {
 		.map(([label, value], index) => ({
 			label,
 			value,
-			color: ["#0f8b6f", "#2567b8", "#d99b22", "#f46f5e", "#6b7280"][index % 5],
+			color: ["#2563eb", "#2567b8", "#d99b22", "#f46f5e", "#6b7280"][index % 5],
 		}))
 		.sort((a, b) => b.value - a.value);
 }
@@ -344,12 +344,12 @@ export function MuscleGroupChart({ exercises }: { exercises: PlanExercise[] }) {
 	}
 
 	return (
-		<div className="grid gap-4 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
+		<div className="grid gap-4 rounded-xl border border-[#d6e2f5] bg-[#f7faff] p-4">
 			{data.map((item) => (
 				<div key={item.label} className="grid gap-1">
 					<div className="flex items-center justify-between gap-3 text-sm">
-						<span className="font-black text-[#17211f]">{item.label}</span>
-						<span className="font-semibold text-[#62706b]">
+						<span className="font-black text-[#111827]">{item.label}</span>
+						<span className="font-semibold text-[#5b6b86]">
 							{item.value} - {getPercent(item.value, total)}%
 						</span>
 					</div>

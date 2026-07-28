@@ -44,17 +44,17 @@ export default function AuthCallback({ authUser, onLogin }: AuthCallbackProps) {
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 place-items-center px-4 py-8 md:px-12">
-			<section className="w-full max-w-md rounded-lg border border-[#d9e5df] bg-white p-8 text-center shadow-[0_24px_70px_rgba(23,33,31,0.10)]">
-				<h2 className="m-0 text-2xl font-black text-[#17211f]">
+			<section className="w-full max-w-md rounded-xl border border-[#d6e2f5] bg-white p-8 text-center shadow-[0_24px_70px_rgba(23,33,31,0.10)]">
+				<h2 className="m-0 text-2xl font-black text-[#111827]">
 					Signing you in
 				</h2>
-				<p className="mt-3 text-sm leading-6 text-[#62706b]">
+				<p className="mt-3 text-sm leading-6 text-[#5b6b86]">
 					Finishing your Google sign-in.
 				</p>
 				{errorMessage ? (
 					<div className="mt-5 flex flex-col gap-3">
 						<p
-							className="m-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+							className="m-0 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
 							role="alert"
 						>
 							{errorMessage}
@@ -62,7 +62,7 @@ export default function AuthCallback({ authUser, onLogin }: AuthCallbackProps) {
 						<button
 							type="button"
 							onClick={() => navigate("/login", { replace: true })}
-							className="min-h-11 rounded-lg bg-[#0f8b6f] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[#0b725b] focus:outline-none focus:ring-3 focus:ring-[#0f8b6f]/25"
+							className="min-h-11 rounded-xl bg-[#2563eb] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[#1d4ed8] focus:outline-none focus:ring-3 focus:ring-[#2563eb]/25"
 						>
 							Back to sign in
 						</button>

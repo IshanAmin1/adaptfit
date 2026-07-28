@@ -20,12 +20,12 @@ export default function LoggedWorkoutInfo({
 	workoutLog,
 }: LoggedWorkoutInfoProps) {
 	return (
-		<div className="grid gap-3 rounded-lg border border-[#b7cbc2] bg-[#f6faf7] p-5">
+		<div className="grid gap-3 rounded-xl border border-[#9db4d8] bg-[#f7faff] p-5">
 			<div>
-				<p className="m-0 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+				<p className="m-0 text-xs font-black uppercase tracking-widest text-[#2563eb]">
 					Workout logged
 				</p>
-				<p className="mt-2 text-lg font-black text-[#17211f]">
+				<p className="mt-2 text-lg font-black text-[#111827]">
 					Already logged today's workout
 				</p>
 			</div>
@@ -33,18 +33,18 @@ export default function LoggedWorkoutInfo({
 				{workoutLog.exercises.map((exercise, index) => (
 					<div
 						key={`${exercise.exerciseName}-${index}`}
-						className="grid gap-1 rounded-lg border border-[#d9e5df] bg-white px-3 py-2"
+						className="grid gap-1 rounded-xl border border-[#d6e2f5] bg-white px-3 py-2"
 					>
 						<div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
-							<p className="m-0 text-sm font-black text-[#17211f]">
+							<p className="m-0 text-sm font-black text-[#111827]">
 								{exercise.exerciseName}
 							</p>
-							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#2563eb]">
 								{formatLoggedExerciseResult(exercise)}
 							</p>
 						</div>
 						{hasText(exercise.notes) ? (
-							<p className="m-0 text-sm font-semibold leading-5 text-[#62706b]">
+							<p className="m-0 text-sm font-semibold leading-5 text-[#5b6b86]">
 								{exercise.notes}
 							</p>
 						) : null}
@@ -52,11 +52,11 @@ export default function LoggedWorkoutInfo({
 				))}
 			</div>
 			{hasText(workoutLog.notes) ? (
-				<div className="rounded-lg border border-[#d9e5df] bg-white px-3 py-2">
-					<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+				<div className="rounded-xl border border-[#d6e2f5] bg-white px-3 py-2">
+					<p className="m-0 text-xs font-black uppercase tracking-widest text-[#5b6b86]">
 						Comments
 					</p>
-					<p className="mt-1 text-sm font-semibold leading-5 text-[#17211f]">
+					<p className="mt-1 text-sm font-semibold leading-5 text-[#111827]">
 						{workoutLog.notes}
 					</p>
 				</div>
