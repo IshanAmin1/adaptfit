@@ -14,6 +14,7 @@ function sendSseComment(res, comment) {
 
 export function streamQueueJobStatus(queueName, onCompleted) {
 	return async (req, res) => {
+		const startedAt = Date.now();
 		const { queue, listener } = getQueueWithListener(queueName);
 		const job = await queue.getJob(req.params.jobId);
 
@@ -36,6 +37,11 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 		heartbeat.unref?.();
 
 		const streamTimeout = setTimeout(() => {
+			console.warn(
+				`SSE stream timed out after ${Date.now() - startedAt}ms queue=${queueName} job=${
+					job.id
+				} user=${req.user.id}.`,
+			);
 			send({
 				type: "error",
 				error:
@@ -53,9 +59,16 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 			sendSseMessage(res, event);
 		};
 
-		const cleanup = () => {
+		const cleanup = (reason = "closed") => {
 			if (closed) {
 				return;
+			}
+
+			const durationMs = Date.now() - startedAt;
+			if (reason === "client_closed" && durationMs >= 55000) {
+				console.warn(
+					`SSE stream client closed after ${durationMs}ms queue=${queueName} job=${job.id} user=${req.user.id}.`,
+				);
 			}
 
 			closed = true;
@@ -109,7 +122,7 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 		listener.on("progress", onProgress);
 		listener.on("completed", onCompletedEvent);
 		listener.on("failed", onFailed);
-		req.on("close", cleanup);
+		req.on("close", () => cleanup("client_closed"));
 
 		const state = await job.getState();
 

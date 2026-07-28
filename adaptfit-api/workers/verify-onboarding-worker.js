@@ -95,7 +95,21 @@ async function verifyOnboarding(profile, job) {
 
 new Worker(
 	VALIDATE_ONBOARDING_QUEUE_NAME,
-	async (job) => verifyOnboarding(job.data.profile, job),
+	async (job) => {
+		const startedAt = Date.now();
+
+		try {
+			return await verifyOnboarding(job.data.profile, job);
+		} catch (error) {
+			console.error(
+				`Onboarding validation job failed after ${
+					Date.now() - startedAt
+				}ms job=${job.id} user=${job.data.userId}:`,
+				error,
+			);
+			throw error;
+		}
+	},
 	{
 		connection: {
 			host: REDIS_HOST,
