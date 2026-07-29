@@ -17,7 +17,7 @@ export default function RequireSubscription({
 }: RequireSubscriptionProps) {
 	if (!authChecked) {
 		return (
-			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-[#62706b]">
+			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-muted">
 				Loading
 			</div>
 		);

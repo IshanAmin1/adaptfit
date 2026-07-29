@@ -14,7 +14,7 @@ export default function DashboardCard({
 	return (
 		<div
 			id={id}
-			className={`col-span-1 rounded-lg border border-[#d9e5df] bg-white/90 shadow-[0_18px_45px_rgba(23,33,31,0.08)] ${className}`}
+			className={`col-span-1 rounded-xl border border-border bg-white/90 shadow-[0_18px_45px_rgba(23,33,31,0.08)] ${className}`}
 		>
 			{children}
 		</div>

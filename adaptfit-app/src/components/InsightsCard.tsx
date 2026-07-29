@@ -68,7 +68,7 @@ export default function InsightsCard() {
 					eyebrow="Insights"
 					title="Plan calibration"
 					action={
-						<div className="grid h-12 w-12 place-items-center rounded-full bg-[#e4efff] font-black text-[#2567b8]">
+						<div className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft font-black text-accent-blue">
 							AI
 						</div>
 					}
@@ -79,16 +79,16 @@ export default function InsightsCard() {
 						triggers.map((trigger, index) => (
 							<div
 								key={`${trigger}-${index}`}
-								className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4.5"
+								className="rounded-xl border border-border bg-surface-soft p-4.5"
 							>
 								<strong className="block text-[17px] font-semibold">
 									Adaptation rule {index + 1}
 								</strong>
-								<p className="mt-2 leading-6 text-[#62706b]">{trigger}</p>
+								<p className="mt-2 leading-6 text-muted">{trigger}</p>
 							</div>
 						))
 					) : (
-						<p className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4.5 text-[#62706b]">
+						<p className="rounded-xl border border-border bg-surface-soft p-4.5 text-muted">
 							No adaptive rules were included in this plan.
 						</p>
 					)}
@@ -101,29 +101,29 @@ export default function InsightsCard() {
 					{signalItems.map((item) => (
 						<div
 							key={item.label}
-							className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4"
+							className="rounded-xl border border-border bg-surface-soft p-4"
 						>
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-sm font-black text-[#17211f]">
+								<span className="text-sm font-black text-secondary">
 									{item.label}
 								</span>
-								<span className="text-sm font-semibold text-[#62706b]">
+								<span className="text-sm font-semibold text-muted">
 									{item.value}
 								</span>
 							</div>
 							<div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white">
 								<span
-									className="block h-full rounded-[inherit] bg-[#0f8b6f]"
+									className="block h-full rounded-[inherit] bg-primary"
 									style={{ width: `${item.width}%` }}
 								/>
 							</div>
 						</div>
 					))}
-					<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+					<div className="rounded-xl border border-border bg-surface-soft p-4">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 							Adaptation rules
 						</p>
-						<p className="mt-2 text-2xl font-black text-[#0f8b6f]">
+						<p className="mt-2 text-2xl font-black text-primary">
 							{triggers.length}
 						</p>
 					</div>
@@ -148,12 +148,12 @@ export default function InsightsCard() {
 					].map(([label, value]) => (
 						<div
 							key={label}
-							className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] px-4 py-3"
+							className="rounded-xl border border-border bg-surface-soft px-4 py-3"
 						>
-							<span className="block text-[11px] font-black uppercase tracking-[0.08em] text-[#62706b]">
+							<span className="block text-[11px] font-black uppercase tracking-[0.08em] text-muted">
 								{label}
 							</span>
-							<strong className="mt-1 block text-lg font-black text-[#17211f]">
+							<strong className="mt-1 block text-lg font-black text-secondary">
 								{value}
 							</strong>
 						</div>

@@ -1,12 +1,14 @@
 import type { Option } from "./Select";
 
 export default function ChoiceGrid({
+	label,
 	options,
 	value,
 	onChange,
 	multi = false,
 	className = "sm:grid-cols-2",
 }: {
+	label: string;
 	options: Option[];
 	value: string | string[];
 	onChange: (value: string | string[]) => void;
@@ -16,7 +18,8 @@ export default function ChoiceGrid({
 	const selectedValues = Array.isArray(value) ? value : [value];
 
 	return (
-		<div className={`grid gap-3 ${className}`}>
+		<fieldset className={`grid gap-3 ${className}`}>
+			<legend className="text-lg font-black text-secondary">{label}</legend>
 			{options.map((option) => {
 				const isSelected = selectedValues.includes(option.value);
 
@@ -24,10 +27,10 @@ export default function ChoiceGrid({
 					<button
 						key={option.value}
 						type="button"
-						className={`min-h-12 rounded-lg border px-4 py-3 text-left text-sm font-semibold transition ${
+						className={`min-h-12 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
 							isSelected
-								? "border-[#0f8b6f] bg-[#e7f6ef] text-[#0f8b6f]"
-								: "border-[#d9e5df] bg-white text-[#17211f] hover:border-[#8db7a7]"
+								? "border-primary bg-primary-tint text-primary"
+								: "border-border bg-white text-secondary hover:border-control"
 						}`}
 						onClick={() => {
 							if (!multi) {
@@ -45,6 +48,6 @@ export default function ChoiceGrid({
 					</button>
 				);
 			})}
-		</div>
+		</fieldset>
 	);
 }

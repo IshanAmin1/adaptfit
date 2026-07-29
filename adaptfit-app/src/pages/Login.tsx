@@ -28,17 +28,17 @@ export default function Login({ authUser }: LoginProps) {
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-center px-4 py-8 md:px-12">
-			<section className="mx-auto grid w-full max-w-5xl -translate-y-5 overflow-hidden rounded-lg border border-[#d9e5df] bg-white shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[0.9fr_1.1fr]">
-				<div className="flex min-h-132 flex-col justify-center bg-[#f0faf5] p-6 sm:p-10 lg:p-12">
+			<section className="mx-auto grid w-full max-w-5xl -translate-y-5 overflow-hidden rounded-xl border border-border bg-white shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[0.9fr_1.1fr]">
+				<div className="flex min-h-132 flex-col justify-center bg-primary-subtle p-6 sm:p-10 lg:p-12">
 					<div className="mx-auto flex w-full max-w-104 flex-col gap-8">
 						<div>
-							<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+							<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
 								Sign in
 							</p>
-							<h2 className="m-0 text-[clamp(2rem,7vw,2.75rem)] font-black leading-none text-[#17211f]">
+							<h2 className="m-0 text-[clamp(2rem,7vw,2.75rem)] font-black leading-none text-secondary">
 								Train smarter. Adapt faster.
 							</h2>
-							<p className="mt-4 text-base leading-7 text-[#62706b]">
+							<p className="mt-4 text-base leading-7 text-muted">
 								Use your Google account to continue.
 							</p>
 						</div>
@@ -47,7 +47,7 @@ export default function Login({ authUser }: LoginProps) {
 							<button
 								type="button"
 								onClick={handleGoogleLogin}
-								className="flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-[#b7cbc2] bg-white px-4 py-3 text-sm font-black text-[#17211f] shadow-[0_10px_30px_rgba(15,139,111,0.08)] transition hover:-translate-y-0.5 hover:border-[#0f8b6f] hover:text-[#0f8b6f] focus:outline-none focus:ring-3 focus:ring-[#0f8b6f]/25"
+								className="flex min-h-11 w-full items-center justify-center gap-3 rounded-xl border border-control bg-white px-4 py-3 text-sm font-black text-secondary shadow-[0_10px_30px_rgba(37,99,235,0.10)] transition hover:-translate-y-0.5 hover:border-primary hover:text-primary focus:outline-none focus:ring-3 focus:ring-primary/25"
 							>
 								<svg
 									aria-hidden="true"
@@ -76,7 +76,7 @@ export default function Login({ authUser }: LoginProps) {
 							</button>
 							{errorMessage ? (
 								<p
-									className="m-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+									className="m-0 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
 									role="alert"
 								>
 									{errorMessage}
@@ -86,11 +86,11 @@ export default function Login({ authUser }: LoginProps) {
 					</div>
 				</div>
 
-				<div className="hidden bg-[#e8f7ef] p-4 md:block">
+				<div className="hidden bg-primary-soft p-4 md:block">
 					<img
 						src={loginImage}
 						alt="AdaptFit dashboard preview"
-						className="h-full min-h-124 w-full rounded-lg object-cover"
+						className="h-full min-h-124 w-full rounded-xl object-cover"
 					/>
 				</div>
 			</section>

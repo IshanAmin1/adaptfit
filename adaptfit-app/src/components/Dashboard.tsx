@@ -133,25 +133,25 @@ export default function Dashboard() {
 			<DashboardCard className="flex min-h-125 flex-col gap-7 p-8 xl:col-span-8">
 				<div className="grid gap-5">
 					<div>
-						<p className="mb-3 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+						<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
 							Today&apos;s plan
 						</p>
 						<h1 className="m-0 text-[clamp(1.8rem,3vw,2.6rem)] font-black uppercase leading-[1.08]">
 							{isWorkoutDay ? todaySession?.session_type : "Rest day"}
 						</h1>
-						<p className="mt-3 text-xl font-black uppercase tracking-[0.08em] text-[#62706b]">
+						<p className="mt-3 text-xl font-black uppercase tracking-[0.08em] text-muted">
 							{todaySession?.day || todayName}
 						</p>
 					</div>
 
 					{!loggedWorkout ? (
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_12rem]">
-							<div className="flex items-start gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 text-[#17211f]">
-								<span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
+							<div className="flex items-start gap-3 rounded-xl border border-border bg-surface-soft p-4 text-secondary">
+								<span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-lg bg-primary-soft text-primary">
 									<DumbbellIcon />
 								</span>
 								<div>
-									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 										{isWorkoutDay ? "Equipment" : "Recovery focus"}
 									</p>
 									<p className="mt-1 text-lg font-black leading-5">
@@ -159,12 +159,12 @@ export default function Dashboard() {
 									</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
-								<span className="grid h-10 w-10 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
+							<div className="flex items-center gap-3 rounded-xl border border-border bg-surface-soft p-4">
+								<span className="grid h-10 w-10 flex-none place-items-center rounded-lg bg-primary-soft text-primary">
 									<ClockIcon />
 								</span>
 								<div>
-									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 										{isWorkoutDay ? "Time" : "Meals"}
 									</p>
 									<p className="mt-1 text-lg font-black leading-5">
@@ -181,13 +181,13 @@ export default function Dashboard() {
 				{isWorkoutDay && todaySession ? (
 					<>
 						{successMessage ? (
-							<p className="rounded-lg border border-[#b7cbc2] bg-[#f6faf7] p-3 text-sm font-black text-[#0f8b6f]">
+							<p className="rounded-xl border border-control bg-surface-soft p-3 text-sm font-black text-primary">
 								{successMessage}
 							</p>
 						) : null}
 						{!loggedWorkout ? (
 							<div className="grid gap-3">
-								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+								<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 									Exercises
 								</p>
 								<div className="grid gap-3">
@@ -195,21 +195,21 @@ export default function Dashboard() {
 										<ExerciseDemoTrigger
 											key={`${exercise.exercise_name}-${index}`}
 											exercise={exercise}
-											className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg bg-[#17322d] p-4 text-left text-white transition hover:bg-[#214840] focus:outline-none focus:ring-2 focus:ring-[#0f8b6f] focus:ring-offset-2"
+											className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-xl bg-primary-strong p-4 text-left text-white transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 										>
 											<div className="min-w-0">
 												<strong className="block text-base font-black leading-5">
 													{exercise.exercise_name}
 												</strong>
-												<p className="mt-1 text-sm font-semibold text-[#c8f7e6]">
+												<p className="mt-1 text-sm font-semibold text-primary-muted">
 													{exercise.target_muscle_group}
 												</p>
 											</div>
 											<div className="flex flex-none flex-col items-end gap-1">
-												<p className="m-0 text-sm font-black text-[#c8f7e6]">
+												<p className="m-0 text-sm font-black text-primary-muted">
 													{exercise.sets} sets x {exercise.reps}
 												</p>
-												<p className="m-0 max-w-36 text-right text-[0.68rem] font-black uppercase tracking-widest text-[#c8f7e6]">
+												<p className="m-0 max-w-36 text-right text-[0.68rem] font-black uppercase tracking-widest text-primary-muted">
 													{exercise.exerciseDbId
 														? "View demo"
 														: "No demo, search"}
@@ -230,7 +230,7 @@ export default function Dashboard() {
 									setSuccessMessage(null);
 									setIsWorkoutLogOpen(true);
 								}}
-								className="mt-auto self-start rounded-lg border-0 bg-[#0f8b6f] px-7.5 py-4.5 text-lg font-black uppercase text-white"
+								className="mt-auto self-start rounded-xl border-0 bg-primary px-7.5 py-4.5 text-lg font-black uppercase text-white"
 							>
 								Log workout
 							</button>
@@ -238,11 +238,11 @@ export default function Dashboard() {
 					</>
 				) : (
 					<div className="grid gap-4">
-						<div className="rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-5">
-							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+						<div className="rounded-xl border border-border bg-surface-soft p-5">
+							<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 								Rest guidance
 							</p>
-							<p className="mt-2 text-base leading-6 text-[#17211f]">
+							<p className="mt-2 text-base leading-6 text-secondary">
 								No workout is scheduled today. Keep movement light, hydrate, and
 								use the nutrition targets to support recovery.
 							</p>
@@ -255,9 +255,9 @@ export default function Dashboard() {
 							].map(([label, value]) => (
 								<div
 									key={label}
-									className="rounded-lg bg-[#17322d] p-4 text-white"
+									className="rounded-xl bg-primary-strong p-4 text-white"
 								>
-									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#c8f7e6]">
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-primary-muted">
 										{label}
 									</p>
 									<p className="mt-2 text-lg font-black">{value}</p>
@@ -265,14 +265,14 @@ export default function Dashboard() {
 							))}
 						</div>
 						{restDayMeal ? (
-							<div className="rounded-lg border border-[#d9e5df] bg-white p-5">
-								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+							<div className="rounded-xl border border-border bg-white p-5">
+								<p className="m-0 text-xs font-black uppercase tracking-widest text-primary">
 									Recovery meal
 								</p>
-								<p className="mt-2 text-base font-black text-[#17211f]">
+								<p className="mt-2 text-base font-black text-secondary">
 									{restDayMeal.meal_name}
 								</p>
-								<p className="mt-1 text-sm leading-5 text-[#62706b]">
+								<p className="mt-1 text-sm leading-5 text-muted">
 									{restDayMeal.description}
 								</p>
 							</div>
@@ -286,7 +286,7 @@ export default function Dashboard() {
 					eyebrow="Nutrition goals"
 					title={`${plan.nutrients.daily_calories} kcal`}
 					action={
-						<span className="rounded-full bg-[#e0f5ee] px-2.75 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#0f8b6f]">
+						<span className="rounded-full bg-primary-soft px-2.75 py-2 text-xs font-black uppercase tracking-[0.08em] text-primary">
 							Today
 						</span>
 					}
@@ -305,34 +305,34 @@ export default function Dashboard() {
 							plan.nutrients.macros.protein_g,
 							macroTotal,
 						)}
-						barClassName="bg-[#2567b8]"
+						barClassName="bg-accent-blue"
 					/>
 					<ProgressBar
 						label="Carbs"
 						value={`${plan.nutrients.macros.carbs_g}g`}
 						widthPercent={macroWidth(plan.nutrients.macros.carbs_g, macroTotal)}
-						barClassName="bg-[#d99b22]"
+						barClassName="bg-accent-amber"
 					/>
 					<ProgressBar
 						label="Fat"
 						value={`${plan.nutrients.macros.fat_g}g`}
 						widthPercent={macroWidth(plan.nutrients.macros.fat_g, macroTotal)}
-						barClassName="bg-[#f46f5e]"
+						barClassName="bg-accent-coral"
 					/>
 				</div>
 
 				{plan.nutrients.sample_meals[0] ? (
-					<div className="mt-7 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
-						<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+					<div className="mt-7 rounded-xl border border-border bg-surface-soft p-4">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 							Recommended meal today
 						</p>
-						<p className="mt-2 text-base font-black text-[#17211f]">
+						<p className="mt-2 text-base font-black text-secondary">
 							{plan.nutrients.sample_meals[0].meal_name}
 						</p>
-						<p className="mt-1 text-sm leading-5 text-[#62706b]">
+						<p className="mt-1 text-sm leading-5 text-muted">
 							{plan.nutrients.sample_meals[0].description}
 						</p>
-						<p className="mt-2 text-xs font-black uppercase tracking-widest text-[#0f8b6f]">
+						<p className="mt-2 text-xs font-black uppercase tracking-widest text-primary">
 							{plan.nutrients.sample_meals[0].estimated_calories} kcal
 						</p>
 					</div>

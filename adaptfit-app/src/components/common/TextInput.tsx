@@ -19,7 +19,7 @@ export default function TextInput({
 }) {
 	return (
 		<input
-			className="min-h-12 rounded-lg border border-[#b7cbc2] bg-white px-4 text-base font-semibold text-[#17211f] outline-none focus:border-[#0f8b6f] focus:ring-4 focus:ring-[#0f8b6f]/15"
+			className="min-h-12 rounded-xl border border-control bg-white px-4 text-base font-semibold text-secondary outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
 			type={type}
 			value={value}
 			required={required}

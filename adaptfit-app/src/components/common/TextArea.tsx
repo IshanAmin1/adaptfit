@@ -9,7 +9,7 @@ export default function TextArea({
 }) {
 	return (
 		<textarea
-			className="min-h-28 resize-y rounded-lg border border-[#b7cbc2] bg-white px-4 py-3 text-base font-semibold text-[#17211f] outline-none focus:border-[#0f8b6f] focus:ring-4 focus:ring-[#0f8b6f]/15"
+			className="min-h-28 resize-y rounded-xl border border-control bg-white px-4 py-3 text-base font-semibold text-secondary outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
 			value={value}
 			placeholder={placeholder}
 			onChange={(event) => onChange(event.target.value)}
