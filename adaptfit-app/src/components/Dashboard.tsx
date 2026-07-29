@@ -1,12 +1,17 @@
+import { useEffect, useState } from "react";
 import DashboardCard from "./common/DashboardCard";
 import ProgressBar from "./common/ProgressBar";
 import SectionHeading from "./common/SectionHeading";
 import ClockIcon from "./icons/ClockIcon";
 import DumbbellIcon from "./icons/DumbbellIcon";
 import ExerciseDemoTrigger from "./plan/ExerciseDemoTrigger";
+import LoggedWorkoutInfo from "./plan/LoggedWorkoutInfo";
 import { MacroDonut } from "./plan/PlanCharts";
 import PlanState from "./plan/PlanState";
+import WorkoutLogModal from "./plan/WorkoutLogModal";
+import { loggingService } from "../api/logging-service";
 import { useLatestPlan } from "../hooks/useLatestPlan";
+import type { WorkoutLog } from "../types/plan";
 import {
 	findTodaySession,
 	formatEquipment,
@@ -21,11 +26,50 @@ function macroWidth(value: number, total: number) {
 	return Math.max(8, Math.min(100, Math.round((value / total) * 100)));
 }
 
+function getTodayInputValue() {
+	return new Date().toISOString().slice(0, 10);
+}
+
 export default function Dashboard() {
 	const { plan, isLoading, errorMessage } = useLatestPlan();
+	const [isWorkoutLogOpen, setIsWorkoutLogOpen] = useState(false);
+	const [successMessage, setSuccessMessage] = useState<string | null>(null);
+	const [todayWorkoutLog, setTodayWorkoutLog] = useState<WorkoutLog | null>(
+		null,
+	);
 	const todaySession = findTodaySession(plan);
 	const isWorkoutDay = Boolean(todaySession?.exercises.length);
+	const loggedWorkout = isWorkoutDay ? todayWorkoutLog : null;
 	const todayName = getTodayName();
+
+	useEffect(() => {
+		if (!plan || !isWorkoutDay) {
+			return;
+		}
+
+		let ignoreResult = false;
+
+		async function loadTodayWorkoutLog() {
+			try {
+				const workoutLog =
+					await loggingService.getTodayWorkoutLog(getTodayInputValue());
+
+				if (!ignoreResult) {
+					setTodayWorkoutLog(workoutLog);
+				}
+			} catch {
+				if (!ignoreResult) {
+					setTodayWorkoutLog(null);
+				}
+			}
+		}
+
+		loadTodayWorkoutLog();
+
+		return () => {
+			ignoreResult = true;
+		};
+	}, [plan, isWorkoutDay]);
 
 	if (isLoading) {
 		return (
@@ -73,6 +117,19 @@ export default function Dashboard() {
 
 	return (
 		<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 xl:grid-cols-12">
+			{isWorkoutLogOpen && todaySession ? (
+				<WorkoutLogModal
+					planId={plan.id}
+					session={todaySession}
+					onClose={() => setIsWorkoutLogOpen(false)}
+					onSaved={(workoutLog) => {
+						setIsWorkoutLogOpen(false);
+						setTodayWorkoutLog(workoutLog);
+						setSuccessMessage("Today's workout was logged.");
+					}}
+				/>
+			) : null}
+
 			<DashboardCard className="flex min-h-125 flex-col gap-7 p-8 xl:col-span-8">
 				<div className="grid gap-5">
 					<div>
@@ -87,80 +144,97 @@ export default function Dashboard() {
 						</p>
 					</div>
 
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_12rem]">
-						<div className="flex items-start gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 text-[#17211f]">
-							<span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
-								<DumbbellIcon />
-							</span>
-							<div>
-								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
-									{isWorkoutDay ? "Equipment" : "Recovery focus"}
-								</p>
-								<p className="mt-1 text-lg font-black leading-5">
-									{isWorkoutDay ? primaryEquipment : "Rest, steps, mobility"}
-								</p>
+					{!loggedWorkout ? (
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_12rem]">
+							<div className="flex items-start gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4 text-[#17211f]">
+								<span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
+									<DumbbellIcon />
+								</span>
+								<div>
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+										{isWorkoutDay ? "Equipment" : "Recovery focus"}
+									</p>
+									<p className="mt-1 text-lg font-black leading-5">
+										{isWorkoutDay ? primaryEquipment : "Rest, steps, mobility"}
+									</p>
+								</div>
+							</div>
+							<div className="flex items-center gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
+								<span className="grid h-10 w-10 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
+									<ClockIcon />
+								</span>
+								<div>
+									<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+										{isWorkoutDay ? "Time" : "Meals"}
+									</p>
+									<p className="mt-1 text-lg font-black leading-5">
+										{isWorkoutDay
+											? `${todaySession?.duration_minutes} min`
+											: `${plan.nutrients.meal_frequency} meals`}
+									</p>
+								</div>
 							</div>
 						</div>
-						<div className="flex items-center gap-3 rounded-lg border border-[#d9e5df] bg-[#f6faf7] p-4">
-							<span className="grid h-10 w-10 flex-none place-items-center rounded-md bg-[#e0f5ee] text-[#0f8b6f]">
-								<ClockIcon />
-							</span>
-							<div>
-								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
-									{isWorkoutDay ? "Time" : "Meals"}
-								</p>
-								<p className="mt-1 text-lg font-black leading-5">
-									{isWorkoutDay
-										? `${todaySession?.duration_minutes} min`
-										: `${plan.nutrients.meal_frequency} meals`}
-								</p>
-							</div>
-						</div>
-					</div>
+					) : null}
 				</div>
 
 				{isWorkoutDay && todaySession ? (
 					<>
-						<div className="grid gap-3">
-							<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
-								Exercises
+						{successMessage ? (
+							<p className="rounded-lg border border-[#b7cbc2] bg-[#f6faf7] p-3 text-sm font-black text-[#0f8b6f]">
+								{successMessage}
 							</p>
+						) : null}
+						{!loggedWorkout ? (
 							<div className="grid gap-3">
-								{todaySession.exercises.map((exercise, index) => (
-									<ExerciseDemoTrigger
-										key={`${exercise.exercise_name}-${index}`}
-										exercise={exercise}
-										className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg bg-[#17322d] p-4 text-left text-white transition hover:bg-[#214840] focus:outline-none focus:ring-2 focus:ring-[#0f8b6f] focus:ring-offset-2"
-									>
-										<div className="min-w-0">
-											<strong className="block text-base font-black leading-5">
-												{exercise.exercise_name}
-											</strong>
-											<p className="mt-1 text-sm font-semibold text-[#c8f7e6]">
-												{exercise.target_muscle_group}
-											</p>
-										</div>
-										<div className="flex flex-none flex-col items-end gap-1">
-											<p className="m-0 text-sm font-black text-[#c8f7e6]">
-												{exercise.sets} sets x {exercise.reps}
-											</p>
-											<p className="m-0 max-w-36 text-right text-[0.68rem] font-black uppercase tracking-widest text-[#c8f7e6]">
-												{exercise.exerciseDbId
-													? "View demo"
-													: "No demo, search"}
-											</p>
-										</div>
-									</ExerciseDemoTrigger>
-								))}
+								<p className="m-0 text-xs font-black uppercase tracking-widest text-[#62706b]">
+									Exercises
+								</p>
+								<div className="grid gap-3">
+									{todaySession.exercises.map((exercise, index) => (
+										<ExerciseDemoTrigger
+											key={`${exercise.exercise_name}-${index}`}
+											exercise={exercise}
+											className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg bg-[#17322d] p-4 text-left text-white transition hover:bg-[#214840] focus:outline-none focus:ring-2 focus:ring-[#0f8b6f] focus:ring-offset-2"
+										>
+											<div className="min-w-0">
+												<strong className="block text-base font-black leading-5">
+													{exercise.exercise_name}
+												</strong>
+												<p className="mt-1 text-sm font-semibold text-[#c8f7e6]">
+													{exercise.target_muscle_group}
+												</p>
+											</div>
+											<div className="flex flex-none flex-col items-end gap-1">
+												<p className="m-0 text-sm font-black text-[#c8f7e6]">
+													{exercise.sets} sets x {exercise.reps}
+												</p>
+												<p className="m-0 max-w-36 text-right text-[0.68rem] font-black uppercase tracking-widest text-[#c8f7e6]">
+													{exercise.exerciseDbId
+														? "View demo"
+														: "No demo, search"}
+												</p>
+											</div>
+										</ExerciseDemoTrigger>
+									))}
+								</div>
 							</div>
-						</div>
+						) : null}
 
-						<button
-							type="button"
-							className="mt-auto self-start rounded-lg border-0 bg-[#0f8b6f] px-7.5 py-4.5 text-lg font-black uppercase text-white"
-						>
-							Log workout
-						</button>
+						{loggedWorkout ? (
+							<LoggedWorkoutInfo workoutLog={loggedWorkout} />
+						) : (
+							<button
+								type="button"
+								onClick={() => {
+									setSuccessMessage(null);
+									setIsWorkoutLogOpen(true);
+								}}
+								className="mt-auto self-start rounded-lg border-0 bg-[#0f8b6f] px-7.5 py-4.5 text-lg font-black uppercase text-white"
+							>
+								Log workout
+							</button>
+						)}
 					</>
 				) : (
 					<div className="grid gap-4">

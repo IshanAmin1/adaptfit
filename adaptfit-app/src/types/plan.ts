@@ -30,6 +30,37 @@ export type PlanScheduleDay = {
 	exercises: PlanExercise[];
 };
 
+export type WorkoutCompletionStatus = "completed" | "partial";
+
+export type WorkoutLogExerciseInput = {
+	exerciseName: string;
+	targetSets: number;
+	targetReps: string;
+	completionStatus: WorkoutCompletionStatus;
+	setsCompleted: number;
+	repsCompleted?: number | "";
+	notes?: string;
+};
+
+export type WorkoutLogInput = {
+	day: string;
+	sessionType: string;
+	loggedFor: string;
+	notes?: string;
+	exercises: WorkoutLogExerciseInput[];
+};
+
+export type WorkoutLog = {
+	id: string;
+	planId: string;
+	day: string;
+	sessionType: string;
+	exercises: WorkoutLogExerciseInput[];
+	notes?: string | null;
+	loggedFor: string;
+	createdAt: string;
+};
+
 export type PlanTargets = {
 	bmi?: number;
 	bmr: number;
