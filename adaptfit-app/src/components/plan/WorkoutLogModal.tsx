@@ -3,12 +3,19 @@ import { loggingService } from "../../api/logging-service";
 import type {
 	PlanScheduleDay,
 	WorkoutLog,
+	WorkoutCompletionStatus,
 	WorkoutLogExerciseInput,
 } from "../../types/plan";
-import { formatPlanLabel } from "../../utils/plan-utils";
+
+type WorkoutLogModalProps = {
+	planId: string;
+	session: PlanScheduleDay;
+	onClose: () => void;
+	onSaved: (workoutLog: WorkoutLog) => void;
+};
 
 const statusOptions: {
-	value: "completed" | "partial";
+	value: WorkoutCompletionStatus;
 	label: string;
 }[] = [
 	{ value: "completed", label: "Full" },
@@ -44,12 +51,7 @@ export default function WorkoutLogModal({
 	session,
 	onClose,
 	onSaved,
-}: {
-	planId: string;
-	session: PlanScheduleDay;
-	onClose: () => void;
-	onSaved: (workoutLog: WorkoutLog) => void;
-}) {
+}: WorkoutLogModalProps) {
 	const [notes, setNotes] = useState("");
 	const [exercises, setExercises] = useState(() =>
 		buildInitialExercises(session),
@@ -59,21 +61,20 @@ export default function WorkoutLogModal({
 
 	function updateExercise(
 		index: number,
-		updatedExercise: WorkoutLogExerciseInput,
+		updates: Partial<WorkoutLogExerciseInput>,
 	) {
 		setExercises((currentExercises) =>
 			currentExercises.map((exercise, exerciseIndex) =>
-				exerciseIndex === index ? updatedExercise : exercise,
+				exerciseIndex === index ? { ...exercise, ...updates } : exercise,
 			),
 		);
 	}
 
-	function setExerciseStatus(index: number, status: "completed" | "partial") {
+	function setExerciseStatus(index: number, status: WorkoutCompletionStatus) {
 		const exercise = exercises[index];
 		const setsCompleted = status === "completed" ? exercise.targetSets : 0;
 
 		updateExercise(index, {
-			...exercise,
 			completionStatus: status,
 			setsCompleted,
 			repsCompleted: status === "partial" ? 0 : "",
@@ -117,7 +118,7 @@ export default function WorkoutLogModal({
 							Log workout
 						</p>
 						<h2 className="mt-1 text-2xl font-black text-secondary">
-							{session.day} - {formatPlanLabel(session.session_type)}
+							{session.day} - {session.session_type}
 						</h2>
 					</div>
 					<button
@@ -172,7 +173,6 @@ export default function WorkoutLogModal({
 												value={exercise.setsCompleted}
 												onChange={(event) =>
 													updateExercise(index, {
-														...exercise,
 														setsCompleted: Number(event.target.value),
 													})
 												}
@@ -188,7 +188,6 @@ export default function WorkoutLogModal({
 												value={exercise.repsCompleted ?? ""}
 												onChange={(event) =>
 													updateExercise(index, {
-														...exercise,
 														repsCompleted:
 															event.target.value === ""
 																? ""
@@ -204,10 +203,7 @@ export default function WorkoutLogModal({
 												value={exercise.notes || ""}
 												rows={2}
 												onChange={(event) =>
-													updateExercise(index, {
-														...exercise,
-														notes: event.target.value,
-													})
+													updateExercise(index, { notes: event.target.value })
 												}
 												className="rounded-xl border border-control bg-white px-3 py-2 text-base font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
 											/>
