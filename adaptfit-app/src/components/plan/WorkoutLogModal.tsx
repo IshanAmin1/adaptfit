@@ -3,24 +3,9 @@ import { loggingService } from "../../api/logging-service";
 import type {
 	PlanScheduleDay,
 	WorkoutLog,
-	WorkoutCompletionStatus,
 	WorkoutLogExerciseInput,
 } from "../../types/plan";
-
-type WorkoutLogModalProps = {
-	planId: string;
-	session: PlanScheduleDay;
-	onClose: () => void;
-	onSaved: (workoutLog: WorkoutLog) => void;
-};
-
-const statusOptions: {
-	value: WorkoutCompletionStatus;
-	label: string;
-}[] = [
-	{ value: "completed", label: "Full" },
-	{ value: "partial", label: "Partial" },
-];
+import { formatPlanLabel } from "../../utils/plan-utils";
 
 function getTodayInputValue() {
 	return new Date().toISOString().slice(0, 10);
@@ -40,18 +25,17 @@ function buildInitialExercises(
 	}));
 }
 
-function getStatusClasses(isActive: boolean) {
-	return isActive
-		? "border-primary bg-primary text-white"
-		: "border-control bg-white text-secondary hover:border-primary";
-}
-
 export default function WorkoutLogModal({
 	planId,
 	session,
 	onClose,
 	onSaved,
-}: WorkoutLogModalProps) {
+}: {
+	planId: string;
+	session: PlanScheduleDay;
+	onClose: () => void;
+	onSaved: (workoutLog: WorkoutLog) => void;
+}) {
 	const [notes, setNotes] = useState("");
 	const [exercises, setExercises] = useState(() =>
 		buildInitialExercises(session),
@@ -59,22 +43,23 @@ export default function WorkoutLogModal({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 
-	function updateExercise(
+	function replaceExercise(
 		index: number,
-		updates: Partial<WorkoutLogExerciseInput>,
+		updatedExercise: WorkoutLogExerciseInput,
 	) {
 		setExercises((currentExercises) =>
 			currentExercises.map((exercise, exerciseIndex) =>
-				exerciseIndex === index ? { ...exercise, ...updates } : exercise,
+				exerciseIndex === index ? updatedExercise : exercise,
 			),
 		);
 	}
 
-	function setExerciseStatus(index: number, status: WorkoutCompletionStatus) {
+	function setExerciseStatus(index: number, status: "completed" | "partial") {
 		const exercise = exercises[index];
 		const setsCompleted = status === "completed" ? exercise.targetSets : 0;
 
-		updateExercise(index, {
+		replaceExercise(index, {
+			...exercise,
 			completionStatus: status,
 			setsCompleted,
 			repsCompleted: status === "partial" ? 0 : "",
@@ -118,7 +103,7 @@ export default function WorkoutLogModal({
 							Log workout
 						</p>
 						<h2 className="mt-1 text-2xl font-black text-secondary">
-							{session.day} - {session.session_type}
+							{session.day} - {formatPlanLabel(session.session_type)}
 						</h2>
 					</div>
 					<button
@@ -147,18 +132,28 @@ export default function WorkoutLogModal({
 										</p>
 									</div>
 									<div className="grid grid-cols-2 gap-2">
-										{statusOptions.map((option) => (
-											<button
-												key={option.value}
-												type="button"
-												onClick={() => setExerciseStatus(index, option.value)}
-												className={`h-9 rounded-xl border px-3 text-xs font-black uppercase ${getStatusClasses(
-													exercise.completionStatus === option.value,
-												)}`}
-											>
-												{option.label}
-											</button>
-										))}
+										<button
+											type="button"
+											onClick={() => setExerciseStatus(index, "completed")}
+											className={`h-9 rounded-xl border px-3 text-xs font-black uppercase ${
+												exercise.completionStatus === "completed"
+													? "border-primary bg-primary text-white"
+													: "border-control bg-white text-secondary hover:border-primary"
+											}`}
+										>
+											Full
+										</button>
+										<button
+											type="button"
+											onClick={() => setExerciseStatus(index, "partial")}
+											className={`h-9 rounded-xl border px-3 text-xs font-black uppercase ${
+												exercise.completionStatus === "partial"
+													? "border-primary bg-primary text-white"
+													: "border-control bg-white text-secondary hover:border-primary"
+											}`}
+										>
+											Partial
+										</button>
 									</div>
 								</div>
 
@@ -172,7 +167,8 @@ export default function WorkoutLogModal({
 												max={exercise.targetSets - 1}
 												value={exercise.setsCompleted}
 												onChange={(event) =>
-													updateExercise(index, {
+													replaceExercise(index, {
+														...exercise,
 														setsCompleted: Number(event.target.value),
 													})
 												}
@@ -187,7 +183,8 @@ export default function WorkoutLogModal({
 												step={1}
 												value={exercise.repsCompleted ?? ""}
 												onChange={(event) =>
-													updateExercise(index, {
+													replaceExercise(index, {
+														...exercise,
 														repsCompleted:
 															event.target.value === ""
 																? ""
@@ -203,7 +200,10 @@ export default function WorkoutLogModal({
 												value={exercise.notes || ""}
 												rows={2}
 												onChange={(event) =>
-													updateExercise(index, { notes: event.target.value })
+													replaceExercise(index, {
+														...exercise,
+														notes: event.target.value,
+													})
 												}
 												className="rounded-xl border border-control bg-white px-3 py-2 text-base font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
 											/>

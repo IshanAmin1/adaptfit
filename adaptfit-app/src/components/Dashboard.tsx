@@ -16,6 +16,7 @@ import type { WorkoutLog } from "../types/plan";
 import {
 	findTodaySession,
 	formatEquipment,
+	formatPlanLabel,
 	getTodayName,
 } from "../utils/plan-utils";
 
@@ -194,7 +195,9 @@ export default function Dashboard() {
 								Today&apos;s plan
 							</p>
 							<h1 className="m-0 text-[clamp(1.8rem,3vw,2.6rem)] font-black uppercase leading-[1.08]">
-								{isWorkoutDay ? todaySession?.session_type : "Rest day"}
+								{isWorkoutDay
+									? formatPlanLabel(todaySession?.session_type)
+									: "Rest day"}
 							</h1>
 							<p className="mt-3 text-xl font-black uppercase tracking-[0.08em] text-muted">
 								{todaySession?.day || todayName}
