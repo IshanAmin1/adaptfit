@@ -174,7 +174,11 @@ plansRouter.post(
 			console.error(error);
 
 			if (error.status) {
-				return res.status(error.status).json({ error: error.message });
+				return res.status(error.status).json({
+					error: error.message,
+					jobId: error.jobId,
+					statusUrl: error.statusUrl,
+				});
 			}
 
 			return res

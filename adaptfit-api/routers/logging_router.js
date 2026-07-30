@@ -130,7 +130,7 @@ function buildAiValidationSystemPrompt() {
 		Return only JSON matching this shape: {"isValid": boolean, "message": string}.
 		Use the planned workout as context and check whether the user's logged values are realistic and consistent.
 		Completed exercises are valid when completed sets match target sets.
-		Do not require a rep count for completed exercises; repsCompleted may be an empty string.
+		Completed exercises may describe setsCompleted and repsCompleted as "completed all".
 		Allow partial exercises with 0 sets or 0 reps.
 		Notes must be meaningful and related to the workout, exercise, effort, pain, difficulty, modifications, or recovery.
 		Reject notes that are random filler, gibberish, repeated words, unrelated text, or placeholder text like "blah blah", "asdf", or "test".
@@ -147,13 +147,26 @@ function buildAiValidationSystemPrompt() {
 }
 
 function buildAiValidationPrompt(session, workoutLog) {
+	const validationWorkoutLog = {
+		...workoutLog,
+		exercises: workoutLog.exercises.map((exercise) =>
+			exercise.completionStatus === "completed"
+				? {
+						...exercise,
+						setsCompleted: "completed all",
+						repsCompleted: "completed all",
+					}
+				: exercise,
+		),
+	};
+
 	return `Workout log JSON: ${JSON.stringify({
 		plannedSession: {
 			day: session.day,
 			sessionType: session.session_type,
 			exercises: session.exercises,
 		},
-		workoutLog,
+		workoutLog: validationWorkoutLog,
 	})}`;
 }
 

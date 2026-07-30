@@ -77,6 +77,11 @@ const PlanSchema = z.object({
 	}),
 });
 
+const AdaptivePlanSchema = PlanSchema.pick({
+	weekly_schedule: true,
+	adaptive_notes: true,
+});
+
 const PLAN_JSON_SCHEMA = {
 	type: "object",
 	additionalProperties: false,
@@ -208,6 +213,16 @@ const PLAN_JSON_SCHEMA = {
 	},
 };
 
+const ADAPTIVE_PLAN_JSON_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	required: ["weekly_schedule", "adaptive_notes"],
+	properties: {
+		weekly_schedule: PLAN_JSON_SCHEMA.properties.weekly_schedule,
+		adaptive_notes: PLAN_JSON_SCHEMA.properties.adaptive_notes,
+	},
+};
+
 const SYSTEM_PROMPT = [
 	"You are a certified fitness and nutrition planning engine.",
 	"You generate structured, personalized weekly workout and nutrition plans based on validated AdaptFit onboarding data.",
@@ -223,6 +238,17 @@ const SYSTEM_PROMPT = [
 	"Use concise canonical exercise names instead of overly specific variations unless the user's available equipment, limitations, or goal requires the variation.",
 	"Respect equipment, machine, schedule, injury, and dietary constraints exactly as given.",
 	"Treat selected equipment as available tools, not as an exclusive requirement for every exercise. Bodyweight exercises are allowed whenever they fit the goal, even if the user selected dumbbells, bands, machines, barbell, or full gym access.",
+].join("\n");
+
+const ADAPTIVE_SYSTEM_PROMPT = [
+	"You are a certified fitness planning engine.",
+	"You adapt weekly workout schedules based on validated AdaptFit onboarding data and recent workout logs.",
+	"Output only valid JSON matching the provided schema. No markdown, commentary, or explanations outside the JSON.",
+	"Every numeric field must be a number, not a string.",
+	"Keep changes conservative and grounded in the user's recent workout completion logs.",
+	"Respect equipment, schedule, injury, and training constraints exactly as given.",
+	"If information is insufficient to safely recommend an exercise because of a stated injury or limitation, exclude it and choose a safer alternative.",
+	"Every exercise must include at least 2 alternative exercises targeting the same muscle group.",
 ].join("\n");
 
 function optionalValue(value) {
@@ -249,6 +275,26 @@ function formatWorkoutLogsForPrompt(workoutLogs) {
 				notes: exercise.notes || "not provided",
 			})),
 			notes: log.notes || "not provided",
+		})),
+		null,
+		2,
+	);
+}
+
+function formatScheduleForPrompt(schedule) {
+	return JSON.stringify(
+		schedule.map((session) => ({
+			day: session.day,
+			session_type: session.session_type,
+			duration_minutes: session.duration_minutes,
+			exercises: session.exercises.map((exercise) => ({
+				exercise_name: exercise.exercise_name,
+				target_muscle_group: exercise.target_muscle_group,
+				sets: exercise.sets,
+				reps: exercise.reps,
+				rest_seconds: exercise.rest_seconds,
+				equipment_needed: exercise.equipment_needed,
+			})),
 		})),
 		null,
 		2,
@@ -300,26 +346,31 @@ function buildInitialPlanPrompt(profile) {
 }
 
 function buildAdaptivePlanPrompt(profile, adaptationContext) {
+	const previousPlan = adaptationContext.previousPlan?.plan
+		? adaptationContext.previousPlan.plan
+		: adaptationContext.previousPlan;
+	const previousSchedule =
+		previousPlan.weekly_schedule ||
+		adaptationContext.previousPlan?.schedule ||
+		[];
+
 	return [
-		"Adapt the user's existing AdaptFit weekly workout and nutrition plan for next week.",
+		"Adapt only the user's weekly workout schedule for next week.",
 		"",
 		"ADAPTATION RULES:",
-		"- Use the previous plan as the baseline. Do not redesign from scratch.",
+		"- Return only weekly_schedule and adaptive_notes.",
+		"- Do not create or change nutrition targets, meals, calories, macros, user summary, or plan metadata.",
+		"- Use the previous weekly schedule as the baseline. Do not redesign from scratch.",
 		"- Keep the same workout days, session types, and exercises when adherence was good.",
 		"- If a workout or exercise was partial, adjust conservatively by reducing sets, simplifying the exercise, adding recovery, or choosing a safer alternative.",
 		"- If workouts were completed consistently, progress gradually with modest changes to volume, intensity, or exercise complexity.",
-		"- Avoid changing nutrition targets unless adherence data or the user's goal clearly supports a modest adjustment.",
 		"- Respect onboarding constraints exactly.",
 		"- Use adaptive_notes.adjustment_triggers to summarize the most important reasons for the changes.",
 		"",
 		buildProfilePromptSection(profile),
 		"",
-		"PREVIOUS PLAN BASELINE:",
-		JSON.stringify(
-			adaptationContext.previousPlan?.plan || adaptationContext.previousPlan,
-			null,
-			2,
-		),
+		"PREVIOUS WEEKLY SCHEDULE BASELINE:",
+		formatScheduleForPrompt(previousSchedule),
 		"",
 		"THIS WEEK'S WORKOUT COMPLETION LOGS:",
 		formatWorkoutLogsForPrompt(adaptationContext.workoutLogs),
@@ -334,6 +385,23 @@ function buildPlanPrompt(profile, adaptationContext = null) {
 		: buildInitialPlanPrompt(profile);
 }
 
+function buildFullPlanFromAdaptiveResponse(adaptationContext, adaptivePlan) {
+	const previousPlan = adaptationContext.previousPlan?.plan
+		? adaptationContext.previousPlan.plan
+		: adaptationContext.previousPlan;
+
+	return {
+		plan_metadata: {
+			...previousPlan.plan_metadata,
+			generated_at: new Date().toISOString(),
+		},
+		user_summary: previousPlan.user_summary,
+		nutrition_plan: previousPlan.nutrition_plan,
+		weekly_schedule: adaptivePlan.weekly_schedule,
+		adaptive_notes: adaptivePlan.adaptive_notes,
+	};
+}
+
 async function generatePlan(profile, job) {
 	await job.updateProgress({
 		stage: "plan_generation",
@@ -342,12 +410,19 @@ async function generatePlan(profile, job) {
 			: "Generating your workout and nutrition plan.",
 	});
 
+	const isAdaptivePlan = Boolean(job.data.adaptationContext);
+	const responseSchema = isAdaptivePlan ? AdaptivePlanSchema : PlanSchema;
+	const responseJsonSchema = isAdaptivePlan
+		? ADAPTIVE_PLAN_JSON_SCHEMA
+		: PLAN_JSON_SCHEMA;
+	const systemPrompt = isAdaptivePlan ? ADAPTIVE_SYSTEM_PROMPT : SYSTEM_PROMPT;
+
 	const content = await queryModelWithRetries(
-		SYSTEM_PROMPT,
+		systemPrompt,
 		buildPlanPrompt(profile, job.data.adaptationContext),
 		(output) => {
 			try {
-				return !PlanSchema.safeParse(JSON.parse(output)).success;
+				return !responseSchema.safeParse(JSON.parse(output)).success;
 			} catch {
 				return true;
 			}
@@ -358,13 +433,21 @@ async function generatePlan(profile, job) {
 				type: "json_schema",
 				json_schema: {
 					name: "adaptfit_weekly_plan",
-					schema: PLAN_JSON_SCHEMA,
+					schema: responseJsonSchema,
 				},
 			},
 		},
 	);
 
-	const plan = PlanSchema.parse(JSON.parse(content));
+	const responsePlan = responseSchema.parse(JSON.parse(content));
+	const plan = PlanSchema.parse(
+		isAdaptivePlan
+			? buildFullPlanFromAdaptiveResponse(
+					job.data.adaptationContext,
+					responsePlan,
+				)
+			: responsePlan,
+	);
 
 	await job.updateProgress({
 		stage: "plan_saving",

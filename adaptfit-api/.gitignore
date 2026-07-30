@@ -1,5 +1,9 @@
 # node.js
 node_modules/
 
+# logs
+*.log
+*.err
+
 # local env
 .env

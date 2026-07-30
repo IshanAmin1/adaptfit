@@ -504,6 +504,10 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-start px-4 py-8 md:px-12">
+			{isSubmitting ? (
+				<div className="fixed inset-0 z-[80] cursor-wait" aria-hidden="true" />
+			) : null}
+
 			<section className="mx-auto grid w-full max-w-264 content-start gap-8 rounded-xl border border-border bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:p-10">
 				<div className="grid gap-4">
 					<div className="flex flex-wrap items-end justify-between gap-4">

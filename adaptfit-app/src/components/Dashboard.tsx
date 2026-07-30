@@ -10,6 +10,7 @@ import { MacroDonut } from "./plan/PlanCharts";
 import PlanState from "./plan/PlanState";
 import WorkoutLogModal from "./plan/WorkoutLogModal";
 import { loggingService } from "../api/logging-service";
+import { plansService } from "../api/plans-service";
 import { useLatestPlan } from "../hooks/useLatestPlan";
 import type { WorkoutLog } from "../types/plan";
 import {
@@ -31,9 +32,12 @@ function getTodayInputValue() {
 }
 
 export default function Dashboard() {
-	const { plan, isLoading, errorMessage } = useLatestPlan();
+	const { plan, setPlan, isLoading, errorMessage } = useLatestPlan();
 	const [isWorkoutLogOpen, setIsWorkoutLogOpen] = useState(false);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
+	const [syncMessage, setSyncMessage] = useState<string | null>(null);
+	const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
+	const [isSyncingPlan, setIsSyncingPlan] = useState(false);
 	const [todayWorkoutLog, setTodayWorkoutLog] = useState<WorkoutLog | null>(
 		null,
 	);
@@ -115,8 +119,60 @@ export default function Dashboard() {
 			: "None";
 	const restDayMeal = plan.nutrients.sample_meals[0];
 
+	async function handleSyncToPlan() {
+		setIsSyncingPlan(true);
+		setSuccessMessage(null);
+		setSyncErrorMessage(null);
+		setSyncMessage("Starting plan update...");
+
+		try {
+			const planJob = await plansService.adaptPlan();
+			setSyncMessage("Plan update queued.");
+
+			const adaptedPlan = await plansService.streamPlanStatus(
+				planJob.statusUrl,
+				(event) => {
+					setSyncMessage(event.message);
+				},
+			);
+
+			if (adaptedPlan) {
+				setPlan(adaptedPlan);
+				setTodayWorkoutLog(null);
+			}
+
+			setSyncMessage("Plan updated. Check Plan tab.");
+		} catch {
+			setSyncMessage(null);
+			setSyncErrorMessage("Plan sync could not be completed.");
+		} finally {
+			setIsSyncingPlan(false);
+		}
+	}
+
 	return (
 		<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 xl:grid-cols-12">
+			{isSyncingPlan ? (
+				<div
+					className="fixed inset-0 z-[80] grid place-items-center bg-secondary/70 px-4 backdrop-blur-sm"
+					role="status"
+					aria-live="polite"
+				>
+					<div className="w-full max-w-md rounded-xl border border-border bg-white p-7 text-center shadow-[0_24px_70px_rgba(23,33,31,0.25)]">
+						<div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary-soft border-t-primary" />
+						<p className="mt-5 text-xs font-black uppercase tracking-widest text-primary">
+							Syncing plan
+						</p>
+						<p className="mt-3 text-lg font-black leading-6 text-secondary">
+							{syncMessage || "Updating your plan..."}
+						</p>
+						<p className="mt-4 text-sm font-semibold leading-5 text-muted">
+							Syncs weekly on Sundays automatically as well :)
+						</p>
+					</div>
+				</div>
+			) : null}
+
 			{isWorkoutLogOpen && todaySession ? (
 				<WorkoutLogModal
 					planId={plan.id}
@@ -132,17 +188,35 @@ export default function Dashboard() {
 
 			<DashboardCard className="flex min-h-125 flex-col gap-7 p-8 xl:col-span-8">
 				<div className="grid gap-5">
-					<div>
-						<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
-							Today&apos;s plan
-						</p>
-						<h1 className="m-0 text-[clamp(1.8rem,3vw,2.6rem)] font-black uppercase leading-[1.08]">
-							{isWorkoutDay ? todaySession?.session_type : "Rest day"}
-						</h1>
-						<p className="mt-3 text-xl font-black uppercase tracking-[0.08em] text-muted">
-							{todaySession?.day || todayName}
-						</p>
+					<div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+						<div>
+							<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
+								Today&apos;s plan
+							</p>
+							<h1 className="m-0 text-[clamp(1.8rem,3vw,2.6rem)] font-black uppercase leading-[1.08]">
+								{isWorkoutDay ? todaySession?.session_type : "Rest day"}
+							</h1>
+							<p className="mt-3 text-xl font-black uppercase tracking-[0.08em] text-muted">
+								{todaySession?.day || todayName}
+							</p>
+						</div>
+						<div className="grid justify-items-start gap-2 md:justify-items-end">
+							<button
+								type="button"
+								onClick={handleSyncToPlan}
+								disabled={isSyncingPlan}
+								className="rounded-xl border border-primary bg-white px-5 py-3 text-sm font-black uppercase text-primary transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								{isSyncingPlan ? "Syncing..." : "Sync to plan"}
+							</button>
+						</div>
 					</div>
+
+					{syncErrorMessage ? (
+						<p className="rounded-xl border border-accent-coral bg-surface-soft p-3 text-sm font-black text-accent-coral">
+							{syncErrorMessage}
+						</p>
+					) : null}
 
 					{!loggedWorkout ? (
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_12rem]">
