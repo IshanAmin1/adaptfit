@@ -51,6 +51,37 @@ export default function Plan({ authUser }: { authUser: AuthUser | null }) {
 		);
 	}
 
+	const onboardingItems = plan.onboardingProfile
+		? [
+				["Experience", plan.onboardingProfile.experienceLevel],
+				["Location", plan.onboardingProfile.trainingLocation],
+				[
+					"Equipment",
+					formatEquipment(plan.onboardingProfile.equipmentAvailable),
+				],
+				[
+					"Available days",
+					plan.onboardingProfile.availableDays?.length
+						? plan.onboardingProfile.availableDays.join(", ")
+						: "Not provided",
+				],
+				["Session length", plan.onboardingProfile.preferredSessionLength],
+				[
+					"Limitations",
+					plan.onboardingProfile.injuriesOrLimitations || "Not provided",
+				],
+				["Diet type", plan.onboardingProfile.dietType],
+				[
+					"Foods to avoid",
+					plan.onboardingProfile.allergiesOrFoodsToAvoid || "Not provided",
+				],
+				[
+					"Preferred meals/day",
+					plan.onboardingProfile.mealFrequencyPreference || "Not provided",
+				],
+			]
+		: [];
+
 	return (
 		<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 lg:grid-cols-12">
 			<DashboardCard className="p-8 lg:col-span-12">
@@ -91,64 +122,17 @@ export default function Plan({ authUser }: { authUser: AuthUser | null }) {
 
 			<DashboardCard className="p-8 lg:col-span-7">
 				<SectionHeading eyebrow="Preferences" title="User Summary" />
-				{plan.onboardingProfile ? (
+				{onboardingItems.length ? (
 					<div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-						<InfoTile
-							label="Experience"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatPlanLabel(plan.onboardingProfile.experienceLevel)}
-						</InfoTile>
-						<InfoTile
-							label="Location"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatPlanLabel(plan.onboardingProfile.trainingLocation)}
-						</InfoTile>
-						<InfoTile
-							label="Equipment"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatEquipment(plan.onboardingProfile.equipmentAvailable)}
-						</InfoTile>
-						<InfoTile
-							label="Available days"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{plan.onboardingProfile.availableDays?.length
-								? plan.onboardingProfile.availableDays.join(", ")
-								: "Not provided"}
-						</InfoTile>
-						<InfoTile
-							label="Session length"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatPlanLabel(plan.onboardingProfile.preferredSessionLength)}
-						</InfoTile>
-						<InfoTile
-							label="Limitations"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatPlanLabel(plan.onboardingProfile.injuriesOrLimitations)}
-						</InfoTile>
-						<InfoTile
-							label="Diet type"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatPlanLabel(plan.onboardingProfile.dietType)}
-						</InfoTile>
-						<InfoTile
-							label="Foods to avoid"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatPlanLabel(plan.onboardingProfile.allergiesOrFoodsToAvoid)}
-						</InfoTile>
-						<InfoTile
-							label="Preferred meals/day"
-							valueClassName="text-sm font-black capitalize leading-5 text-secondary"
-						>
-							{formatPlanLabel(plan.onboardingProfile.mealFrequencyPreference)}
-						</InfoTile>
+						{onboardingItems.map(([label, value]) => (
+							<InfoTile
+								key={label}
+								label={label}
+								valueClassName="text-sm font-black capitalize leading-5 text-secondary"
+							>
+								{formatPlanLabel(value)}
+							</InfoTile>
+						))}
 					</div>
 				) : (
 					<p className="mt-6 rounded-xl border border-border bg-surface-soft p-4 text-sm font-semibold text-muted">
@@ -160,15 +144,15 @@ export default function Plan({ authUser }: { authUser: AuthUser | null }) {
 			<DashboardCard className="p-8 lg:col-span-12">
 				<SectionHeading eyebrow="Nutrition summary" title="Daily Targets" />
 				<div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-					<InfoTile label="Daily calories">
-						{plan.nutrients.daily_calories} kcal
-					</InfoTile>
-					<InfoTile label="Meal frequency">
-						{plan.nutrients.meal_frequency} meals
-					</InfoTile>
-					<InfoTile label="Protein target">
-						{plan.nutrients.macros.protein_g}g
-					</InfoTile>
+					{[
+						["Daily calories", `${plan.nutrients.daily_calories} kcal`],
+						["Meal frequency", `${plan.nutrients.meal_frequency} meals`],
+						["Protein target", `${plan.nutrients.macros.protein_g}g`],
+					].map(([label, value]) => (
+						<InfoTile key={label} label={label}>
+							{value}
+						</InfoTile>
+					))}
 				</div>
 			</DashboardCard>
 

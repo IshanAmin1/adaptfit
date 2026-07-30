@@ -7,6 +7,14 @@ import type {
 } from "../../types/plan";
 import { formatPlanLabel } from "../../utils/plan-utils";
 
+const statusOptions: {
+	value: "completed" | "partial";
+	label: string;
+}[] = [
+	{ value: "completed", label: "Full" },
+	{ value: "partial", label: "Partial" },
+];
+
 function getTodayInputValue() {
 	return new Date().toISOString().slice(0, 10);
 }
@@ -23,6 +31,12 @@ function buildInitialExercises(
 		repsCompleted: "",
 		notes: "",
 	}));
+}
+
+function getStatusClasses(isActive: boolean) {
+	return isActive
+		? "border-primary bg-primary text-white"
+		: "border-control bg-white text-secondary hover:border-primary";
 }
 
 export default function WorkoutLogModal({
@@ -43,7 +57,7 @@ export default function WorkoutLogModal({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 
-	function replaceExercise(
+	function updateExercise(
 		index: number,
 		updatedExercise: WorkoutLogExerciseInput,
 	) {
@@ -58,7 +72,7 @@ export default function WorkoutLogModal({
 		const exercise = exercises[index];
 		const setsCompleted = status === "completed" ? exercise.targetSets : 0;
 
-		replaceExercise(index, {
+		updateExercise(index, {
 			...exercise,
 			completionStatus: status,
 			setsCompleted,
@@ -132,28 +146,18 @@ export default function WorkoutLogModal({
 										</p>
 									</div>
 									<div className="grid grid-cols-2 gap-2">
-										<button
-											type="button"
-											onClick={() => setExerciseStatus(index, "completed")}
-											className={`h-9 rounded-xl border px-3 text-xs font-black uppercase ${
-												exercise.completionStatus === "completed"
-													? "border-primary bg-primary text-white"
-													: "border-control bg-white text-secondary hover:border-primary"
-											}`}
-										>
-											Full
-										</button>
-										<button
-											type="button"
-											onClick={() => setExerciseStatus(index, "partial")}
-											className={`h-9 rounded-xl border px-3 text-xs font-black uppercase ${
-												exercise.completionStatus === "partial"
-													? "border-primary bg-primary text-white"
-													: "border-control bg-white text-secondary hover:border-primary"
-											}`}
-										>
-											Partial
-										</button>
+										{statusOptions.map((option) => (
+											<button
+												key={option.value}
+												type="button"
+												onClick={() => setExerciseStatus(index, option.value)}
+												className={`h-9 rounded-xl border px-3 text-xs font-black uppercase ${getStatusClasses(
+													exercise.completionStatus === option.value,
+												)}`}
+											>
+												{option.label}
+											</button>
+										))}
 									</div>
 								</div>
 
@@ -167,7 +171,7 @@ export default function WorkoutLogModal({
 												max={exercise.targetSets - 1}
 												value={exercise.setsCompleted}
 												onChange={(event) =>
-													replaceExercise(index, {
+													updateExercise(index, {
 														...exercise,
 														setsCompleted: Number(event.target.value),
 													})
@@ -183,7 +187,7 @@ export default function WorkoutLogModal({
 												step={1}
 												value={exercise.repsCompleted ?? ""}
 												onChange={(event) =>
-													replaceExercise(index, {
+													updateExercise(index, {
 														...exercise,
 														repsCompleted:
 															event.target.value === ""
@@ -200,7 +204,7 @@ export default function WorkoutLogModal({
 												value={exercise.notes || ""}
 												rows={2}
 												onChange={(event) =>
-													replaceExercise(index, {
+													updateExercise(index, {
 														...exercise,
 														notes: event.target.value,
 													})
