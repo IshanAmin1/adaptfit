@@ -60,6 +60,14 @@ export async function saveGeneratedPlan({
 	return serializePlan(createdPlan.toJSON());
 }
 
+export async function userHasGeneratedPlan(userId) {
+	const planCount = await Plan.count({
+		where: { user_id: userId },
+	});
+
+	return planCount > 0;
+}
+
 export async function findLatestPlanForUser(userId) {
 	const plan = await Plan.findOne({
 		where: { user_id: userId },

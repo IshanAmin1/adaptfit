@@ -5,5 +5,5 @@ export function getAuthenticatedPath(user: AuthUser) {
 		return "/subscribe";
 	}
 
-	return user.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
+	return user.hasGeneratedPlan ? "/dashboard" : "/onboarding";
 }

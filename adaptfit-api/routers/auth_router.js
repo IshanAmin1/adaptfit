@@ -3,6 +3,7 @@ import { Router } from "express";
 import { randomBytes } from "node:crypto";
 import { isAuthenticated } from "../middleware/auth.js";
 import { authRateLimit } from "../middleware/rate_limit.js";
+import { userHasGeneratedPlan } from "../utils/models/plans.js";
 import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
 import { serializeUser, upsertGoogleUser } from "../utils/models/users.js";
 import {
@@ -154,8 +155,13 @@ authRouter.get("/google/callback", authRateLimit, async (req, res) => {
 
 authRouter.get("/me", isAuthenticated, async (req, res) => {
 	try {
-		const billingStatus = await getBillingStatusForUser(req.user.id);
-		return res.json({ user: serializeUser(req.user, billingStatus) });
+		const [billingStatus, hasGeneratedPlan] = await Promise.all([
+			getBillingStatusForUser(req.user.id),
+			userHasGeneratedPlan(req.user.id),
+		]);
+		return res.json({
+			user: serializeUser(req.user, billingStatus, hasGeneratedPlan),
+		});
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ error: "Current user request failed." });
