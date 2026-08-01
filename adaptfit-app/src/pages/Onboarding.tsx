@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { authService } from "../api/auth-service";
 import { onboardingService } from "../api/onboarding-service";
 import type { OnboardingProgressEvent } from "../api/onboarding-service";
 import type { AuthUser } from "../types/auth";
@@ -269,6 +270,14 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const [submissionProgress, setSubmissionProgress] = useState<
 		OnboardingProgressEvent[]
 	>([]);
+
+	async function refreshCurrentUser(fallbackUser: AuthUser) {
+		try {
+			return (await authService.getCurrentUser()) ?? fallbackUser;
+		} catch {
+			return fallbackUser;
+		}
+	}
 	const isConfirmationStep = stepIndex === steps.length - 2;
 	const isResultStep = stepIndex === steps.length - 1;
 	const confirmationProgressPercent = Math.round(
@@ -307,7 +316,7 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 				isMounted = false;
 			};
 		}
-
+		// Promise.resolve() to chain the async tasks
 		Promise.resolve()
 			.then(() => {
 				if (isMounted) {
@@ -510,13 +519,14 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 					]);
 				},
 			);
+			const refreshedUser = await refreshCurrentUser(user);
 
-			onComplete(user);
+			onComplete(refreshedUser);
 			setSubmissionState({
 				status: "success",
 				message:
 					"Your onboarding details were saved and your first plan is ready.",
-				user,
+				user: refreshedUser,
 			});
 		} catch (error: unknown) {
 			const message =
@@ -1034,11 +1044,16 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 										size="sm"
 										className="h-10 min-w-40 px-10 disabled:cursor-not-allowed disabled:opacity-60"
 										disabled={isSubmitting || !submissionState.user}
-										onClick={() => {
-											if (submissionState.user) {
-												onComplete(submissionState.user);
-												navigate("/dashboard", { replace: true });
+										onClick={async () => {
+											if (!submissionState.user) {
+												return;
 											}
+
+											const refreshedUser = await refreshCurrentUser(
+												submissionState.user,
+											);
+											onComplete(refreshedUser);
+											navigate("/dashboard", { replace: true });
 										}}
 									>
 										Continue to dashboard

@@ -6,6 +6,10 @@ import { randomBytes } from "node:crypto";
 
 import { VALIDATE_ONBOARDING_QUEUE_NAME } from "../services/tasks.js";
 import { REDIS_HOST, REDIS_PORT } from "../config/env/storage.js";
+import { enqueuePlanGeneration } from "../routers/plans_router.js";
+import { saveOnboardingProfile } from "../utils/models/onboarding.js";
+import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
+import { serializeUser } from "../utils/models/users.js";
 
 try {
 	await sequelize.authenticate();
@@ -90,7 +94,40 @@ async function verifyOnboarding(profile, job) {
 	);
 
 	const invalidFields = ValidationResultSchema.parse(JSON.parse(content));
-	return { invalidFields };
+
+	if (invalidFields.length > 0) {
+		return { invalidFields };
+	}
+
+	await job.updateProgress({
+		stage: "saving",
+		message: "Saving your onboarding profile.",
+	});
+
+	const user = await saveOnboardingProfile(job.data.userId, profile);
+
+	if (!user) {
+		const error = new Error("User could not be found.");
+		error.status = 404;
+		throw error;
+	}
+
+	const billingStatus = await getBillingStatusForUser(user.id);
+	const serializedUser = serializeUser(user, billingStatus);
+
+	const planJob = await enqueuePlanGeneration(user.id, user.onboardingProfile);
+
+	await job.updateProgress({
+		stage: "plan_queued",
+		message: "Starting your first plan generation.",
+	});
+
+	return {
+		invalidFields,
+		user: serializedUser,
+		planJobId: planJob.jobId,
+		planStatusUrl: planJob.statusUrl,
+	};
 }
 
 new Worker(
