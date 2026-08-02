@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { AuthUser } from "../types/auth";
+import { getAuthenticatedPath } from "../utils/auth-utils";
 import { Button, ButtonLink } from "./common/Button";
 
 type NavbarProps = {
@@ -26,11 +27,7 @@ function getHomePath(authUser: AuthUser | null) {
 		return "/";
 	}
 
-	if (!authUser.hasActiveSubscription) {
-		return "/subscribe";
-	}
-
-	return authUser.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
+	return getAuthenticatedPath(authUser);
 }
 
 export default function Navbar({ authUser, onLogout }: NavbarProps) {
@@ -102,7 +99,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				aria-label="Main navigation"
 				className="hidden justify-center gap-7.5 md:flex"
 			>
-				{hasPaidAccess && authUser?.hasCompletedOnboarding
+				{hasPaidAccess && authUser?.hasGeneratedPlan
 					? navItems.map((item) => {
 							const className = getNavItemClassName(item);
 
@@ -151,7 +148,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 
 				{isMenuOpen ? (
 					<div className="absolute right-0 top-13 grid min-w-58 gap-2 rounded-xl border border-border bg-white p-3 shadow-[0_18px_45px_rgba(23,33,31,0.14)]">
-						{hasPaidAccess && authUser?.hasCompletedOnboarding
+						{hasPaidAccess && authUser?.hasGeneratedPlan
 							? navItems.map((item) => (
 									<Link
 										key={item.href}

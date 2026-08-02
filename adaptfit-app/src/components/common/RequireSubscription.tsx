@@ -31,7 +31,7 @@ export default function RequireSubscription({
 		return <Navigate to="/subscribe" replace />;
 	}
 
-	if (requireOnboarding && !authUser.hasCompletedOnboarding) {
+	if (requireOnboarding && !authUser.hasGeneratedPlan) {
 		return <Navigate to="/onboarding" replace />;
 	}
 

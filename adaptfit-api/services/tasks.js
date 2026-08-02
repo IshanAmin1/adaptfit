@@ -76,3 +76,33 @@ export async function enqueueUserJob(queueName, userId, data) {
 		removeOnFail: { age: 3600 },
 	});
 }
+
+/**
+ * Finds the current active job for a user on a queue, if one exists.
+ * @param {string} queueName
+ * @param {string} userId
+ * @returns {Promise<{ jobId: string, statusUrl: string, state: string } | null>}
+ */
+export async function findActiveUserJob(queueName, userId) {
+	const { queue } = getQueueWithListener(queueName);
+	const jobId = `${queueName}-${userId}`;
+	const job = await queue.getJob(jobId);
+
+	if (!job) {
+		return null;
+	}
+
+	const state = await job.getState();
+
+	if (!ACTIVE_JOB_STATES.has(state)) {
+		return null;
+	}
+
+	const statusPath = QUEUE_STATUS_PATHS[queueName];
+
+	return {
+		jobId: job.id,
+		statusUrl: `${statusPath}/${job.id}/stream`,
+		state,
+	};
+}

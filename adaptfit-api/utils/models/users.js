@@ -1,6 +1,10 @@
 import { User } from "../../models/index.js";
 
-export function serializeUser(user, billingStatus = null) {
+export function serializeUser(
+	user,
+	billingStatus = null,
+	hasGeneratedPlan = false,
+) {
 	return {
 		id: user.id,
 		email: user.email,
@@ -11,6 +15,7 @@ export function serializeUser(user, billingStatus = null) {
 		hasActiveSubscription: Boolean(billingStatus?.hasActiveSubscription),
 		subscription: billingStatus?.subscription || null,
 		hasCompletedOnboarding: Boolean(user.onboardingProfile?.completed_at),
+		hasGeneratedPlan: Boolean(hasGeneratedPlan),
 	};
 }
 

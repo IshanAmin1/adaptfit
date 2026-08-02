@@ -20,5 +20,6 @@ export type AuthUser = {
 	avatarUrl?: string | null;
 	hasActiveSubscription: boolean;
 	hasCompletedOnboarding: boolean;
+	hasGeneratedPlan: boolean;
 	subscription?: UserSubscription | null;
 };

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { authService } from "../api/auth-service";
 import { onboardingService } from "../api/onboarding-service";
 import type { OnboardingProgressEvent } from "../api/onboarding-service";
 import type { AuthUser } from "../types/auth";
@@ -176,6 +177,10 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const [profile, setProfile] = useState<OnboardingProfile>(initialProfile);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isCheckingPendingJob, setIsCheckingPendingJob] = useState(() =>
+		Boolean(authUser),
+	);
+	const [hasPendingJob, setHasPendingJob] = useState(false);
 	const [submissionState, setSubmissionState] = useState<{
 		status: "idle" | "success" | "error";
 		message: string | null;
@@ -188,6 +193,14 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const [submissionProgress, setSubmissionProgress] = useState<
 		OnboardingProgressEvent[]
 	>([]);
+
+	async function refreshCurrentUser(fallbackUser: AuthUser) {
+		try {
+			return (await authService.getCurrentUser()) ?? fallbackUser;
+		} catch {
+			return fallbackUser;
+		}
+	}
 	const isConfirmationStep = stepIndex === steps.length - 2;
 	const isResultStep = stepIndex === steps.length - 1;
 	const confirmationProgressPercent = Math.round(
@@ -212,8 +225,125 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const progressPercent = isResultStep
 		? submissionProgressPercent
 		: Math.round((stepIndex / Math.max(steps.length - 1, 1)) * 100);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		if (!authUser) {
+			return () => {
+				isMounted = false;
+			};
+		}
+		// Promise.resolve() to chain the async tasks
+		Promise.resolve()
+			.then(() => {
+				if (isMounted) {
+					setIsCheckingPendingJob(true);
+				}
+
+				return onboardingService.getPendingJob();
+			})
+			.then((pendingJob) => {
+				if (!isMounted) {
+					return;
+				}
+
+				if (!pendingJob) {
+					setHasPendingJob(false);
+					return;
+				}
+
+				setHasPendingJob(true);
+				setIsSubmitting(true);
+				setErrorMessage(null);
+				setStepIndex(steps.length - 1);
+				setSubmissionProgress([
+					{
+						stage: "reconnected",
+						message: "Reconnected to your in-progress request.",
+					},
+				]);
+				setSubmissionState({
+					status: "idle",
+					message: null,
+					user: null,
+				});
+
+				onboardingService
+					.streamPendingJobWithProgress(
+						pendingJob.statusUrl,
+						authUser,
+						(progressEvent) => {
+							if (isMounted) {
+								setSubmissionProgress((currentProgress) => [
+									...currentProgress,
+									progressEvent,
+								]);
+							}
+						},
+					)
+					.then((user) => {
+						if (!isMounted) {
+							return;
+						}
+
+						onComplete(user);
+						setSubmissionState({
+							status: "success",
+							message:
+								"Your onboarding details were saved and your first plan is ready.",
+							user,
+						});
+					})
+					.catch((error: unknown) => {
+						if (!isMounted) {
+							return;
+						}
+
+						const message =
+							error instanceof Error
+								? error.message
+								: "Your in-progress request could not be resumed.";
+
+						setSubmissionState({
+							status: "error",
+							message,
+							user: null,
+						});
+					})
+					.finally(() => {
+						if (isMounted) {
+							setIsSubmitting(false);
+							setHasPendingJob(false);
+						}
+					});
+			})
+			.catch(() => {
+				if (isMounted) {
+					setHasPendingJob(false);
+				}
+			})
+			.finally(() => {
+				if (isMounted) {
+					setIsCheckingPendingJob(false);
+				}
+			});
+
+		return () => {
+			isMounted = false;
+		};
+	}, [authUser, onComplete]);
+
+	if (isCheckingPendingJob) {
+		return (
+			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-muted">
+				Loading
+			</div>
+		);
+	}
 	if (
-		authUser?.hasCompletedOnboarding &&
+		authUser?.hasGeneratedPlan &&
+		!hasPendingJob &&
 		!isConfirmationStep &&
 		!isResultStep
 	) {
@@ -306,12 +436,14 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 					]);
 				},
 			);
+			const refreshedUser = await refreshCurrentUser(user);
 
+			onComplete(refreshedUser);
 			setSubmissionState({
 				status: "success",
 				message:
 					"Your onboarding details were saved and your first plan is ready.",
-				user,
+				user: refreshedUser,
 			});
 		} catch (error: unknown) {
 			const message =
@@ -421,10 +553,6 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-start px-4 py-8 md:px-12">
-			{isSubmitting ? (
-				<div className="fixed inset-0 z-[80] cursor-wait" aria-hidden="true" />
-			) : null}
-
 			<section className="mx-auto grid w-full max-w-264 content-start gap-8 rounded-xl border border-border bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:p-10">
 				<div className="grid gap-4">
 					<div className="flex flex-wrap items-end justify-between gap-4">
@@ -490,11 +618,17 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 							submissionState={submissionState}
 							onBack={goToPreviousStep}
 							onEditSubmission={handleEditSubmission}
-							onContinue={() => {
-								if (submissionState.user) {
-									onComplete(submissionState.user);
-									navigate("/dashboard", { replace: true });
+							onContinue={async () => {
+								if (!submissionState.user) {
+									return;
 								}
+
+								const refreshedUser = await refreshCurrentUser(
+									submissionState.user,
+								);
+
+								onComplete(refreshedUser);
+								navigate("/dashboard", { replace: true });
 							}}
 						/>
 					</div>

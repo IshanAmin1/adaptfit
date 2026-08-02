@@ -1,4 +1,5 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { authService } from "./auth-service";
 import type { AuthUser } from "../types/auth";
 import { OnboardingProfile } from "../types/onboarding";
 import { apiFetch, getApiUrl } from "../utils/api.js";
@@ -47,6 +48,20 @@ type StartOnboardingJobResponse = {
 	statusUrl: string;
 };
 
+export type PendingOnboardingJob = {
+	pending: true;
+	queueName: string;
+	jobId: string;
+	statusUrl: string;
+	state: string;
+};
+
+type PendingOnboardingJobResponse =
+	| PendingOnboardingJob
+	| {
+			pending: false;
+	  };
+
 type OnboardingErrorResponse = {
 	error?: string;
 	message?: string;
@@ -93,7 +108,109 @@ async function streamStatus(
 	});
 }
 
+async function refreshUserAfterPlanGeneration(fallbackUser: AuthUser) {
+	try {
+		const refreshedUser = await authService.getCurrentUser();
+		return refreshedUser ?? fallbackUser;
+	} catch {
+		return fallbackUser;
+	}
+}
+
+async function streamPlanGeneration(
+	planStatusUrl: string,
+	onProgress: (event: OnboardingProgressEvent) => void,
+) {
+	await streamStatus(planStatusUrl, (event) => {
+		if (event.type === "progress") {
+			onProgress({
+				stage: event.stage,
+				message: event.message,
+			});
+			return;
+		}
+
+		if (event.type === "error") {
+			const message =
+				event.error || event.message || "Plan generation request failed";
+
+			onProgress({
+				stage: "error",
+				message,
+			});
+			throw new Error(message);
+		}
+	});
+}
+
 export const onboardingService = {
+	async getPendingJob(): Promise<PendingOnboardingJob | null> {
+		const response = await apiFetch(`/onboarding/pending`, {
+			method: "GET",
+		});
+
+		const body = (await response.json().catch(() => null)) as
+			PendingOnboardingJobResponse | OnboardingErrorResponse | null;
+
+		if (!response.ok) {
+			const message =
+				body && "error" in body
+					? body.error || body.message
+					: "Pending onboarding status could not be loaded.";
+			throw new Error(
+				message || "Pending onboarding status could not be loaded.",
+			);
+		}
+
+		if (body && "pending" in body && body.pending) {
+			return body;
+		}
+
+		return null;
+	},
+
+	async streamPendingJobWithProgress(
+		statusUrl: string,
+		fallbackUser: AuthUser,
+		onProgress: (event: OnboardingProgressEvent) => void,
+	): Promise<AuthUser> {
+		let completedUser: AuthUser | null = null;
+		let planStatusUrl: string | null = null;
+
+		await streamStatus(statusUrl, (event) => {
+			if (event.type === "progress") {
+				onProgress({
+					stage: event.stage,
+					message: event.message,
+				});
+				return;
+			}
+
+			if (event.type === "error") {
+				const message =
+					event.error || event.message || "Onboarding request failed";
+
+				onProgress({
+					stage: "error",
+					message,
+				});
+				throw new Error(message);
+			}
+
+			if (event.type === "complete" && "user" in event) {
+				completedUser = event.user;
+				planStatusUrl = event.planStatusUrl ?? null;
+			}
+		});
+
+		if (planStatusUrl) {
+			await streamPlanGeneration(planStatusUrl, onProgress);
+			return refreshUserAfterPlanGeneration(completedUser ?? fallbackUser);
+		}
+
+		return completedUser ?? fallbackUser;
+	},
+
 	async submitProfileWithProgress(
 		profile: OnboardingProfile,
 		onProgress: (event: OnboardingProgressEvent) => void,
@@ -165,26 +282,8 @@ export const onboardingService = {
 		}
 
 		if (planStatusUrl) {
-			await streamStatus(planStatusUrl, (event) => {
-				if (event.type === "progress") {
-					onProgress({
-						stage: event.stage,
-						message: event.message,
-					});
-					return;
-				}
-
-				if (event.type === "error") {
-					const message =
-						event.error || event.message || "Plan generation request failed";
-
-					onProgress({
-						stage: "error",
-						message,
-					});
-					throw new Error(message);
-				}
-			});
+			await streamPlanGeneration(planStatusUrl, onProgress);
+			return refreshUserAfterPlanGeneration(completedUser);
 		}
 
 		return completedUser;

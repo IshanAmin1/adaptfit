@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { billingService } from "../api/billing-service";
 import { Button } from "../components/common/Button";
 import type { AuthUser } from "../types/auth";
+import { getAuthenticatedPath } from "../utils/auth-utils";
 
 type SubscribeProps = {
 	authChecked: boolean;
@@ -23,7 +24,44 @@ function formatSubscriptionDate(value?: string | null) {
 }
 
 function getSubscribedPath(user: AuthUser) {
-	return user.hasCompletedOnboarding ? "/dashboard" : "/onboarding";
+	return getAuthenticatedPath(user);
+}
+
+function getSubscriptionDateText(authUser: AuthUser | null) {
+	const subscription = authUser?.subscription;
+
+	if (!subscription) {
+		return null;
+	}
+
+	if (subscription.endedAt) {
+		const endedDate = formatSubscriptionDate(subscription.endedAt);
+		return endedDate ? `Ended ${endedDate}.` : "Ended.";
+	}
+
+	if (subscription.cancelAt) {
+		const cancelDate = formatSubscriptionDate(subscription.cancelAt);
+		return cancelDate ? `Access ends ${cancelDate}.` : "Canceling soon.";
+	}
+
+	if (subscription.cancelAtPeriodEnd) {
+		const periodEndDate = formatSubscriptionDate(subscription.currentPeriodEnd);
+		return periodEndDate
+			? `Access ends ${periodEndDate}.`
+			: "Access ends at the end of the billing period.";
+	}
+
+	if (authUser?.hasActiveSubscription) {
+		const renewalDate = formatSubscriptionDate(subscription.currentPeriodEnd);
+		return renewalDate ? `Renews ${renewalDate}.` : null;
+	}
+
+	if (subscription.canceledAt) {
+		const canceledDate = formatSubscriptionDate(subscription.canceledAt);
+		return canceledDate ? `Canceled ${canceledDate}.` : "Canceled.";
+	}
+
+	return null;
 }
 
 export default function Subscribe({
@@ -37,45 +75,8 @@ export default function Subscribe({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const isSuccessReturn = location.pathname === "/subscribe/success";
 	const authUserId = authUser?.id;
-	// cache the subscription date text to avoid unnecessary re-renders when the authUser object changes
-	const subscriptionDateText = useMemo(() => {
-		const subscription = authUser?.subscription;
 
-		if (!subscription) {
-			return null;
-		}
-
-		if (subscription.endedAt) {
-			const endedDate = formatSubscriptionDate(subscription.endedAt);
-			return endedDate ? `Ended ${endedDate}.` : "Ended.";
-		}
-
-		if (subscription.cancelAt) {
-			const cancelDate = formatSubscriptionDate(subscription.cancelAt);
-			return cancelDate ? `Access ends ${cancelDate}.` : "Canceling soon.";
-		}
-
-		if (subscription.cancelAtPeriodEnd) {
-			const periodEndDate = formatSubscriptionDate(
-				subscription.currentPeriodEnd,
-			);
-			return periodEndDate
-				? `Access ends ${periodEndDate}.`
-				: "Access ends at the end of the billing period.";
-		}
-
-		if (authUser?.hasActiveSubscription) {
-			const renewalDate = formatSubscriptionDate(subscription.currentPeriodEnd);
-			return renewalDate ? `Renews ${renewalDate}.` : null;
-		}
-
-		if (subscription.canceledAt) {
-			const canceledDate = formatSubscriptionDate(subscription.canceledAt);
-			return canceledDate ? `Canceled ${canceledDate}.` : "Canceled.";
-		}
-
-		return null;
-	}, [authUser?.hasActiveSubscription, authUser?.subscription]);
+	const subscriptionDateText = getSubscriptionDateText(authUser);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -186,7 +187,7 @@ export default function Subscribe({
 									disabled={isLoading}
 									onClick={() => navigate(getSubscribedPath(authUser))}
 								>
-									{authUser.hasCompletedOnboarding
+									{authUser.hasGeneratedPlan
 										? "Open dashboard"
 										: "Start onboarding"}
 								</Button>

@@ -5,6 +5,8 @@ import { hasActiveSubscription } from "../middleware/subscription.js";
 import * as z from "zod";
 import {
 	enqueueUserJob,
+	findActiveUserJob,
+	GENERATE_PLAN_QUEUE_NAME,
 	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
 import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
@@ -208,7 +210,6 @@ async function completeOnboardingFromValidationResult(
 		planStatusUrl: planJob.statusUrl,
 	};
 }
-
 onboardingRouter.post(
 	"/",
 	isAuthenticated,
@@ -243,6 +244,48 @@ onboardingRouter.post(
 			return res
 				.status(503)
 				.json({ error: "Onboarding validation could not be started." });
+		}
+	},
+);
+
+onboardingRouter.get(
+	"/pending",
+	isAuthenticated,
+	hasActiveSubscription,
+	async (req, res) => {
+		try {
+			const validationJob = await findActiveUserJob(
+				VALIDATE_ONBOARDING_QUEUE_NAME,
+				req.user.id,
+			);
+
+			if (validationJob) {
+				return res.json({
+					pending: true,
+					queueName: VALIDATE_ONBOARDING_QUEUE_NAME,
+					...validationJob,
+				});
+			}
+
+			const planJob = await findActiveUserJob(
+				GENERATE_PLAN_QUEUE_NAME,
+				req.user.id,
+			);
+
+			if (planJob) {
+				return res.json({
+					pending: true,
+					queueName: GENERATE_PLAN_QUEUE_NAME,
+					...planJob,
+				});
+			}
+
+			return res.json({ pending: false });
+		} catch (error) {
+			console.error(error);
+			return res
+				.status(503)
+				.json({ error: "Pending onboarding status could not be loaded." });
 		}
 	},
 );
