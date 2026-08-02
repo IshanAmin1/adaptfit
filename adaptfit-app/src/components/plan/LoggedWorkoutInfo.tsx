@@ -1,24 +1,10 @@
 import type { WorkoutLog } from "../../types/plan";
 
-type LoggedWorkoutInfoProps = {
-	workoutLog: WorkoutLog;
-};
-
-function formatLoggedExerciseResult(exercise: WorkoutLog["exercises"][number]) {
-	if (exercise.completionStatus === "completed") {
-		return "Full";
-	}
-
-	return `${exercise.setsCompleted} sets x ${exercise.repsCompleted ?? 0} reps`;
-}
-
-function hasText(value: string | null | undefined) {
-	return Boolean(value?.trim());
-}
-
 export default function LoggedWorkoutInfo({
 	workoutLog,
-}: LoggedWorkoutInfoProps) {
+}: {
+	workoutLog: WorkoutLog;
+}) {
 	return (
 		<div className="grid gap-3 rounded-xl border border-control bg-surface-soft p-5">
 			<div>
@@ -40,10 +26,14 @@ export default function LoggedWorkoutInfo({
 								{exercise.exerciseName}
 							</p>
 							<p className="m-0 text-xs font-black uppercase tracking-widest text-primary">
-								{formatLoggedExerciseResult(exercise)}
+								{exercise.completionStatus === "completed"
+									? "Full"
+									: `${exercise.setsCompleted} sets x ${
+											exercise.repsCompleted ?? 0
+										} reps`}
 							</p>
 						</div>
-						{hasText(exercise.notes) ? (
+						{exercise.notes?.trim() ? (
 							<p className="m-0 text-sm font-semibold leading-5 text-muted">
 								{exercise.notes}
 							</p>
@@ -51,7 +41,7 @@ export default function LoggedWorkoutInfo({
 					</div>
 				))}
 			</div>
-			{hasText(workoutLog.notes) ? (
+			{workoutLog.notes?.trim() ? (
 				<div className="rounded-xl border border-border bg-white px-3 py-2">
 					<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 						Comments

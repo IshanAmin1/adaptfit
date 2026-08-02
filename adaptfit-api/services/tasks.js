@@ -61,6 +61,8 @@ export async function enqueueUserJob(queueName, userId, data) {
 			error.statusUrl = `${statusPath}/${existingJob.id}/stream`;
 			throw error;
 		}
+
+		await existingJob.remove();
 	}
 
 	return queue.add(`${queueName}-${userId}`, data, {

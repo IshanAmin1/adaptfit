@@ -41,6 +41,19 @@ export function formatEquipment(equipment: string[]) {
 		.join(", ");
 }
 
+export function formatPlanLabel(value: string | null | undefined) {
+	if (!value) {
+		return "Not provided";
+	}
+
+	return value
+		.replace(/_/g, " ")
+		.split(" ")
+		.filter(Boolean)
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(" ");
+}
+
 export function formatGeneratedDate(value?: string) {
 	if (!value) {
 		return "Recently generated";

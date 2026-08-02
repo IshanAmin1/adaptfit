@@ -91,10 +91,11 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				to={getHomePath(authUser)}
 				className="flex items-center gap-2.5 text-[22px] font-black text-inherit no-underline"
 			>
-				<div className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-primary font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)]">
-					<span className="relative z-10 text-[23px] leading-none">A</span>
-					<span className="absolute bottom-1.5 h-1 w-5 bg-white/80" />
-				</div>
+				<img
+					src="/assets/logo.png"
+					alt="AdaptFit"
+					className="h-10 w-10 rounded-xl object-cover"
+				/>
 				<div>AdaptFit</div>
 			</Link>
 			<nav
