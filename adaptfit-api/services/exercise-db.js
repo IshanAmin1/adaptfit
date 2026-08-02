@@ -4,43 +4,6 @@ import {
 	EXERCISE_DB_RAPIDAPI_KEY,
 } from "../config/env/exercisedb.js";
 
-const MIN_EXERCISE_MATCH_SCORE = 80;
-const EXERCISE_NAME_MODIFIERS = new Set([
-	"alternating",
-	"assisted",
-	"band",
-	"barbell",
-	"bodyweight",
-	"cable",
-	"close",
-	"decline",
-	"dumbbell",
-	"ez",
-	"flat",
-	"incline",
-	"kettlebell",
-	"machine",
-	"neutral",
-	"one",
-	"plate",
-	"resistance",
-	"seated",
-	"single",
-	"smith",
-	"standing",
-	"supported",
-	"two",
-	"wide",
-]);
-
-function getHeaders() {
-	return {
-		"x-rapidapi-key": EXERCISE_DB_RAPIDAPI_KEY,
-		"x-rapidapi-host": EXERCISE_DB_RAPIDAPI_HOST,
-		"Content-Type": "application/json",
-	};
-}
-
 async function requestExerciseDb(path) {
 	if (!EXERCISE_DB_RAPIDAPI_KEY) {
 		throw new Error("Exercise DB RapidAPI key is not configured.");
@@ -48,7 +11,11 @@ async function requestExerciseDb(path) {
 
 	const response = await fetch(`${EXERCISE_DB_BASE_URL}${path}`, {
 		method: "GET",
-		headers: getHeaders(),
+		headers: {
+			"x-rapidapi-key": EXERCISE_DB_RAPIDAPI_KEY,
+			"x-rapidapi-host": EXERCISE_DB_RAPIDAPI_HOST,
+			"Content-Type": "application/json",
+		},
 	});
 	const body = await response.json().catch(() => null);
 
@@ -69,63 +36,32 @@ function normalizeName(value) {
 		.trim();
 }
 
-function getCoreNameTerms(value) {
-	return normalizeName(value)
-		.split(" ")
-		.filter((term) => term && !EXERCISE_NAME_MODIFIERS.has(term));
-}
-
-function scoreExerciseMatch(query, exercise) {
+function isExerciseMatch(query, exercise) {
 	const normalizedQuery = normalizeName(query);
 	const normalizedName = normalizeName(exercise.name);
-	const normalizedQueryCore = getCoreNameTerms(query).join(" ");
-	const normalizedNameCore = getCoreNameTerms(exercise.name).join(" ");
 
-	if (!normalizedName) {
-		return 0;
-	}
-
-	const isExactMatch = normalizedName === normalizedQuery;
-	const isPartialMatch =
+	return (
+		normalizedName === normalizedQuery ||
 		normalizedName.includes(normalizedQuery) ||
-		normalizedQuery.includes(normalizedName);
-	const isCoreMovementMatch =
-		normalizedQueryCore &&
-		normalizedNameCore &&
-		normalizedQueryCore === normalizedNameCore;
-
-	if (isExactMatch) {
-		return 100;
-	}
-
-	if (isPartialMatch || isCoreMovementMatch) {
-		return 80;
-	}
-
-	return 0;
+		normalizedQuery.includes(normalizedName)
+	);
 }
 
-function pickBestSearchResult(query, exercises) {
-	let bestExercise = null;
-	let bestScore = 0;
-
+function findMatchingExercise(query, exercises) {
 	for (const exercise of exercises) {
 		if (!exercise.exerciseId || !exercise.name) {
 			continue;
 		}
 
-		const score = scoreExerciseMatch(query, exercise);
-
-		if (score > bestScore) {
-			bestExercise = exercise;
-			bestScore = score;
+		if (isExerciseMatch(query, exercise)) {
+			return exercise;
 		}
 	}
 
-	return bestScore >= MIN_EXERCISE_MATCH_SCORE ? bestExercise : null;
+	return null;
 }
 
-export async function searchExercises(search) {
+async function searchExercises(search) {
 	const body = await requestExerciseDb(
 		`/exercises/search?search=${encodeURIComponent(search)}`,
 	);
@@ -134,7 +70,8 @@ export async function searchExercises(search) {
 }
 
 export async function findExerciseReference(search) {
-	const match = pickBestSearchResult(search, await searchExercises(search));
+	const exercises = await searchExercises(search);
+	const match = findMatchingExercise(search, exercises);
 
 	return match
 		? {
@@ -173,22 +110,18 @@ export async function planWithExerciseReferencesFromAPI(plan) {
 
 	const referencesByName = new Map();
 
-	await Promise.all(
-		[...exerciseNames].map(async (exerciseName) => {
-			try {
-				referencesByName.set(
-					exerciseName,
-					await findExerciseReference(exerciseName),
-				);
-			} catch (error) {
-				console.warn(
-					`Exercise DB lookup failed for "${exerciseName}":`,
-					error.message,
-				);
-				referencesByName.set(exerciseName, null);
-			}
-		}),
-	);
+	for (const exerciseName of exerciseNames) {
+		try {
+			const reference = await findExerciseReference(exerciseName);
+			referencesByName.set(exerciseName, reference);
+		} catch (error) {
+			console.warn(
+				`Exercise DB lookup failed for "${exerciseName}":`,
+				error.message,
+			);
+			referencesByName.set(exerciseName, null);
+		}
+	}
 
 	return {
 		...plan,

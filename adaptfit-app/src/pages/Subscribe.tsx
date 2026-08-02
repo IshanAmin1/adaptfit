@@ -163,10 +163,10 @@ export default function Subscribe({
 
 	return (
 		<div className="mx-auto grid min-h-[calc(100vh-78px)] w-full max-w-336 items-center px-4 py-8 md:px-12">
-			<section className="mx-auto grid w-full max-w-256 gap-8 rounded-xl border border-border bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[1fr_0.85fr] md:p-10">
+			<section className="mx-auto grid w-full max-w-5xl gap-8 rounded-xl border border-border bg-white p-6 shadow-[0_24px_70px_rgba(23,33,31,0.10)] md:grid-cols-[1fr_0.85fr] md:p-10">
 				<div className="flex flex-col justify-center gap-6">
 					<div>
-						<p className="mb-3 text-xs font-black uppercase tracking-[0.1em] text-primary">
+						<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
 							AdaptFit membership
 						</p>
 						<h1 className="m-0 text-[clamp(2rem,6vw,3.5rem)] font-black leading-none text-secondary">
@@ -227,16 +227,16 @@ export default function Subscribe({
 
 				<div className="grid content-center gap-4 rounded-xl bg-primary-subtle p-6">
 					<div>
-						<p className="m-0 text-xs font-black uppercase tracking-[0.1em] text-muted">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 							Signed in as
 						</p>
-						<p className="mt-2 break-words text-lg font-black text-secondary">
+						<p className="mt-2 wrap-break-word text-lg font-black text-secondary">
 							{authUser.email}
 						</p>
 					</div>
 					<div className="h-px bg-border" />
 					<div>
-						<p className="m-0 text-xs font-black uppercase tracking-[0.1em] text-muted">
+						<p className="m-0 text-xs font-black uppercase tracking-widest text-muted">
 							Status
 						</p>
 						<p className="mt-2 text-2xl font-black text-secondary">

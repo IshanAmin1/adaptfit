@@ -8,11 +8,11 @@ import { MuscleGroupChart } from "../components/plan/PlanCharts";
 import PlanState from "../components/plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
 import type { AuthUser } from "../types/auth";
-import { formatEquipment, formatGeneratedDate } from "../utils/plan-utils";
-
-type PlanProps = {
-	authUser: AuthUser | null;
-};
+import {
+	formatEquipment,
+	formatGeneratedDate,
+	formatPlanLabel,
+} from "../utils/plan-utils";
 
 function getPlanTitle(authUser: AuthUser | null) {
 	const name =
@@ -21,7 +21,7 @@ function getPlanTitle(authUser: AuthUser | null) {
 	return name ? `${name}'s Plan` : "Your Plan";
 }
 
-export default function Plan({ authUser }: PlanProps) {
+export default function Plan({ authUser }: { authUser: AuthUser | null }) {
 	const { plan, isLoading, errorMessage } = useLatestPlan();
 
 	if (isLoading) {
@@ -100,7 +100,7 @@ export default function Plan({ authUser }: PlanProps) {
 						label="Primary goal"
 						valueClassName="text-lg font-black capitalize text-secondary"
 					>
-						{plan.metadata.user_goal.replace(/_/g, " ")}
+						{formatPlanLabel(plan.metadata.user_goal)}
 					</InfoTile>
 					<InfoTile
 						label="Target description"
@@ -130,7 +130,7 @@ export default function Plan({ authUser }: PlanProps) {
 								label={label}
 								valueClassName="text-sm font-black capitalize leading-5 text-secondary"
 							>
-								{value.replace(/_/g, " ")}
+								{formatPlanLabel(value)}
 							</InfoTile>
 						))}
 					</div>
@@ -170,7 +170,7 @@ export default function Plan({ authUser }: PlanProps) {
 										{session.day}
 									</p>
 									<p className="mt-1 truncate text-lg font-black text-secondary">
-										{session.session_type}
+										{formatPlanLabel(session.session_type)}
 									</p>
 								</div>
 								<div className="flex items-center justify-center gap-3">

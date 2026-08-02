@@ -14,7 +14,12 @@ export function getQueueWithListener(queueName) {
 	if (!queueWithListener) {
 		queueWithListener = {
 			queue: new Queue(queueName, {
-				connection: { host: REDIS_HOST, port: REDIS_PORT },
+				connection: {
+					host: REDIS_HOST,
+					port: REDIS_PORT,
+					removeOnComplete: true,
+					removeOnFail: true,
+				},
 			}),
 			listener: new QueueEvents(queueName, {
 				connection: { host: REDIS_HOST, port: REDIS_PORT },
@@ -61,6 +66,8 @@ export async function enqueueUserJob(queueName, userId, data) {
 			error.statusUrl = `${statusPath}/${existingJob.id}/stream`;
 			throw error;
 		}
+
+		await existingJob.remove();
 	}
 
 	return queue.add(`${queueName}-${userId}`, data, {

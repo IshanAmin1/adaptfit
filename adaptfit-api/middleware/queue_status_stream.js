@@ -101,6 +101,7 @@ export function streamQueueJobStatus(queueName, onCompleted) {
 					type: "error",
 					error: error.message || "Request could not be completed.",
 					invalidFields: error.invalidFields,
+					rejectionReasons: error.rejectionReasons,
 				});
 			}
 

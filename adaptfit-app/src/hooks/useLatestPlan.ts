@@ -40,5 +40,5 @@ export function useLatestPlan() {
 		};
 	}, []);
 
-	return { plan, isLoading, errorMessage };
+	return { plan, setPlan, isLoading, errorMessage };
 }

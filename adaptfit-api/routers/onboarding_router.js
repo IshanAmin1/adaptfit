@@ -10,6 +10,10 @@ import {
 	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
 import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
+import { enqueuePlanGeneration } from "./plans_router.js";
+import { saveOnboardingProfile } from "../utils/models/onboarding.js";
+import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
+import { serializeUser } from "../utils/models/users.js";
 
 export const onboardingRouter = Router();
 
@@ -77,7 +81,7 @@ const OnboardingProfileSchema = z
 	.superRefine((profile, ctx) => {
 		if (new Set(profile.availableDays).size !== profile.availableDays.length) {
 			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
+				code: "custom",
 				path: ["availableDays"],
 				message: "availableDays must not contain duplicate days",
 			});
@@ -88,16 +92,35 @@ const OnboardingProfileSchema = z
 			profile.machineTypes.length > 0
 		) {
 			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
+				code: "custom",
 				path: ["machineTypes"],
 				message: "machineTypes requires machines to be selected",
 			});
 		}
+
+		if (
+			profile.equipmentAvailable.includes("machines") &&
+			profile.machineTypes.length <= 0 &&
+			!profile.customMachines
+		) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["customMachines"],
+				message: "customMachines must be specified if no machines are selected",
+			});
+		}
 	});
 
-function formatValidationError(invalidFields) {
+function formatValidationError(invalidFields, rejectionReasons = {}) {
 	const count = invalidFields.length;
 	const label = count === 1 ? "issue" : "issues";
+	const reasons = invalidFields
+		.map((field) => rejectionReasons[field])
+		.filter(Boolean);
+
+	if (reasons.length > 0) {
+		return `You need to fix ${count} ${label}: ${reasons.join(" ")}`;
+	}
 
 	return `You need to fix ${count} ${label}: ${invalidFields.join(", ")}.`;
 }
@@ -134,6 +157,59 @@ function validateProfile(profile) {
 	};
 }
 
+async function completeOnboardingFromValidationResult(
+	validationResult,
+	profile,
+	userId,
+	sendProgress,
+) {
+	const invalidFields = validationResult?.invalidFields || [];
+	const rejectionReasons = validationResult?.rejectionReasons || {};
+
+	if (invalidFields.length > 0) {
+		const error = new Error(
+			formatValidationError(invalidFields, rejectionReasons),
+		);
+		error.status = 422;
+		error.invalidFields = invalidFields;
+		error.rejectionReasons = rejectionReasons;
+		throw error;
+	}
+
+	sendProgress({
+		stage: "saving",
+		message: "Saving your onboarding profile.",
+	});
+
+	const user = await saveOnboardingProfile(userId, profile);
+
+	if (!user) {
+		const error = new Error("User could not be found.");
+		error.status = 404;
+		throw error;
+	}
+
+	const billingStatus = await getBillingStatusForUser(user.id);
+	const serializedUser = serializeUser(user, billingStatus);
+
+	sendProgress({
+		stage: "complete",
+		message: "Your onboarding profile is ready.",
+	});
+
+	const planJob = await enqueuePlanGeneration(userId, user.onboardingProfile);
+
+	sendProgress({
+		stage: "plan_queued",
+		message: "Starting your first plan generation.",
+	});
+
+	return {
+		user: serializedUser,
+		planJobId: planJob.jobId,
+		planStatusUrl: planJob.statusUrl,
+	};
+}
 onboardingRouter.post(
 	"/",
 	isAuthenticated,
@@ -159,6 +235,7 @@ onboardingRouter.post(
 				return res.status(error.status).json({
 					error: error.message,
 					invalidFields: error.invalidFields,
+					rejectionReasons: error.rejectionReasons,
 					jobId: error.jobId,
 					statusUrl: error.statusUrl,
 				});
@@ -219,17 +296,17 @@ onboardingRouter.get(
 	hasActiveSubscription,
 	streamQueueJobStatus(
 		VALIDATE_ONBOARDING_QUEUE_NAME,
-		async ({ returnvalue, send }) => {
-			const invalidFields = returnvalue?.invalidFields || [];
+		async ({ req, job, returnvalue, send }) => {
+			const user = await completeOnboardingFromValidationResult(
+				returnvalue,
+				job.data.profile,
+				req.user.id,
+				(event) => {
+					send({ type: "progress", ...event });
+				},
+			);
 
-			if (invalidFields.length > 0) {
-				const error = new Error(formatValidationError(invalidFields));
-				error.status = 422;
-				error.invalidFields = invalidFields;
-				throw error;
-			}
-
-			send({ type: "complete", ...returnvalue });
+			send({ type: "complete", ...user });
 		},
 	),
 );
