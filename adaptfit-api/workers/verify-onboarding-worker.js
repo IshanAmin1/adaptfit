@@ -23,16 +23,45 @@ const AI_VALIDATION_FIELD_NAMES = [
 	"mealFrequencyPreference",
 ];
 
-const ValidationResultSchema = z.array(z.enum(AI_VALIDATION_FIELD_NAMES));
+const ValidationResultSchema = z
+	.object({
+		invalidFields: z.array(z.enum(AI_VALIDATION_FIELD_NAMES)),
+		rejectionReasons: z
+			.record(z.enum(AI_VALIDATION_FIELD_NAMES), z.string().min(1))
+			.default({}),
+	})
+	.superRefine((validationResult, ctx) => {
+		const missingRejectionReason = validationResult.invalidFields.some(
+			(field) => !validationResult.rejectionReasons[field],
+		);
+		const missingInvalidField = Object.keys(
+			validationResult.rejectionReasons,
+		).some((field) => !validationResult.invalidFields.includes(field));
+		if (missingRejectionReason) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["rejectionReason"],
+				message: "Missing rejection reason for an invalid field",
+			});
+		} else if (missingInvalidField) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["invalidFields"],
+				message: "Missing invalid field for a rejection reason",
+			});
+		}
+	});
 
 function buildSystemPrompt(requestId) {
 	return `
 		You validate onboarding details.
-		Return only a JSON array of incorrect field names.
-		Do not include markdown, explanations, or any extra keys.
+		Return only a JSON object with invalidFields and rejectionReasons.
+		invalidFields must be an array of incorrect field names.
+		rejectionReasons must be an object keyed by incorrect field name, with a concise user-facing reason for rejection.
+		Do not include markdown or any extra keys.
 		A field is incorrect when it is invalid, impossible, or conflicts with another field.
 		A field can only be considered for validation when the user provides a value. Do NOT mark empty responses as incorrect.
-		Use the app rules in the profile as context and return [] when everything looks correct.
+		Use the app rules in the profile as context and return {"invalidFields":[],"rejectionReasons":{}} when everything looks correct.
 
 		Field names to validate: ${AI_VALIDATION_FIELD_NAMES.join(", ")}.
 
@@ -65,8 +94,8 @@ async function verifyOnboarding(profile, job) {
 		(output) => {
 			try {
 				const parsedOutput = JSON.parse(output);
-				const parsedResult = ValidationResultSchema.safeDecode(parsedOutput);
-				return !parsedResult.success;
+				const parsedResult = ValidationResultSchema.safeParse(parsedOutput);
+				return parsedResult.success;
 			} catch {
 				return true;
 			}
@@ -78,10 +107,27 @@ async function verifyOnboarding(profile, job) {
 				json_schema: {
 					name: "onboarding_validation",
 					schema: {
-						type: "array",
-						items: {
-							type: "string",
-							enum: AI_VALIDATION_FIELD_NAMES,
+						type: "object",
+						additionalProperties: false,
+						required: ["invalidFields", "rejectionReasons"],
+						properties: {
+							invalidFields: {
+								type: "array",
+								items: {
+									type: "string",
+									enum: AI_VALIDATION_FIELD_NAMES,
+								},
+							},
+							rejectionReasons: {
+								type: "object",
+								additionalProperties: false,
+								properties: Object.fromEntries(
+									AI_VALIDATION_FIELD_NAMES.map((field) => [
+										field,
+										{ type: "string" },
+									]),
+								),
+							},
 						},
 					},
 				},
@@ -89,8 +135,7 @@ async function verifyOnboarding(profile, job) {
 		},
 	);
 
-	const invalidFields = ValidationResultSchema.parse(JSON.parse(content));
-	return { invalidFields };
+	return JSON.parse(content);
 }
 
 new Worker(
