@@ -46,6 +46,9 @@ export default function Dashboard() {
 	const isWorkoutDay = Boolean(todaySession?.exercises.length);
 	const loggedWorkout = isWorkoutDay ? todayWorkoutLog : null;
 	const todayName = getTodayName();
+	const hasSyncedAfterTodayWorkout =
+		Boolean(plan?.generatedAt && loggedWorkout?.createdAt) &&
+		new Date(plan.generatedAt) > new Date(loggedWorkout.createdAt);
 
 	useEffect(() => {
 		if (!plan || !isWorkoutDay) {
@@ -121,6 +124,20 @@ export default function Dashboard() {
 	const restDayMeal = plan.nutrients.sample_meals[0];
 
 	async function handleSyncToPlan() {
+		if (!loggedWorkout) {
+			setSuccessMessage(null);
+			setSyncErrorMessage("Log today's workout before syncing to your plan.");
+			return;
+		}
+
+		if (hasSyncedAfterTodayWorkout) {
+			setSuccessMessage(null);
+			setSyncErrorMessage(
+				"You already synced your plan after today's workout.",
+			);
+			return;
+		}
+
 		setIsSyncingPlan(true);
 		setSuccessMessage(null);
 		setSyncErrorMessage(null);
@@ -143,9 +160,13 @@ export default function Dashboard() {
 			}
 
 			setSyncMessage("Plan updated. Check Plan tab.");
-		} catch {
+		} catch (error) {
 			setSyncMessage(null);
-			setSyncErrorMessage("Plan sync could not be completed.");
+			setSyncErrorMessage(
+				error instanceof Error
+					? error.message
+					: "Plan sync could not be completed.",
+			);
 		} finally {
 			setIsSyncingPlan(false);
 		}
@@ -207,11 +228,20 @@ export default function Dashboard() {
 							<button
 								type="button"
 								onClick={handleSyncToPlan}
-								disabled={isSyncingPlan}
+								disabled={
+									isSyncingPlan || !loggedWorkout || hasSyncedAfterTodayWorkout
+								}
 								className="rounded-xl border border-primary bg-white px-5 py-3 text-sm font-black uppercase text-primary transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-60"
 							>
 								{isSyncingPlan ? "Syncing..." : "Sync to plan"}
 							</button>
+							{!loggedWorkout || hasSyncedAfterTodayWorkout ? (
+								<p className="m-0 max-w-64 text-left text-xs font-bold leading-4 text-muted md:text-right">
+									{hasSyncedAfterTodayWorkout
+										? "Today's workout is already synced."
+										: "Available after today's workout is logged."}
+								</p>
+							) : null}
 						</div>
 					</div>
 

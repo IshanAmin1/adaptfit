@@ -394,6 +394,25 @@ function buildProfilePromptSection(profile) {
 	].join("\n");
 }
 
+function buildAdaptiveProfilePromptSection(profile) {
+	return [
+		"TRAINING PROFILE:",
+		`- Primary goal: ${profile.primaryGoal}`,
+		`- Experience level: ${profile.experienceLevel}`,
+		`- Injuries or limitations: ${optionalValue(profile.injuriesOrLimitations)}`,
+		"",
+		"TRAINING CONSTRAINTS:",
+		`- Training location: ${profile.trainingLocation}`,
+		`- Available equipment: ${JSON.stringify(profile.equipmentAvailable)}`,
+		`- Machine types: ${JSON.stringify(profile.machineTypes || [])}`,
+		`- Other machines: ${optionalValue(profile.customMachines)}`,
+		"- Equipment guidance: use the selected equipment where helpful, but you may mix in bodyweight exercises such as push-ups, planks, squats, lunges, or mobility work when appropriate.",
+		`- Available workout days: ${JSON.stringify(profile.availableDays || [])}`,
+		`- Preferred session length: ${profile.preferredSessionLength}`,
+		"- Schedule workouts only on the selected available workout days. Days outside that list should not contain workouts.",
+	].join("\n");
+}
+
 function buildAdaptivePlanPrompt(profile, adaptationContext) {
 	const previousPlan = getPreviousPlan(adaptationContext);
 	const previousSchedule =
@@ -414,7 +433,7 @@ function buildAdaptivePlanPrompt(profile, adaptationContext) {
 		"- Respect onboarding constraints exactly.",
 		"- Use adaptive_notes.adjustment_triggers to summarize the most important reasons for the changes.",
 		"",
-		buildProfilePromptSection(profile),
+		buildAdaptiveProfilePromptSection(profile),
 		"",
 		"PREVIOUS WEEKLY SCHEDULE BASELINE:",
 		formatScheduleForPrompt(previousSchedule),
