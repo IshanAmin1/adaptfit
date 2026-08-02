@@ -1,4 +1,22 @@
+import { REDO_COOLDOWN_MS } from "../config/env";
 import type { GeneratedPlan } from "../types/plan";
+
+export function getRedoAvailableAt(completedAt?: string | null) {
+	if (!completedAt) {
+		return null;
+	}
+
+	return new Date(completedAt).getTime() + REDO_COOLDOWN_MS;
+}
+
+export function isRedoCooldownActive(
+	completedAt?: string | null,
+	now = Date.now(),
+) {
+	const redoAvailableAt = getRedoAvailableAt(completedAt);
+
+	return redoAvailableAt ? now < redoAvailableAt : false;
+}
 
 const weekdays = [
 	"Sunday",

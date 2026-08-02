@@ -11,9 +11,7 @@ import {
 } from "../services/tasks.js";
 import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
 import { enqueuePlanGeneration } from "./plans_router.js";
-import { saveOnboardingProfile } from "../utils/models/onboarding.js";
-import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
-import { serializeUser } from "../utils/models/users.js";
+import { REDO_COOLDOWN_MS } from "../config/env/onboarding.js";
 
 export const onboardingRouter = Router();
 
@@ -157,10 +155,21 @@ function validateProfile(profile) {
 	};
 }
 
+function isRedoCooldownActive(user) {
+	const completedAt = user?.onboardingProfile?.completed_at;
+
+	if (!completedAt) {
+		return false;
+	}
+
+	return Date.now() - new Date(completedAt).getTime() < REDO_COOLDOWN_MS;
+}
+
 async function completeOnboardingFromValidationResult(
 	validationResult,
 	profile,
 	userId,
+	user,
 	sendProgress,
 ) {
 	const invalidFields = validationResult?.invalidFields || [];
@@ -178,26 +187,20 @@ async function completeOnboardingFromValidationResult(
 
 	sendProgress({
 		stage: "saving",
-		message: "Saving your onboarding profile.",
+		message: "Starting your updated plan generation.",
 	});
-
-	const user = await saveOnboardingProfile(userId, profile);
-
-	if (!user) {
-		const error = new Error("User could not be found.");
-		error.status = 404;
-		throw error;
-	}
-
-	const billingStatus = await getBillingStatusForUser(user.id);
-	const serializedUser = serializeUser(user, billingStatus);
 
 	sendProgress({
 		stage: "complete",
 		message: "Your onboarding profile is ready.",
 	});
 
-	const planJob = await enqueuePlanGeneration(userId, user.onboardingProfile);
+	const planJob = await enqueuePlanGeneration(
+		userId,
+		{ id: null, profile },
+		null,
+		true,
+	);
 
 	sendProgress({
 		stage: "plan_queued",
@@ -205,7 +208,7 @@ async function completeOnboardingFromValidationResult(
 	});
 
 	return {
-		user: serializedUser,
+		user,
 		planJobId: planJob.jobId,
 		planStatusUrl: planJob.statusUrl,
 	};
@@ -217,6 +220,13 @@ onboardingRouter.post(
 	onboardingRateLimit,
 	async (req, res) => {
 		try {
+			if (req.user.hasGeneratedPlan && isRedoCooldownActive(req.user)) {
+				return res.status(429).json({
+					error:
+						"You can redo onboarding once per day. Please try again tomorrow.",
+				});
+			}
+
 			const profile = validateProfile(req.body?.profile);
 			const job = await enqueueUserJob(
 				VALIDATE_ONBOARDING_QUEUE_NAME,
@@ -301,6 +311,7 @@ onboardingRouter.get(
 				returnvalue,
 				job.data.profile,
 				req.user.id,
+				req.user,
 				(event) => {
 					send({ type: "progress", ...event });
 				},

@@ -1,9 +1,11 @@
 import * as z from "zod";
+import { sequelize } from "../datasource.js";
 import { queryModelWithRetries } from "./openrouter.js";
 import {
 	findLatestPlanForUser,
 	saveGeneratedPlan,
 } from "../utils/models/plans.js";
+import { saveOnboardingProfile } from "../utils/models/onboarding.js";
 import { findRecentWorkoutLogsForUser } from "../utils/models/workout_logs.js";
 import { getBillingStatusForUser } from "../utils/models/subscriptions.js";
 import { findUsersWithCompletedOnboarding } from "../utils/models/users.js";
@@ -480,11 +482,28 @@ export async function generatePlan(profile, job) {
 		message: "Saving your generated plan.",
 	});
 
-	const savedPlan = await saveGeneratedPlan({
-		userId: job.data.userId,
-		onboardingProfileId: job.data.onboardingProfileId,
-		plan,
-	});
+	const savedPlan = job.data.persistOnboardingAfterGeneration
+		? await sequelize.transaction(async (transaction) => {
+				const savedUser = await saveOnboardingProfile(
+					job.data.userId,
+					profile,
+					{
+						transaction,
+					},
+				);
+
+				return saveGeneratedPlan({
+					userId: job.data.userId,
+					onboardingProfileId: savedUser?.onboardingProfile?.id || null,
+					plan,
+					transaction,
+				});
+			})
+		: await saveGeneratedPlan({
+				userId: job.data.userId,
+				onboardingProfileId: job.data.onboardingProfileId,
+				plan,
+			});
 
 	await job.updateProgress({
 		stage: "plan_complete",

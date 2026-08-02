@@ -41,11 +41,12 @@ function toOnboardingRecord(userId, profile) {
 	};
 }
 
-export async function saveOnboardingProfile(userId, profile) {
+export async function saveOnboardingProfile(userId, profile, options = {}) {
 	await OnboardingProfile.upsert(toOnboardingRecord(userId, profile), {
 		conflictFields: ["user_id"],
 		returning: true,
+		transaction: options.transaction,
 	});
 
-	return findUserById(userId);
+	return findUserById(userId, { transaction: options.transaction });
 }

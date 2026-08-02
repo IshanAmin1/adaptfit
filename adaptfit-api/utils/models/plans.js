@@ -16,7 +16,12 @@ export function serializePlan(plan) {
 		id: plan.id,
 		userId: plan.user_id,
 		onboardingProfileId: plan.onboarding_profile_id,
-		onboardingProfile: plan.onboardingProfile?.profile || null,
+		onboardingProfile: plan.onboardingProfile
+			? {
+					...plan.onboardingProfile.profile,
+					completedAt: plan.onboardingProfile.completed_at || null,
+				}
+			: null,
 		status: plan.status,
 		metadata: plan.metadata,
 		targets: plan.targets,
@@ -41,21 +46,27 @@ export async function saveGeneratedPlan({
 	userId,
 	onboardingProfileId = null,
 	plan,
+	transaction = null,
 }) {
 	const updatedPlan = await planWithExerciseReferencesFromAPI(plan);
 
-	const createdPlan = await Plan.create({
-		user_id: userId,
-		onboarding_profile_id: onboardingProfileId,
-		status: "generated",
-		metadata: updatedPlan.plan_metadata,
-		targets: updatedPlan.user_summary,
-		nutrients: updatedPlan.nutrition_plan,
-		schedule: updatedPlan.weekly_schedule,
-		exercises: flattenExercises(updatedPlan.weekly_schedule),
-		adaptive_notes: updatedPlan.adaptive_notes,
-		generated_at: new Date(),
-	});
+	const createdPlan = await Plan.create(
+		{
+			user_id: userId,
+			onboarding_profile_id: onboardingProfileId,
+			status: "generated",
+			metadata: updatedPlan.plan_metadata,
+			targets: updatedPlan.user_summary,
+			nutrients: updatedPlan.nutrition_plan,
+			schedule: updatedPlan.weekly_schedule,
+			exercises: flattenExercises(updatedPlan.weekly_schedule),
+			adaptive_notes: updatedPlan.adaptive_notes,
+			generated_at: new Date(),
+		},
+		{
+			transaction,
+		},
+	);
 
 	return serializePlan(createdPlan.toJSON());
 }
