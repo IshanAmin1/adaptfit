@@ -53,16 +53,12 @@ const AiWorkoutLogValidationSchema = z
 
 function buildSystemPrompt() {
 	return `
-		You validate workout log inputs for AdaptFit.
+		You validate workout log notes for AdaptFit.
 		Return only JSON matching this shape: {"isValid": boolean, "message": string}.
-		Use the planned workout as context and check whether the user's logged values are realistic and consistent.
-		Completed exercises are valid when completed sets match target sets.
-		Completed exercises may describe setsCompleted and repsCompleted as "completed all".
-		Allow partial exercises with 0 sets or 0 reps.
-		Notes must be meaningful and related to the workout, exercise, effort, pain, difficulty, modifications, or recovery.
+		Only validate the note text. Do not judge sets, reps, completion status, workout difficulty, or plan changes.
+		Notes are valid when they are meaningful and related to the workout, exercise, effort, pain, difficulty, modifications, or recovery.
 		Reject notes that are random filler, gibberish, repeated words, unrelated text, or placeholder text like "blah blah", "asdf", or "test".
-		Mark invalid only when the log is clearly impossible, nonsensical, contradictory, or not related to the planned workout.
-		Allow normal human variation, short notes, and skipped effort when the status is partial.
+		Allow normal human variation and short notes.
 		If valid, return {"isValid": true, "message": ""}.
 		If invalid, return {"isValid": false, "message": "A short user-facing reason."}.
 
@@ -77,28 +73,41 @@ function buildSystemPrompt() {
 	`;
 }
 
-function buildValidationPrompt(session, workoutLog) {
-	const aiWorkoutLog = {
-		...workoutLog,
-		exercises: workoutLog.exercises.map((exercise) =>
-			exercise.completionStatus === "completed"
-				? {
-						...exercise,
-						setsCompleted: "completed all",
-						repsCompleted: "completed all",
-					}
-				: exercise,
-		),
-	};
+function buildValidationPrompt(workoutLog) {
+	const notes = [];
+	const exerciseNotes = [];
 
-	return `Workout log: <<USER_DATA>>${JSON.stringify({
-		plannedSession: {
-			day: session.day,
-			sessionType: session.session_type,
-			exercises: session.exercises,
-		},
-		workoutLog: aiWorkoutLog,
+	if (workoutLog.notes?.trim()) {
+		notes.push(workoutLog.notes);
+	}
+
+	for (const exercise of workoutLog.exercises) {
+		if (exercise.notes?.trim()) {
+			exerciseNotes.push({
+				exerciseName: exercise.exerciseName,
+				notes: exercise.notes,
+			});
+		}
+	}
+
+	return `Workout notes: <<USER_DATA>>${JSON.stringify({
+		notes,
+		exerciseNotes,
 	})}<<END_USER_DATA>>`;
+}
+
+function shouldValidateWorkoutLogWithAi(workoutLog) {
+	if (workoutLog.notes?.trim()) {
+		return true;
+	}
+
+	for (const exercise of workoutLog.exercises) {
+		if (exercise.notes?.trim()) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 function parseTodayWorkoutLogQuery(query) {
@@ -159,13 +168,13 @@ function validateWorkoutLogPayload(payload) {
 	return workoutLog;
 }
 
-async function validateWorkoutLogWithAi(session, workoutLog) {
+async function validateWorkoutLogWithAi(workoutLog) {
 	let content;
 
 	try {
 		content = await queryModelWithRetries(
 			buildSystemPrompt(),
-			buildValidationPrompt(session, workoutLog),
+			buildValidationPrompt(workoutLog),
 			(output) => {
 				try {
 					return !AiWorkoutLogValidationSchema.safeParse(JSON.parse(output))
@@ -294,7 +303,7 @@ loggingRouter.post(
 				return res.status(404).json({ error: "Plan could not be found." });
 			}
 
-			const session = assertWorkoutLogMatchesPlan(plan, workoutLog);
+			assertWorkoutLogMatchesPlan(plan, workoutLog);
 			const existingLog = await findWorkoutLogForDate({
 				userId: req.user.id,
 				loggedFor: workoutLog.loggedFor,
@@ -306,7 +315,9 @@ loggingRouter.post(
 					.json({ error: "You already logged today's workout." });
 			}
 
-			await validateWorkoutLogWithAi(session, workoutLog);
+			if (shouldValidateWorkoutLogWithAi(workoutLog)) {
+				await validateWorkoutLogWithAi(workoutLog);
+			}
 
 			const savedLog = await saveWorkoutLog({
 				userId: req.user.id,

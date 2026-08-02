@@ -9,7 +9,10 @@ import {
 	getQueueWithListener,
 } from "../services/tasks.js";
 import { findLatestPlanForUser } from "../utils/models/plans.js";
-import { findRecentWorkoutLogsForUser } from "../utils/models/workout_logs.js";
+import {
+	findRecentWorkoutLogsForUser,
+	findWorkoutLogForDate,
+} from "../utils/models/workout_logs.js";
 
 export const plansRouter = Router();
 
@@ -153,6 +156,28 @@ plansRouter.post(
 				return res
 					.status(409)
 					.json({ error: "Generate a plan before testing adaptation." });
+			}
+
+			const today = new Date().toISOString().slice(0, 10);
+			const todayWorkoutLog = await findWorkoutLogForDate({
+				userId: req.user.id,
+				loggedFor: today,
+			});
+
+			if (!todayWorkoutLog) {
+				return res.status(409).json({
+					error: "Log today's workout before syncing to your plan.",
+				});
+			}
+
+			const alreadySyncedToday =
+				new Date(previousPlan.generatedAt) >
+				new Date(todayWorkoutLog.createdAt);
+
+			if (alreadySyncedToday) {
+				return res.status(409).json({
+					error: "You already synced your plan after today's workout.",
+				});
 			}
 
 			const workoutLogs = await findRecentWorkoutLogsForUser(req.user.id, 7);
