@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import logoUrl from "../assets/logo.png";
 import type { AuthUser } from "../types/auth";
 import { getAuthenticatedPath } from "../utils/auth-utils";
 import { Button, ButtonLink } from "./common/Button";
@@ -89,7 +90,7 @@ export default function Navbar({ authUser, onLogout }: NavbarProps) {
 				className="flex items-center gap-2.5 text-[22px] font-black text-inherit no-underline"
 			>
 				<img
-					src="/assets/logo.png"
+					src={logoUrl}
 					alt="AdaptFit"
 					className="h-10 w-10 rounded-xl object-cover"
 				/>
