@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../api/auth-service";
+import { plansService } from "../api/plans-service";
 import { onboardingService } from "../api/onboarding-service";
 import type { OnboardingProgressEvent } from "../api/onboarding-service";
 import type { AuthUser } from "../types/auth";
 import { OnboardingProfile } from "../types/onboarding";
+import type { GeneratedPlan } from "../types/plan";
+import { ButtonLink } from "../components/common/Button";
+import { isRedoCooldownActive } from "../utils/plan-utils";
 import {
 	MAX_REASONABLE_AGE,
 	MAX_REASONABLE_HEIGHT_CM,
@@ -38,6 +42,34 @@ const initialProfile: OnboardingProfile = {
 	allergiesOrFoodsToAvoid: "",
 	mealFrequencyPreference: "",
 };
+
+function buildProfileFromPlan(plan: GeneratedPlan): OnboardingProfile {
+	const onboardingProfile = plan.onboardingProfile;
+
+	if (!onboardingProfile) {
+		return initialProfile;
+	}
+
+	return {
+		age: String(onboardingProfile.age ?? ""),
+		biologicalSex: onboardingProfile.biologicalSex ?? "",
+		height: String(onboardingProfile.height ?? ""),
+		currentWeight: String(onboardingProfile.currentWeight ?? ""),
+		primaryGoal: onboardingProfile.primaryGoal ?? "",
+		goalTarget: onboardingProfile.targetWeightOrTimeline ?? "",
+		experienceLevel: onboardingProfile.experienceLevel ?? "",
+		injuriesOrLimitations: onboardingProfile.injuriesOrLimitations ?? "",
+		trainingLocation: onboardingProfile.trainingLocation ?? "",
+		equipmentAvailable: onboardingProfile.equipmentAvailable ?? [],
+		machineTypes: onboardingProfile.machineTypes ?? [],
+		customMachines: onboardingProfile.customMachines ?? "",
+		availableDays: onboardingProfile.availableDays ?? [],
+		preferredSessionLength: onboardingProfile.preferredSessionLength ?? "",
+		dietType: onboardingProfile.dietType ?? "",
+		allergiesOrFoodsToAvoid: onboardingProfile.allergiesOrFoodsToAvoid ?? "",
+		mealFrequencyPreference: onboardingProfile.mealFrequencyPreference ?? "",
+	};
+}
 
 const steps = [
 	"Basics",
@@ -173,6 +205,9 @@ function getStepError(stepIndex: number, profile: OnboardingProfile) {
 
 export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const isRedoMode = searchParams.get("redo") === "1";
+	const hasInitializedRedoProfileRef = useRef(false);
 	const [stepIndex, setStepIndex] = useState(0);
 	const [profile, setProfile] = useState<OnboardingProfile>(initialProfile);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -180,6 +215,8 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 	const [isCheckingPendingJob, setIsCheckingPendingJob] = useState(() =>
 		Boolean(authUser),
 	);
+	const [isLoadingRedoProfile, setIsLoadingRedoProfile] = useState(false);
+	const [isRedoBlockedByCooldown, setIsRedoBlockedByCooldown] = useState(false);
 	const [hasPendingJob, setHasPendingJob] = useState(false);
 	const [submissionState, setSubmissionState] = useState<{
 		status: "idle" | "success" | "error";
@@ -251,6 +288,10 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 				if (!pendingJob) {
 					setHasPendingJob(false);
 					return;
+				}
+
+				if (isRedoMode) {
+					hasInitializedRedoProfileRef.current = true;
 				}
 
 				setHasPendingJob(true);
@@ -332,20 +373,91 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 		return () => {
 			isMounted = false;
 		};
-	}, [authUser, onComplete]);
+	}, [authUser, isRedoMode, onComplete]);
 
-	if (isCheckingPendingJob) {
+	useEffect(() => {
+		let isMounted = true;
+
+		if (!isRedoMode) {
+			hasInitializedRedoProfileRef.current = false;
+			return () => {
+				isMounted = false;
+			};
+		}
+
+		if (
+			!authUser ||
+			isCheckingPendingJob ||
+			hasPendingJob ||
+			hasInitializedRedoProfileRef.current ||
+			submissionState.status === "success"
+		) {
+			return () => {
+				isMounted = false;
+			};
+		}
+
+		hasInitializedRedoProfileRef.current = true;
+		setIsLoadingRedoProfile(true);
+
+		plansService
+			.getLatestPlan()
+			.then((latestPlan) => {
+				if (!isMounted || !latestPlan) {
+					return;
+				}
+
+				if (isRedoCooldownActive(latestPlan.onboardingProfile?.completedAt)) {
+					setIsRedoBlockedByCooldown(true);
+					return;
+				}
+
+				setIsRedoBlockedByCooldown(false);
+				setProfile(buildProfileFromPlan(latestPlan));
+				setStepIndex(0);
+				setErrorMessage(null);
+				setSubmissionProgress([]);
+				setSubmissionState({ status: "idle", message: null, user: null });
+			})
+			.catch(() => {
+				if (isMounted) {
+					hasInitializedRedoProfileRef.current = false;
+					setProfile(initialProfile);
+				}
+			})
+			.finally(() => {
+				if (isMounted) {
+					setIsLoadingRedoProfile(false);
+				}
+			});
+
+		return () => {
+			isMounted = false;
+		};
+	}, [
+		authUser,
+		hasPendingJob,
+		isCheckingPendingJob,
+		isRedoMode,
+		submissionState.status,
+	]);
+
+	if (isCheckingPendingJob || isLoadingRedoProfile) {
 		return (
 			<div className="grid min-h-[calc(100vh-78px)] place-items-center px-4 text-sm font-black uppercase tracking-[0.08em] text-muted">
 				Loading
 			</div>
 		);
 	}
+	if (isRedoMode && isRedoBlockedByCooldown) {
+		return <Navigate to="/plan" replace />;
+	}
 	if (
 		authUser?.hasGeneratedPlan &&
 		!hasPendingJob &&
 		!isConfirmationStep &&
-		!isResultStep
+		!isResultStep &&
+		!isRedoMode
 	) {
 		return <Navigate to="/dashboard" replace />;
 	}
@@ -567,6 +679,19 @@ export default function Onboarding({ authUser, onComplete }: OnboardingProps) {
 						<p className="m-0 text-sm font-black uppercase tracking-[0.08em] text-muted">
 							{progressPercent}% complete
 						</p>
+						{isRedoMode &&
+						!isSubmitting &&
+						submissionState.status !== "success" ? (
+							<ButtonLink
+								to="/plan"
+								replace
+								variant="outline"
+								size="sm"
+								className="h-10 px-4"
+							>
+								Cancel redo
+							</ButtonLink>
+						) : null}
 					</div>
 					<div className="h-2 overflow-hidden rounded-full bg-border">
 						<div

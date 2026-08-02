@@ -26,6 +26,7 @@ export async function enqueuePlanGeneration(
 	userId,
 	onboardingProfile,
 	adaptationContext = null,
+	persistOnboardingAfterGeneration = false,
 ) {
 	if (!onboardingProfile?.profile) {
 		const error = new Error(
@@ -40,6 +41,7 @@ export async function enqueuePlanGeneration(
 		onboardingProfileId: onboardingProfile.id,
 		profile: onboardingProfile.profile,
 		adaptationContext,
+		persistOnboardingAfterGeneration,
 	});
 
 	return {

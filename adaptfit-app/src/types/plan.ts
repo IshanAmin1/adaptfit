@@ -104,6 +104,7 @@ export type GeneratedPlan = {
 		dietType: string;
 		allergiesOrFoodsToAvoid?: string;
 		mealFrequencyPreference?: string;
+		completedAt?: string | null;
 	} | null;
 	metadata: {
 		generated_at: string;

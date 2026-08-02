@@ -1,4 +1,5 @@
 import DashboardCard from "../components/common/DashboardCard";
+import { Button } from "../components/common/Button";
 import InfoTile from "../components/common/InfoTile";
 import SectionHeading from "../components/common/SectionHeading";
 import ChevronDown from "../components/icons/ChevronDown.js";
@@ -8,10 +9,12 @@ import { MuscleGroupChart } from "../components/plan/PlanCharts";
 import PlanState from "../components/plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
 import type { AuthUser } from "../types/auth";
+import { useNavigate } from "react-router-dom";
 import {
 	formatEquipment,
 	formatGeneratedDate,
 	formatPlanLabel,
+	isRedoCooldownActive,
 } from "../utils/plan-utils";
 
 function getPlanTitle(authUser: AuthUser | null) {
@@ -22,6 +25,7 @@ function getPlanTitle(authUser: AuthUser | null) {
 }
 
 export default function Plan({ authUser }: { authUser: AuthUser | null }) {
+	const navigate = useNavigate();
 	const { plan, isLoading, errorMessage } = useLatestPlan();
 
 	if (isLoading) {
@@ -81,16 +85,32 @@ export default function Plan({ authUser }: { authUser: AuthUser | null }) {
 				],
 			]
 		: [];
+	const isRedoLocked = isRedoCooldownActive(
+		plan.onboardingProfile?.completedAt,
+	);
+	const redoButtonLabel = isRedoLocked
+		? "Redo available tomorrow"
+		: "Redo onboarding";
 
 	return (
 		<div className="mx-auto grid w-full max-w-336 grid-cols-1 gap-6 px-4 pb-12 pt-8 md:px-12 lg:grid-cols-12">
 			<DashboardCard className="p-8 lg:col-span-12">
-				<div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-					<SectionHeading
-						eyebrow="Weekly plan"
-						title={getPlanTitle(authUser)}
-					/>
-				</div>
+				<SectionHeading
+					eyebrow="Weekly plan"
+					title={getPlanTitle(authUser)}
+					action={
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="h-10 shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60"
+							disabled={isRedoLocked}
+							onClick={() => navigate("/onboarding?redo=1")}
+						>
+							{redoButtonLabel}
+						</Button>
+					}
+				/>
 			</DashboardCard>
 
 			<DashboardCard className="p-8 lg:col-span-5">

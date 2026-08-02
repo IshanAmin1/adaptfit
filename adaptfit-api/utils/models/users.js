@@ -19,9 +19,10 @@ export function serializeUser(
 	};
 }
 
-export async function findUserById(id) {
+export async function findUserById(id, options = {}) {
 	const user = await User.findByPk(id, {
 		include: [{ association: "onboardingProfile" }],
+		...options,
 	});
 	return user?.toJSON() || null;
 }

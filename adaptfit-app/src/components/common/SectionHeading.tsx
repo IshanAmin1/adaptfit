@@ -12,7 +12,7 @@ export default function SectionHeading({
 	action,
 }: SectionHeadingProps) {
 	return (
-		<div className="flex items-start justify-between gap-4">
+		<div className="flex w-full items-start justify-between gap-4">
 			<div>
 				<p className="mb-3 text-xs font-black uppercase tracking-widest text-primary">
 					{eyebrow}
