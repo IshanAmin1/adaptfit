@@ -239,7 +239,11 @@ function getStepError(stepIndex: number, profile: OnboardingProfile) {
 			return "Choose at least one available workout day to continue.";
 		}
 
-		if (profile.machineTypes.length <= 0 && !profile.customMachines) {
+		if (
+			profile.equipmentAvailable.includes("machines") &&
+			profile.machineTypes.length <= 0 &&
+			!profile.customMachines
+		) {
 			return "Choose at least one machine to continue.";
 		}
 	}
