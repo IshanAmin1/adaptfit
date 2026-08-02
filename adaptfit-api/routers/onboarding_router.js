@@ -79,7 +79,7 @@ const OnboardingProfileSchema = z
 	.superRefine((profile, ctx) => {
 		if (new Set(profile.availableDays).size !== profile.availableDays.length) {
 			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
+				code: "custom",
 				path: ["availableDays"],
 				message: "availableDays must not contain duplicate days",
 			});
@@ -90,16 +90,35 @@ const OnboardingProfileSchema = z
 			profile.machineTypes.length > 0
 		) {
 			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
+				code: "custom",
 				path: ["machineTypes"],
 				message: "machineTypes requires machines to be selected",
 			});
 		}
+
+		if (
+			profile.equipmentAvailable.includes("machines") &&
+			profile.machineTypes.length <= 0 &&
+			!profile.customMachines
+		) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["customMachines"],
+				message: "customMachines must be specified if no machines are selected",
+			});
+		}
 	});
 
-function formatValidationError(invalidFields) {
+function formatValidationError(invalidFields, rejectionReasons = {}) {
 	const count = invalidFields.length;
 	const label = count === 1 ? "issue" : "issues";
+	const reasons = invalidFields
+		.map((field) => rejectionReasons[field])
+		.filter(Boolean);
+
+	if (reasons.length > 0) {
+		return `You need to fix ${count} ${label}: ${reasons.join(" ")}`;
+	}
 
 	return `You need to fix ${count} ${label}: ${invalidFields.join(", ")}.`;
 }
@@ -143,11 +162,15 @@ async function completeOnboardingFromValidationResult(
 	sendProgress,
 ) {
 	const invalidFields = validationResult?.invalidFields || [];
+	const rejectionReasons = validationResult?.rejectionReasons || {};
 
 	if (invalidFields.length > 0) {
-		const error = new Error(formatValidationError(invalidFields));
+		const error = new Error(
+			formatValidationError(invalidFields, rejectionReasons),
+		);
 		error.status = 422;
 		error.invalidFields = invalidFields;
+		error.rejectionReasons = rejectionReasons;
 		throw error;
 	}
 
@@ -211,6 +234,7 @@ onboardingRouter.post(
 				return res.status(error.status).json({
 					error: error.message,
 					invalidFields: error.invalidFields,
+					rejectionReasons: error.rejectionReasons,
 					jobId: error.jobId,
 					statusUrl: error.statusUrl,
 				});
