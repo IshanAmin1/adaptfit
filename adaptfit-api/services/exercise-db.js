@@ -108,20 +108,25 @@ export async function planWithExerciseReferencesFromAPI(plan) {
 		return plan;
 	}
 
-	const referencesByName = new Map();
+	const exerciseNameList = Array.from(exerciseNames);
+	const referenceEntries = await Promise.all(
+		exerciseNameList.map(async (exerciseName) => {
+			try {
+				const reference = await findExerciseReference(exerciseName);
 
-	for (const exerciseName of exerciseNames) {
-		try {
-			const reference = await findExerciseReference(exerciseName);
-			referencesByName.set(exerciseName, reference);
-		} catch (error) {
-			console.warn(
-				`Exercise DB lookup failed for "${exerciseName}":`,
-				error.message,
-			);
-			referencesByName.set(exerciseName, null);
-		}
-	}
+				return [exerciseName, reference];
+			} catch (error) {
+				console.warn(
+					`Exercise DB lookup failed for "${exerciseName}":`,
+					error.message,
+				);
+
+				return [exerciseName, null];
+			}
+		}),
+	);
+
+	const referencesByName = new Map(referenceEntries);
 
 	return {
 		...plan,

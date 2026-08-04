@@ -1,6 +1,6 @@
 import DashboardCard from "./common/DashboardCard";
 import SectionHeading from "./common/SectionHeading";
-import { EnergyTargetsChart, WeeklyScheduleChart } from "./plan/PlanCharts";
+import { EnergyTargetsChart } from "./plan/PlanCharts";
 import PlanState from "./plan/PlanState";
 import { useLatestPlan } from "../hooks/useLatestPlan";
 
@@ -135,39 +135,8 @@ export default function InsightsCard() {
 					eyebrow="Calculations"
 					title="Body and energy targets"
 				/>
-				<div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-					{[
-						[
-							"BMI",
-							typeof plan.targets.bmi === "number"
-								? plan.targets.bmi.toFixed(1)
-								: "Pending",
-						],
-						["BMR", String(Math.round(plan.targets.bmr))],
-						["TDEE", String(Math.round(plan.targets.tdee))],
-					].map(([label, value]) => (
-						<div
-							key={label}
-							className="rounded-xl border border-border bg-surface-soft px-4 py-3"
-						>
-							<span className="block text-[11px] font-black uppercase tracking-[0.08em] text-muted">
-								{label}
-							</span>
-							<strong className="mt-1 block text-lg font-black text-secondary">
-								{value}
-							</strong>
-						</div>
-					))}
-				</div>
 				<div className="mt-4">
 					<EnergyTargetsChart plan={plan} />
-				</div>
-			</DashboardCard>
-
-			<DashboardCard className="p-8 lg:col-span-12">
-				<SectionHeading eyebrow="Workload" title="Projected adaptation trend" />
-				<div className="mt-6">
-					<WeeklyScheduleChart schedule={plan.schedule} />
 				</div>
 			</DashboardCard>
 		</div>

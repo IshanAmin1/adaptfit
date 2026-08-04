@@ -15,14 +15,7 @@ const ExerciseSchema = z.object({
 	target_muscle_group: z.string(),
 	sets: z.number(),
 	reps: z.string(),
-	rest_seconds: z.number(),
 	equipment_needed: z.array(z.string()),
-	alternatives: z.array(
-		z.object({
-			exercise_name: z.string(),
-			reason_for_alternative: z.string(),
-		}),
-	),
 });
 
 const WeeklyScheduleSchema = z.array(
@@ -43,7 +36,6 @@ const PlanSchema = z.object({
 		generated_at: z.string(),
 		plan_version: z.string(),
 		user_goal: z.string(),
-		disclaimer: z.string(),
 	}),
 	user_summary: z.object({
 		bmi: z.number(),
@@ -71,6 +63,30 @@ const PlanSchema = z.object({
 	adaptive_notes: AdaptiveNotesSchema,
 });
 
+const InitialModelPlanSchema = z.object({
+	user_summary: z.object({
+		target_physique_description: z.string(),
+	}),
+	nutrition_plan: z.object({
+		daily_calories: z.number(),
+		macros: z.object({
+			protein_g: z.number(),
+			carbs_g: z.number(),
+			fat_g: z.number(),
+		}),
+		meal_frequency: z.number(),
+		sample_meals: z.tuple([
+			z.object({
+				meal_name: z.string(),
+				description: z.string(),
+				estimated_calories: z.number(),
+			}),
+		]),
+	}),
+	weekly_schedule: WeeklyScheduleSchema,
+	adaptive_notes: AdaptiveNotesSchema,
+});
+
 const AdaptivePlanSchema = z.object({
 	weekly_schedule: WeeklyScheduleSchema,
 	adaptive_notes: AdaptiveNotesSchema,
@@ -84,31 +100,16 @@ const exerciseJsonSchema = {
 		"target_muscle_group",
 		"sets",
 		"reps",
-		"rest_seconds",
 		"equipment_needed",
-		"alternatives",
 	],
 	properties: {
 		exercise_name: { type: "string" },
 		target_muscle_group: { type: "string" },
 		sets: { type: "number" },
 		reps: { type: "string" },
-		rest_seconds: { type: "number" },
 		equipment_needed: {
 			type: "array",
 			items: { type: "string" },
-		},
-		alternatives: {
-			type: "array",
-			items: {
-				type: "object",
-				additionalProperties: false,
-				required: ["exercise_name", "reason_for_alternative"],
-				properties: {
-					exercise_name: { type: "string" },
-					reason_for_alternative: { type: "string" },
-				},
-			},
 		},
 	},
 };
@@ -147,32 +148,17 @@ const PLAN_JSON_SCHEMA = {
 	type: "object",
 	additionalProperties: false,
 	required: [
-		"plan_metadata",
 		"user_summary",
 		"nutrition_plan",
 		"weekly_schedule",
 		"adaptive_notes",
 	],
 	properties: {
-		plan_metadata: {
-			type: "object",
-			additionalProperties: false,
-			required: ["generated_at", "plan_version", "user_goal", "disclaimer"],
-			properties: {
-				generated_at: { type: "string" },
-				plan_version: { type: "string" },
-				user_goal: { type: "string" },
-				disclaimer: { type: "string" },
-			},
-		},
 		user_summary: {
 			type: "object",
 			additionalProperties: false,
-			required: ["bmi", "bmr", "tdee", "target_physique_description"],
+			required: ["target_physique_description"],
 			properties: {
-				bmi: { type: "number" },
-				bmr: { type: "number" },
-				tdee: { type: "number" },
 				target_physique_description: { type: "string" },
 			},
 		},
@@ -195,6 +181,8 @@ const PLAN_JSON_SCHEMA = {
 				meal_frequency: { type: "number" },
 				sample_meals: {
 					type: "array",
+					minItems: 1,
+					maxItems: 1,
 					items: {
 						type: "object",
 						additionalProperties: false,
@@ -227,13 +215,14 @@ const SYSTEM_PROMPT = [
 	"You are a certified fitness and nutrition planning engine.",
 	"You generate structured, personalized weekly workout and nutrition plans based on validated AdaptFit onboarding data.",
 	"Output only valid JSON matching the provided schema. No markdown, commentary, or explanations outside the JSON.",
+	"Return only essential plan content. Do not include metadata, BMI, BMR, TDEE, long explanations, or extra fields.",
 	"Every numeric field must be a number, not a string.",
 	"If information is insufficient to safely recommend an exercise because of a stated injury or limitation, exclude it and choose a safer alternative.",
-	"Do not provide medical diagnoses or clinical nutrition advice. Include the required standard disclaimer.",
+	"Do not provide medical diagnoses or clinical nutrition advice.",
 	"Estimate calorie and macro targets using the Mifflin-St Jeor equation for BMR, adjusted by an activity multiplier based on training frequency and goal.",
-	"Calculate BMI from current weight in kilograms and height in centimeters, rounded to one decimal place.",
-	"Write target_physique_description as a neutral, general, text-only goal description. Do not reference the user's actual appearance or produce anything resembling a personal likeness.",
-	"Every exercise must include at least 2 alternative exercises targeting the same muscle group.",
+	"Write target_physique_description as one concise neutral goal sentence. Do not reference the user's actual appearance or produce anything resembling a personal likeness.",
+	"Return exactly one sample meal. Keep its description practical and short: 3-5 foods, not a full recipe or exhaustive ingredient list.",
+	"Limit exercise count by preferred session length: 30 minutes means 2-3 exercises per workout, 45 minutes means 3-4 exercises, and 60 or 60_plus means 4-6 exercises. Never exceed those limits.",
 	"Prefer popular, standard exercise names that are likely to appear in exercise databases, such as Bench Press, Squat, Push Up, Pull Up, Lat Pulldown, Shoulder Press, Plank, Deadlift, Row, Lunge, Leg Press, Bicep Curl, Tricep Pushdown, and Chest Press.",
 	"Use concise canonical exercise names instead of overly specific variations unless the user's available equipment, limitations, or goal requires the variation.",
 	"Respect equipment, machine, schedule, injury, and dietary constraints exactly as given.",
@@ -248,7 +237,7 @@ const ADAPTIVE_SYSTEM_PROMPT = [
 	"Keep changes conservative and grounded in the user's recent workout completion logs.",
 	"Respect equipment, schedule, injury, and training constraints exactly as given.",
 	"If information is insufficient to safely recommend an exercise because of a stated injury or limitation, exclude it and choose a safer alternative.",
-	"Every exercise must include at least 2 alternative exercises targeting the same muscle group.",
+	"Limit exercise count by preferred session length: 30 minutes means 2-3 exercises per workout, 45 minutes means 3-4 exercises, and 60 or 60_plus means 4-6 exercises. Never exceed those limits.",
 ].join("\n");
 
 // Prompt helpers
@@ -256,9 +245,19 @@ const optionalValue = (value) =>
 	value && String(value).trim() ? value : "not provided";
 
 function getPreviousPlan(adaptationContext) {
-	return adaptationContext.previousPlan?.plan
-		? adaptationContext.previousPlan.plan
-		: adaptationContext.previousPlan;
+	const previousPlan = adaptationContext.previousPlan;
+
+	if (previousPlan?.plan) {
+		return previousPlan.plan;
+	}
+
+	return {
+		plan_metadata: previousPlan.metadata,
+		user_summary: previousPlan.targets,
+		nutrition_plan: previousPlan.nutrients,
+		weekly_schedule: previousPlan.schedule,
+		adaptive_notes: previousPlan.adaptiveNotes,
+	};
 }
 
 function parsePlanOutput(schema, output) {
@@ -292,16 +291,76 @@ function buildModelRequest(profile, adaptationContext) {
 			"",
 			"Return only the JSON object.",
 		].join("\n"),
-		responseSchema: PlanSchema,
+		responseSchema: InitialModelPlanSchema,
 		jsonSchema: PLAN_JSON_SCHEMA,
 	};
 }
 
-function buildFullPlan(adaptationContext, modelPlan) {
-	if (!adaptationContext) {
-		return modelPlan;
+function roundToOneDecimal(value) {
+	return Math.round(value * 10) / 10;
+}
+
+function getBmrSexConstant(biologicalSex) {
+	if (biologicalSex === "male") {
+		return 5;
 	}
 
+	if (biologicalSex === "female") {
+		return -161;
+	}
+
+	return -78;
+}
+
+function getActivityMultiplier(availableDays = []) {
+	const trainingDays = availableDays.length;
+
+	if (trainingDays <= 2) {
+		return 1.375;
+	}
+
+	if (trainingDays <= 4) {
+		return 1.55;
+	}
+
+	return 1.725;
+}
+
+function calculateUserTargets(profile) {
+	const heightMeters = profile.height / 100;
+	const bmi = roundToOneDecimal(profile.currentWeight / heightMeters ** 2);
+	const bmr = roundToOneDecimal(
+		10 * profile.currentWeight +
+			6.25 * profile.height -
+			5 * profile.age +
+			getBmrSexConstant(profile.biologicalSex),
+	);
+	const tdee = roundToOneDecimal(
+		bmr * getActivityMultiplier(profile.availableDays || []),
+	);
+
+	return { bmi, bmr, tdee };
+}
+
+function buildInitialPlan(profile, modelPlan) {
+	return {
+		plan_metadata: {
+			generated_at: new Date().toISOString(),
+			plan_version: "1.0",
+			user_goal: profile.primaryGoal,
+		},
+		user_summary: {
+			...calculateUserTargets(profile),
+			target_physique_description:
+				modelPlan.user_summary.target_physique_description,
+		},
+		nutrition_plan: modelPlan.nutrition_plan,
+		weekly_schedule: modelPlan.weekly_schedule,
+		adaptive_notes: modelPlan.adaptive_notes,
+	};
+}
+
+function buildFullPlan(adaptationContext, modelPlan) {
 	const previousPlan = getPreviousPlan(adaptationContext);
 
 	return {
@@ -353,7 +412,6 @@ function formatScheduleForPrompt(schedule) {
 				target_muscle_group: exercise.target_muscle_group,
 				sets: exercise.sets,
 				reps: exercise.reps,
-				rest_seconds: exercise.rest_seconds,
 				equipment_needed: exercise.equipment_needed,
 			})),
 		})),
@@ -430,7 +488,7 @@ function buildAdaptivePlanPrompt(profile, adaptationContext) {
 		"- Do not create or change nutrition targets, meals, calories, macros, user summary, or plan metadata.",
 		"- Use the previous weekly schedule as the baseline. Do not redesign from scratch.",
 		"- Keep the same workout days, session types, and exercises when adherence was good.",
-		"- If a workout or exercise was partial, adjust conservatively by reducing sets, simplifying the exercise, adding recovery, or choosing a safer alternative.",
+		"- If a workout or exercise was partial, adjust conservatively by reducing sets, simplifying the exercise, adding recovery, or choosing a safer exercise.",
 		"- If workouts were completed consistently, progress gradually with modest changes to volume, intensity, or exercise complexity.",
 		"- Respect onboarding constraints exactly.",
 		"- Use adaptive_notes.adjustment_triggers to summarize the most important reasons for the changes.",
@@ -475,7 +533,11 @@ export async function generatePlan(profile, job) {
 	);
 
 	const modelPlan = modelRequest.responseSchema.parse(JSON.parse(content));
-	const plan = PlanSchema.parse(buildFullPlan(adaptationContext, modelPlan));
+	const plan = PlanSchema.parse(
+		adaptationContext
+			? buildFullPlan(adaptationContext, modelPlan)
+			: buildInitialPlan(profile, modelPlan),
+	);
 
 	await job.updateProgress({
 		stage: "plan_saving",

@@ -14,8 +14,6 @@ function flattenExercises(schedule) {
 export function serializePlan(plan) {
 	return {
 		id: plan.id,
-		userId: plan.user_id,
-		onboardingProfileId: plan.onboarding_profile_id,
 		onboardingProfile: plan.onboardingProfile
 			? {
 					...plan.onboardingProfile.profile,
@@ -29,16 +27,7 @@ export function serializePlan(plan) {
 		schedule: plan.schedule,
 		exercises: plan.exercises,
 		adaptiveNotes: plan.adaptive_notes,
-		plan: {
-			plan_metadata: plan.metadata,
-			user_summary: plan.targets,
-			nutrition_plan: plan.nutrients,
-			weekly_schedule: plan.schedule,
-			adaptive_notes: plan.adaptive_notes,
-		},
 		generatedAt: plan.generated_at,
-		createdAt: plan.created_at,
-		updatedAt: plan.updated_at,
 	};
 }
 

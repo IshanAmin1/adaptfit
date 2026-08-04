@@ -235,14 +235,6 @@ export default function Plan({ authUser }: { authUser: AuthUser | null }) {
 										<p className="mt-3 text-sm leading-5 text-muted">
 											Equipment: {formatEquipment(exercise.equipment_needed)}
 										</p>
-										{exercise.alternatives.length ? (
-											<p className="mt-2 text-sm leading-5 text-muted">
-												Alternatives:{" "}
-												{exercise.alternatives
-													.map((alternative) => alternative.exercise_name)
-													.join(", ")}
-											</p>
-										) : null}
 									</div>
 								))}
 							</div>

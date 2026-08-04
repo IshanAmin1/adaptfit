@@ -1,16 +1,9 @@
-export type PlanExerciseAlternative = {
-	exercise_name: string;
-	reason_for_alternative: string;
-};
-
 export type PlanExercise = {
 	exercise_name: string;
 	target_muscle_group: string;
 	sets: number;
 	reps: string;
-	rest_seconds: number;
 	equipment_needed: string[];
-	alternatives: PlanExerciseAlternative[];
 	exerciseDbId?: string;
 	exerciseDbName?: string;
 	day?: string;
@@ -76,11 +69,13 @@ export type PlanNutrients = {
 		fat_g: number;
 	};
 	meal_frequency: number;
-	sample_meals: {
-		meal_name: string;
-		description: string;
-		estimated_calories: number;
-	}[];
+	sample_meals: [
+		{
+			meal_name: string;
+			description: string;
+			estimated_calories: number;
+		},
+	];
 };
 
 export type GeneratedPlan = {
@@ -110,7 +105,6 @@ export type GeneratedPlan = {
 		generated_at: string;
 		plan_version: string;
 		user_goal: string;
-		disclaimer: string;
 	};
 	targets: PlanTargets;
 	nutrients: PlanNutrients;
