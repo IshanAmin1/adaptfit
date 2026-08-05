@@ -45,5 +45,7 @@ new Worker(
 			port: REDIS_PORT,
 		},
 		concurrency: 50,
+		lockDuration: 210000, // 3 minutes 30 seconds
+		lockRenewTime: 30000, // 30 seconds
 	},
 );
