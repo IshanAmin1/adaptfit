@@ -99,30 +99,10 @@ The backend exposes the queue-backed stream through reusable middleware in `adap
 
 **Domain name:** `adaptfit.me`
 
-**Deployment platform:** TODO: Example: Render, Vercel, Railway, Fly.io, etc.
-
-**OAuth deployment tasks:** Register the deployed backend callback URL in Google
-Cloud Console, for example `https://api.adaptfit.me/auth/google/callback`. Add
-server env vars `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
-`GOOGLE_REDIRECT_URI`, `CLIENT_ORIGIN`, and `SESSION_SECRET`. Add frontend env
-var `VITE_API_BASE_URL` pointing to the deployed API. Keep the Google client
-secret out of Vite/frontend env vars, use HTTPS, and verify session cookie
-`sameSite`/domain settings if the frontend and API are hosted on different
-sites.
-
 ### Architecture
 
 **Assignee:** Everyone
 
-TODO: Describe the high-level architecture of the project.
-
-Suggested items to include:
-
-- Frontend framework and major pages/components
-- Backend framework and main API routes
-- Database and main data models
-- Authentication flow
-- Real-time flow
-- AI/MCP/tool-calling flow
-- Stripe/payment flow
-- Deployment setup
+- Frontend: Vite (build tool), React (frontend), React Router (for routing)
+- Backend: Express
+- Database: PostgresSQL
