@@ -176,6 +176,7 @@ export const onboardingService = {
 	): Promise<AuthUser> {
 		let completedUser: AuthUser | null = null;
 		let planStatusUrl: string | null = null;
+		const isPlanStatusUrl = statusUrl.includes("/plans/status/");
 
 		await streamStatus(statusUrl, (event) => {
 			if (event.type === "progress") {
@@ -208,6 +209,10 @@ export const onboardingService = {
 			return refreshUserAfterPlanGeneration(completedUser ?? fallbackUser);
 		}
 
+		if (isPlanStatusUrl) {
+			return refreshUserAfterPlanGeneration(fallbackUser);
+		}
+
 		return completedUser ?? fallbackUser;
 	},
 
@@ -215,8 +220,6 @@ export const onboardingService = {
 		profile: OnboardingProfile,
 		onProgress: (event: OnboardingProgressEvent) => void,
 	): Promise<AuthUser> {
-		let completedUser: AuthUser | null = null;
-		let planStatusUrl: string | null = null;
 		onProgress({
 			stage: "start",
 			message: "Starting validation process.",
@@ -249,43 +252,21 @@ export const onboardingService = {
 			throw new Error("Onboarding request failed");
 		}
 
-		await streamStatus(body.statusUrl, (event) => {
-			if (event.type === "progress") {
-				onProgress({
-					stage: event.stage,
-					message: event.message,
-				});
-				return;
-			}
-
-			if (event.type === "error") {
-				const message =
-					event.error || event.message || "Onboarding request failed";
-
-				onProgress({
-					stage: "error",
-					message,
-				});
-				throw new Error(message);
-			}
-
-			if (event.type === "complete") {
-				if ("user" in event) {
-					completedUser = event.user;
-					planStatusUrl = event.planStatusUrl ?? null;
-				}
-			}
+		onProgress({
+			stage: "plan_queued",
+			message: "Starting your plan generation.",
 		});
 
-		if (!completedUser) {
-			throw new Error("Onboarding request failed");
+		await streamPlanGeneration(body.statusUrl, onProgress);
+
+		const refreshedUser = await authService.getCurrentUser();
+
+		if (!refreshedUser) {
+			throw new Error(
+				"Onboarding completed, but your user session could not be refreshed.",
+			);
 		}
 
-		if (planStatusUrl) {
-			await streamPlanGeneration(planStatusUrl, onProgress);
-			return refreshUserAfterPlanGeneration(completedUser);
-		}
-
-		return completedUser;
+		return refreshedUser;
 	},
 };

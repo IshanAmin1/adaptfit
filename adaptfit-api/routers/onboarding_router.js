@@ -4,14 +4,12 @@ import { onboardingRateLimit } from "../middleware/rate_limit.js";
 import { hasActiveSubscription } from "../middleware/subscription.js";
 import * as z from "zod";
 import {
-	enqueueUserJob,
 	findActiveUserJob,
 	GENERATE_PLAN_QUEUE_NAME,
-	VALIDATE_ONBOARDING_QUEUE_NAME,
 } from "../services/tasks.js";
-import { streamQueueJobStatus } from "../middleware/queue_status_stream.js";
 import { enqueuePlanGeneration } from "./plans_router.js";
 import { REDO_COOLDOWN_MS } from "../config/env/onboarding.js";
+import { validateOnboardingCustomFields } from "../services/onboarding-validation.js";
 
 export const onboardingRouter = Router();
 
@@ -165,54 +163,6 @@ function isRedoCooldownActive(user) {
 	return Date.now() - new Date(completedAt).getTime() < REDO_COOLDOWN_MS;
 }
 
-async function completeOnboardingFromValidationResult(
-	validationResult,
-	profile,
-	userId,
-	user,
-	sendProgress,
-) {
-	const invalidFields = validationResult?.invalidFields || [];
-	const rejectionReasons = validationResult?.rejectionReasons || {};
-
-	if (invalidFields.length > 0) {
-		const error = new Error(
-			formatValidationError(invalidFields, rejectionReasons),
-		);
-		error.status = 422;
-		error.invalidFields = invalidFields;
-		error.rejectionReasons = rejectionReasons;
-		throw error;
-	}
-
-	sendProgress({
-		stage: "saving",
-		message: "Starting your updated plan generation.",
-	});
-
-	sendProgress({
-		stage: "complete",
-		message: "Your onboarding profile is ready.",
-	});
-
-	const planJob = await enqueuePlanGeneration(
-		userId,
-		{ id: null, profile },
-		null,
-		true,
-	);
-
-	sendProgress({
-		stage: "plan_queued",
-		message: "Starting your first plan generation.",
-	});
-
-	return {
-		user,
-		planJobId: planJob.jobId,
-		planStatusUrl: planJob.statusUrl,
-	};
-}
 onboardingRouter.post(
 	"/",
 	isAuthenticated,
@@ -228,15 +178,43 @@ onboardingRouter.post(
 			}
 
 			const profile = validateProfile(req.body?.profile);
-			const job = await enqueueUserJob(
-				VALIDATE_ONBOARDING_QUEUE_NAME,
-				req.user.id,
-				{ userId: req.user.id, profile },
-			);
+			const validationResult = await validateOnboardingCustomFields(profile);
+			const invalidFields = validationResult?.invalidFields || [];
+
+			if (invalidFields.length > 0) {
+				const rejectionReasons = validationResult?.rejectionReasons || {};
+				const error = new Error(
+					formatValidationError(invalidFields, rejectionReasons),
+				);
+				error.status = 422;
+				error.invalidFields = invalidFields;
+				error.rejectionReasons = rejectionReasons;
+				throw error;
+			}
+
+			let planJob;
+
+			try {
+				planJob = await enqueuePlanGeneration(
+					req.user.id,
+					{ id: null, profile },
+					null,
+					true,
+				);
+			} catch (error) {
+				if (error.status === 409 && error.jobId && error.statusUrl) {
+					planJob = {
+						jobId: error.jobId,
+						statusUrl: error.statusUrl,
+					};
+				} else {
+					throw error;
+				}
+			}
 
 			return res.status(202).json({
-				jobId: job.id,
-				statusUrl: `/onboarding/status/${job.id}/stream`,
+				jobId: planJob.jobId,
+				statusUrl: planJob.statusUrl,
 			});
 		} catch (error) {
 			console.error(error);
@@ -253,7 +231,7 @@ onboardingRouter.post(
 
 			return res
 				.status(503)
-				.json({ error: "Onboarding validation could not be started." });
+				.json({ error: "Onboarding could not be started." });
 		}
 	},
 );
@@ -264,19 +242,6 @@ onboardingRouter.get(
 	hasActiveSubscription,
 	async (req, res) => {
 		try {
-			const validationJob = await findActiveUserJob(
-				VALIDATE_ONBOARDING_QUEUE_NAME,
-				req.user.id,
-			);
-
-			if (validationJob) {
-				return res.json({
-					pending: true,
-					queueName: VALIDATE_ONBOARDING_QUEUE_NAME,
-					...validationJob,
-				});
-			}
-
 			const planJob = await findActiveUserJob(
 				GENERATE_PLAN_QUEUE_NAME,
 				req.user.id,
@@ -298,26 +263,4 @@ onboardingRouter.get(
 				.json({ error: "Pending onboarding status could not be loaded." });
 		}
 	},
-);
-
-onboardingRouter.get(
-	"/status/:jobId/stream",
-	isAuthenticated,
-	hasActiveSubscription,
-	streamQueueJobStatus(
-		VALIDATE_ONBOARDING_QUEUE_NAME,
-		async ({ req, job, returnvalue, send }) => {
-			const user = await completeOnboardingFromValidationResult(
-				returnvalue,
-				job.data.profile,
-				req.user.id,
-				req.user,
-				(event) => {
-					send({ type: "progress", ...event });
-				},
-			);
-
-			send({ type: "complete", ...user });
-		},
-	),
 );

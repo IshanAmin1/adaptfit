@@ -31,13 +31,11 @@ export function getQueueWithListener(queueName) {
 	return queueWithListener;
 }
 
-export const VALIDATE_ONBOARDING_QUEUE_NAME = "validate-onboarding";
 export const GENERATE_PLAN_QUEUE_NAME = "generate-plan";
 
 const ACTIVE_JOB_STATES = new Set(["waiting", "active", "delayed", "paused"]);
 
 const QUEUE_STATUS_PATHS = {
-	[VALIDATE_ONBOARDING_QUEUE_NAME]: "/onboarding/status",
 	[GENERATE_PLAN_QUEUE_NAME]: "/plans/status",
 };
 
