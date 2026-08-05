@@ -2,6 +2,7 @@ import {
 	OPENROUTER_API_KEY,
 	OPENROUTER_FALLBACK_MODEL,
 	OPENROUTER_MODEL,
+	OPENROUTER_TIMEOUT_MS,
 } from "../config/env/openrouter.js";
 
 /**
@@ -18,11 +19,18 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 	}
 
 	const startedAt = Date.now();
+	const { timeoutMs = OPENROUTER_TIMEOUT_MS, ...requestArgs } = args;
+	const controller = new AbortController();
+	const timeout = setTimeout(() => {
+		controller.abort();
+	}, timeoutMs);
+	timeout.unref?.();
 	let response;
 
 	try {
 		response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 			method: "POST",
+			signal: controller.signal,
 			headers: {
 				Authorization: `Bearer ${OPENROUTER_API_KEY}`,
 				"Content-Type": "application/json",
@@ -40,15 +48,24 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 					},
 				],
 				temperature: 0,
-				...args,
+				...requestArgs,
 			}),
 		});
 	} catch (error) {
+		if (error?.name === "AbortError") {
+			console.error(
+				`OpenRouter fetch timed out after ${Date.now() - startedAt}ms.`,
+			);
+			return null;
+		}
+
 		console.error(
 			`OpenRouter fetch failed after ${Date.now() - startedAt}ms:`,
 			error,
 		);
 		return null;
+	} finally {
+		clearTimeout(timeout);
 	}
 
 	if (!response.ok) {
@@ -109,6 +126,10 @@ export async function queryModelWithRetries(
 		} else {
 			retries--;
 		}
+	}
+
+	if (!result) {
+		throw Error("AI returned an invalid response. Please try again.");
 	}
 
 	return result;
