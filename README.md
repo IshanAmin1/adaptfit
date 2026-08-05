@@ -104,5 +104,6 @@ The backend exposes the queue-backed stream through reusable middleware in `adap
 **Assignee:** Everyone
 
 - Frontend: Vite (build tool), React (frontend), React Router (for routing)
-- Backend: Express
+- Backend: Node.js, Express
 - Database: PostgresSQL
+- Other Tools: Redis, Docker
