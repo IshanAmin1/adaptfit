@@ -8,5 +8,5 @@ export const STATUS_STREAM_HEARTBEAT_MS = getPositiveIntegerEnv(
 );
 export const STATUS_STREAM_TIMEOUT_MS = getPositiveIntegerEnv(
 	"STATUS_STREAM_TIMEOUT_MS",
-	10 * 60 * 1000,
+	4 * 60 * 1000,
 );
