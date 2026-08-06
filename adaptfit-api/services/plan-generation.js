@@ -522,6 +522,9 @@ export async function generatePlan(profile, job) {
 		(output) => requirePlanOutputRetry(modelRequest.responseSchema, output),
 		1,
 		{
+			requestLabel: adaptationContext
+				? "adaptive-plan-generation"
+				: "initial-plan-generation",
 			response_format: {
 				type: "json_schema",
 				json_schema: {
