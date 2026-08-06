@@ -88,6 +88,8 @@ const submissionProgressStages = [
 	"complete",
 	"plan_queued",
 	"plan_generation",
+	"nutrition_generation",
+	"workout_generation",
 	"plan_saving",
 	"plan_complete",
 ];

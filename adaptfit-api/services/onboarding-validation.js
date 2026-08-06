@@ -1,6 +1,5 @@
 import { randomBytes } from "node:crypto";
 import * as z from "zod";
-import { OPENROUTER_VALIDATION_TIMEOUT_MS } from "../config/env/openrouter.js";
 import { queryModelWithRetries } from "./openrouter.js";
 
 const AI_VALIDATION_FIELD_NAMES = [
@@ -113,7 +112,6 @@ export async function validateOnboardingCustomFields(profile) {
 		1,
 		{
 			requestLabel: "onboarding-custom-validation",
-			timeoutMs: OPENROUTER_VALIDATION_TIMEOUT_MS,
 			response_format: {
 				type: "json_schema",
 				json_schema: {

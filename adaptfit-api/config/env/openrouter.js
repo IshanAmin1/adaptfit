@@ -1,4 +1,4 @@
-import { getEnvVariable, getPositiveIntegerEnv } from "../../utils/general.js";
+import { getEnvVariable } from "../../utils/general.js";
 
 export const OPENROUTER_API_KEY = getEnvVariable("OPENROUTER_API_KEY");
 export const OPENROUTER_MODEL = getEnvVariable(
@@ -8,12 +8,4 @@ export const OPENROUTER_MODEL = getEnvVariable(
 export const OPENROUTER_FALLBACK_MODEL = getEnvVariable(
 	"OPENROUTER_FALLBACK_MODEL",
 	"nvidia/nemotron-3-super-120b-a12b:free",
-);
-export const OPENROUTER_TIMEOUT_MS = getPositiveIntegerEnv(
-	"OPENROUTER_TIMEOUT_MS",
-	5 * 60 * 1000,
-);
-export const OPENROUTER_VALIDATION_TIMEOUT_MS = getPositiveIntegerEnv(
-	"OPENROUTER_VALIDATION_TIMEOUT_MS",
-	60 * 1000,
 );
