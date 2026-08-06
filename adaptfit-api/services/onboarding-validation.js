@@ -112,6 +112,7 @@ export async function validateOnboardingCustomFields(profile) {
 		},
 		1,
 		{
+			requestLabel: "onboarding-custom-validation",
 			timeoutMs: OPENROUTER_VALIDATION_TIMEOUT_MS,
 			response_format: {
 				type: "json_schema",

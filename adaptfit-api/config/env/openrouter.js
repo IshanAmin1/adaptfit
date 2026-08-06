@@ -11,7 +11,7 @@ export const OPENROUTER_FALLBACK_MODEL = getEnvVariable(
 );
 export const OPENROUTER_TIMEOUT_MS = getPositiveIntegerEnv(
 	"OPENROUTER_TIMEOUT_MS",
-	3 * 60 * 1000,
+	5 * 60 * 1000,
 );
 export const OPENROUTER_VALIDATION_TIMEOUT_MS = getPositiveIntegerEnv(
 	"OPENROUTER_VALIDATION_TIMEOUT_MS",

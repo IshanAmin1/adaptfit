@@ -5,6 +5,18 @@ import {
 	OPENROUTER_TIMEOUT_MS,
 } from "../config/env/openrouter.js";
 
+const OPENROUTER_LOG_BODY_LIMIT = 2000;
+
+function createAiUnavailableError(message) {
+	const error = new Error(message);
+	error.status = 503;
+	return error;
+}
+
+function getOpenRouterBodySummary(body) {
+	return JSON.stringify(body).slice(0, OPENROUTER_LOG_BODY_LIMIT);
+}
+
 /**
  * Query an OpenRouter model
  * @param {string} systemPrompt - System prompt
@@ -19,13 +31,26 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 	}
 
 	const startedAt = Date.now();
-	const { timeoutMs = OPENROUTER_TIMEOUT_MS, ...requestArgs } = args;
+	const {
+		timeoutMs = OPENROUTER_TIMEOUT_MS,
+		requestLabel = "openrouter",
+		...requestArgs
+	} = args;
 	const controller = new AbortController();
 	const timeout = setTimeout(() => {
 		controller.abort();
 	}, timeoutMs);
 	timeout.unref?.();
 	let response;
+	const requestedModels = [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL].filter(
+		Boolean,
+	);
+
+	console.log(
+		`OpenRouter request started label=${requestLabel} timeoutMs=${timeoutMs} models=${requestedModels.join(
+			",",
+		)}`,
+	);
 
 	try {
 		response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -36,7 +61,7 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				models: [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL],
+				models: requestedModels,
 				messages: [
 					{
 						role: "system",
@@ -54,13 +79,17 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 	} catch (error) {
 		if (error?.name === "AbortError") {
 			console.error(
-				`OpenRouter fetch timed out after ${Date.now() - startedAt}ms.`,
+				`OpenRouter fetch timed out label=${requestLabel} after ${
+					Date.now() - startedAt
+				}ms timeoutMs=${timeoutMs}.`,
 			);
 			return null;
 		}
 
 		console.error(
-			`OpenRouter fetch failed after ${Date.now() - startedAt}ms:`,
+			`OpenRouter fetch failed label=${requestLabel} after ${
+				Date.now() - startedAt
+			}ms:`,
 			error,
 		);
 		return null;
@@ -71,21 +100,55 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 	if (!response.ok) {
 		const errorText = await response.text().catch(() => "");
 		console.error(
-			`OpenRouter query failed with status ${response.status} after ${
+			`OpenRouter query failed label=${requestLabel} status=${
+				response.status
+			} after ${
 				Date.now() - startedAt
-			}ms: ${errorText.slice(0, 500)}`,
+			}ms: ${errorText.slice(0, OPENROUTER_LOG_BODY_LIMIT)}`,
 		);
 		return null;
 	}
 
-	const body = await response.json();
+	const responseText = await response.text().catch(() => "");
+	let body;
+
+	try {
+		body = JSON.parse(responseText);
+	} catch (error) {
+		console.error(
+			`OpenRouter returned invalid JSON label=${requestLabel} status=${
+				response.status
+			} after ${Date.now() - startedAt}ms: ${responseText.slice(
+				0,
+				OPENROUTER_LOG_BODY_LIMIT,
+			)}`,
+			error,
+		);
+		return null;
+	}
+
 	const content = body?.choices?.[0]?.message?.content;
+	const finishReason = body?.choices?.[0]?.finish_reason;
+
+	console.log(
+		`OpenRouter query completed label=${requestLabel} status=${
+			response.status
+		} after ${Date.now() - startedAt}ms model=${body?.model || "unknown"} provider=${
+			body?.provider || "unknown"
+		} finishReason=${finishReason || "unknown"} hasContent=${Boolean(content)}`,
+	);
 
 	if (!content) {
 		console.error(
-			`OpenRouter returned no message content after ${
+			`OpenRouter returned no message content label=${requestLabel} status=${
+				response.status
+			} after ${
 				Date.now() - startedAt
-			}ms.`,
+			}ms model=${body?.model || "unknown"} provider=${
+				body?.provider || "unknown"
+			} finishReason=${finishReason || "unknown"} body=${getOpenRouterBodySummary(
+				body,
+			)}`,
 		);
 	}
 
@@ -117,8 +180,8 @@ export async function queryModelWithRetries(
 		const content = await queryModel(systemPrompt, userPrompt, args);
 
 		if (!content) {
-			throw Error(
-				"AI validation is temporarily unavailable. Please try again at a later time.",
+			throw createAiUnavailableError(
+				"AI request is temporarily unavailable. Please try again at a later time.",
 			);
 		} else if (!shouldRetry(content)) {
 			result = content;
@@ -129,7 +192,9 @@ export async function queryModelWithRetries(
 	}
 
 	if (!result) {
-		throw Error("AI returned an invalid response. Please try again.");
+		throw createAiUnavailableError(
+			"AI returned an invalid response. Please try again.",
+		);
 	}
 
 	return result;
