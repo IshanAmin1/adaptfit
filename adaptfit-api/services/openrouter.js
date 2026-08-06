@@ -2,7 +2,6 @@ import {
 	OPENROUTER_API_KEY,
 	OPENROUTER_FALLBACK_MODEL,
 	OPENROUTER_MODEL,
-	OPENROUTER_TIMEOUT_MS,
 } from "../config/env/openrouter.js";
 
 const OPENROUTER_LOG_BODY_LIMIT = 2000;
@@ -31,23 +30,14 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 	}
 
 	const startedAt = Date.now();
-	const {
-		timeoutMs = OPENROUTER_TIMEOUT_MS,
-		requestLabel = "openrouter",
-		...requestArgs
-	} = args;
-	const controller = new AbortController();
-	const timeout = setTimeout(() => {
-		controller.abort();
-	}, timeoutMs);
-	timeout.unref?.();
+	const { requestLabel = "openrouter", ...requestArgs } = args;
 	let response;
 	const requestedModels = [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL].filter(
 		Boolean,
 	);
 
 	console.log(
-		`OpenRouter request started label=${requestLabel} timeoutMs=${timeoutMs} models=${requestedModels.join(
+		`OpenRouter request started label=${requestLabel} models=${requestedModels.join(
 			",",
 		)}`,
 	);
@@ -55,7 +45,6 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 	try {
 		response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 			method: "POST",
-			signal: controller.signal,
 			headers: {
 				Authorization: `Bearer ${OPENROUTER_API_KEY}`,
 				"Content-Type": "application/json",
@@ -77,15 +66,6 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 			}),
 		});
 	} catch (error) {
-		if (error?.name === "AbortError") {
-			console.error(
-				`OpenRouter fetch timed out label=${requestLabel} after ${
-					Date.now() - startedAt
-				}ms timeoutMs=${timeoutMs}.`,
-			);
-			return null;
-		}
-
 		console.error(
 			`OpenRouter fetch failed label=${requestLabel} after ${
 				Date.now() - startedAt
@@ -93,8 +73,6 @@ export async function queryModel(systemPrompt, userPrompt, args = {}) {
 			error,
 		);
 		return null;
-	} finally {
-		clearTimeout(timeout);
 	}
 
 	if (!response.ok) {
