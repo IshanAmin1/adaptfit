@@ -1,109 +1,217 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/sjGoTOz-)
+# AdaptFit
 
-# AdaptFit Proposal
+AdaptFit is a personalized fitness planning web application. It combines a
+guided onboarding assessment with AI-generated workout and nutrition
+recommendations, then gives users tools to review their plan, log workouts, and
+understand their training targets.
 
-## Team
+## Features
 
-| Name       | UTORid   | AI Usage Policy Acknowledgement                                               |
-| ---------- | -------- | ----------------------------------------------------------------------------- |
-| Ishan Amin | aminish1 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
-| Jerry He   | hejerry4 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
-| Eric Song  | songeri5 | I acknowledge the AI usage policy and pledge to adhere to it in this project. |
+- Google sign-in with a server-side session and PKCE-protected OAuth flow.
+- Subscription checkout and billing management through Stripe.
+- Guided onboarding covering:
+  - Basic information and body measurements
+  - Fitness goals and target timeline
+  - Experience level
+  - Training location, equipment, machines, available days, and session length
+  - Diet type, allergies, foods to avoid, and meal frequency
+- AI-assisted plan generation using OpenRouter.
+- Personalized weekly workout schedules with:
+  - Session type, duration, and exercises
+  - Sets, reps, rest periods, and target muscle groups
+  - Exercise demonstrations and instructions when available
+- Nutrition targets including daily calories and protein, carbohydrate, and fat
+  goals.
+- Dashboard views for the current plan, nutrition summary, and progress.
+- Workout logging with full or partial completion status, completed sets and
+  reps, and notes.
+- Plan insights showing adaptation rules, training signals, energy targets,
+  macro distribution, and muscle-group coverage.
+- Live onboarding and plan-generation progress using Server-Sent Events (SSE).
+- Validation, rate limiting, security headers, and persistent sessions on the
+  API.
 
-## Summary
+## Application flow
 
-**Short Summary**
+1. Sign in with Google.
+2. Start a monthly subscription through Stripe.
+3. Complete the onboarding assessment.
+4. Wait for the queued validation and AI plan-generation steps to finish.
+5. Review the generated plan from the dashboard.
+6. Log completed workouts and use the plan, progress, and insights views to
+   track training.
+7. Redo onboarding later when a new plan is needed and the cooldown allows it.
 
-A web-based fitness platform that generates personalized workout and nutrition plans using AI. Users provide their fitness goals, experience level, available equipment, and dietary preferences through an onboarding assessment. The platform then creates a customized weekly plan and continuously adapts future recommendations based on user progress and performance.
+## Tech stack
 
-**Major Functionalities**
+### Frontend
 
-- AI-Powered Fitness Plan Generation
+- React 19 and TypeScript
+- Vite
+- React Router
+- Tailwind CSS
+- `@microsoft/fetch-event-source` for SSE updates
 
-  The core of the application is a structured AI workflow that generates personalized workout and nutrition plans. User information is processed through multiple stages:
-  Goal Analysis → Exercise Selection → Nutrition Planning → Schedule Generation
-  The system considers factors such as fitness goals, available equipment, experience level, and dietary restrictions to create a complete weekly plan tailored to each user.
+### Backend
 
-- Adaptive Progress Tracking and Feedback System
+- Node.js 18+
+- Express
+- Sequelize
+- PostgreSQL
+- Redis and BullMQ for background jobs
+- Google OAuth
+- Stripe Billing and webhooks
+- OpenRouter for AI-assisted plan generation
+- Exercise DB through RapidAPI for exercise demonstrations
 
-  Users log completed workouts and nutrition data through an interactive dashboard. The platform analyzes this performance data and automatically adjusts future recommendations.
-  Examples include:
-  Increasing or decreasing workout intensity based on completion rates.
-  Recommending alternative exercises when users consistently skip certain movements.
-  Adjusting calorie and macronutrient targets according to progress toward goals.
-  This creates a continuous feedback loop where the generated plans evolve based on real user behavior rather than remaining static.
+## Project structure
 
-**Originality**
+```text
+adaptfit-app/       React frontend
+adaptfit-api/       Express API and background workers
+docs/               Development and feature documentation
+mockups/            Static UI mockup
+docker-compose-dev.yml
+docker-compose-prod.yml
+```
 
-Unlike traditional fitness applications that provide generic workout templates, this platform focuses on intelligent adaptation. The application treats fitness planning as an evolving process rather than a one-time recommendation.
+## Local development
 
-## Capabilities
+### Prerequisites
 
-### Authentication
+- Node.js 18 or newer
+- Docker Desktop
+- A PostgreSQL database
+- A Redis instance
+- Google OAuth credentials
+- Stripe test credentials
+- OpenRouter API access
+- Exercise DB RapidAPI access
 
-**Assignee:** Jerry
+### Install dependencies
 
-**Required question:** Which OAuth provider are you using?
+From the repository root:
 
-**Answer:** Google OAuth using the authorization code flow with PKCE. The SPA
-starts login by navigating to the Express API, the API stores OAuth `state` and
-the PKCE verifier in the Express session, Google redirects back to the API, and
-the API exchanges the auth code with the server-only Google client secret. After
-the returned ID token is verified, AdaptFit stores only the internal `userId` in
-the Express session cookie. Google access tokens are not stored or used for
-external APIs, so no refresh token is requested.
+```powershell
+npm install
+```
 
-### Look and Feel
+### Start PostgreSQL and Redis
 
-**Assignee:** Ishan
+```powershell
+docker compose -f docker-compose-dev.yml up -d
+```
 
-**Required item:** Include a 1-page mockup of the core feature using HTML/CSS only, generated by Copilot.
+The development compose file exposes PostgreSQL on port `5433` and Redis on
+port `6381` to avoid conflicts with services already running on the default
+ports.
 
-**Mockup location:** `mockups/index.html`
+### Configure the API
 
-**Notes:** The mockup shows AdaptFit's core dashboard experience for a logged-in user. It includes a top navigation bar with links to Today, AI Insights, Nutrition, and Progress. The main Today section shows an AI-generated workout plan with the workout name, estimated time, intensity level, completion percentage, and a short list of recommended exercises with sets and reps. The AI Insights section shows how AdaptFit explains plan adjustments based on user behavior, such as increasing intensity or replacing skipped exercises. The Nutrition section shows personalized daily calorie and macro targets with progress bars for protein, carbs, and fat. The Progress section shows a weekly performance summary with a trend chart to help users see improvement over time.
+Create `adaptfit-api/.env` locally. Do not commit this file.
 
-### Real-Time Enablement
+```dotenv
+DATABASE_URL=postgres://DB_USER:DB_PASSWORD@localhost:5433/DB_NAME
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
+CLIENT_ORIGIN=http://localhost:5173
+SESSION_SECRET=generate-a-long-random-secret
 
-**Assignee:** Ishan
+STRIPE_SECRET_KEY=your-stripe-secret-key
+STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+STRIPE_MONTHLY_PRICE_ID=your-stripe-price-id
 
-**Required question:** What technology/library are you using?
+OPENROUTER_API_KEY=your-openrouter-api-key
+EXERCISE_DB_RAPIDAPI_KEY=your-rapidapi-key
+EXERCISE_DB_RAPIDAPI_HOST=edb-with-videos-and-images-by-ascendapi.p.rapidapi.com
+EXERCISE_DB_BASE_URL=https://edb-with-videos-and-images-by-ascendapi.p.rapidapi.com/api/v1
 
-**Answer:** AdaptFit uses Server-Sent Events (SSE) with `@microsoft/fetch-event-source` on the frontend and Express streaming responses on the backend. Onboarding validation runs through a BullMQ task queue: the frontend first submits the onboarding profile with `POST /onboarding`, the backend returns a `jobId` and `statusUrl`, and the frontend then listens to `GET /onboarding/status/:jobId/stream` for progress events.
+REDIS_HOST=localhost
+REDIS_PORT=6381
+```
 
-The backend exposes the queue-backed stream through reusable middleware in `adaptfit-api/middleware/queue_status_stream.js`. Workers update BullMQ progress as the job moves through stages such as `queued`, `ai_validation`, and `saving`, and the SSE stream forwards those status events to the onboarding UI. We are not streaming raw model output; only task progress and final completion/error events are sent to the browser.
+Create `adaptfit-app/.env.local` for the frontend:
 
-### AI Integration with MCP / Tools
+```dotenv
+VITE_API_BASE_URL=http://localhost:3000
+```
 
-**Assignee:** Eric
+Never place server-only secrets such as `GOOGLE_CLIENT_SECRET`,
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `OPENROUTER_API_KEY`, or
+`SESSION_SECRET` in frontend environment variables.
 
-**Required questions:** Which AI provider are you using? How are you planning on integrating the AI?
+### Run the application
 
-**AI provider:** OpenRouter
+In separate terminals:
 
-**Integration plan:** We will use OpenRouter to query the model. We will be using NVIDIA models since they are free.
+```powershell
+cd adaptfit-api
+npm run start:dev-server
+```
 
-### Stripe Integration
+```powershell
+cd adaptfit-api
+npm run start:dev-worker
+```
 
-**Assignee:** Jerry
+```powershell
+cd adaptfit-app
+npm run dev
+```
 
-**Required item:** Provide your sandbox account publishable key.
+The frontend runs at `http://localhost:5173` and the API runs at
+`http://localhost:3000`.
 
-**Sandbox publishable key:** `pk_test_51Tj1yw8xqGcsep6XvUSamVs87dlEXqiYPyfBY11RRY4h2PQFk0iAa4vS4IdXBd6lubCTfkEPdgC0oV7Ya0oj465400c6U9T1eC`
+### Stripe webhooks locally
 
-### Deployment
+Install the Stripe CLI, sign in, and forward webhook events to the local API:
 
-**Assignee:** Eric
+```powershell
+cd adaptfit-api
+npm run start:dev-stripe
+```
 
-**Required item:** Provide an available domain name.
+Copy the webhook signing secret printed by the Stripe CLI into
+`STRIPE_WEBHOOK_SECRET`.
 
-**Domain name:** `adaptfit.me`
+## Useful commands
 
-### Architecture
+From the repository root:
 
-**Assignee:** Everyone
+```powershell
+npm run format
+npm run lint
+npm run tidy
+```
 
-- Frontend: Vite (build tool), React (frontend), React Router (for routing)
-- Backend: Node.js, Express
-- Database: PostgresSQL
-- Other: Redis, Docker
+Frontend commands:
+
+```powershell
+cd adaptfit-app
+npm run build
+npm run preview
+```
+
+## API route groups
+
+- `/auth` - Google login, current-user lookup, and logout
+- `/billing` - Stripe checkout, subscription status, and billing portal
+- `/onboarding` - profile submission, validation, and progress streaming
+- `/plans` - generated plan retrieval and plan-generation progress
+- `/logging` - workout log creation and retrieval
+- `/exercises` - exercise demonstration lookups
+- `/stripe/webhook` - Stripe subscription and payment event handling
+
+## Security and configuration
+
+- Keep all `.env` files, private keys, API tokens, and webhook secrets out of
+  Git.
+- Use Stripe test credentials for local development.
+- Use HTTPS and production secrets only in deployment environments.
+- Review the documentation in [`docs/`](./docs/) for the local setup, OAuth,
+  rate-limiting, authentication, and real-time implementation details.
+
+## License
+
+This project does not currently declare an open-source license.
